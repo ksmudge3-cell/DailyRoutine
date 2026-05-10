@@ -725,15 +725,25 @@ let wheelAngle=0;let spinning=false;
 
 function drawWheel(){
   const canvas=document.getElementById('wheel-canvas');const ctx=canvas.getContext('2d');
-  const cx=140,cy=140,r=130;const n=currentSpinTasks.length;if(n===0)return;
-  ctx.clearRect(0,0,280,280);
+  const dpr=window.devicePixelRatio||1;
+  const size=280;
+  if(canvas.width!==size*dpr){
+    canvas.width=size*dpr;canvas.height=size*dpr;
+    canvas.style.width=size+'px';canvas.style.height=size+'px';
+    ctx.scale(dpr,dpr);
+  }
+  const cx=140,cy=140,r=130;const n=currentSpinTasks.length;
+  ctx.clearRect(0,0,size,size);
+  if(n===0)return;
   const arc=(2*Math.PI)/n;
+  // pointer is at top (270deg = -PI/2), so offset wheel start
+  const pointerAngle=-Math.PI/2;
   currentSpinTasks.forEach((task,i)=>{
-    const start=wheelAngle+i*arc;const end=start+arc;
+    const start=wheelAngle+pointerAngle+i*arc;const end=start+arc;
     ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
     ctx.fillStyle=COLORS[i%COLORS.length];ctx.fill();
     ctx.save();ctx.translate(cx,cy);ctx.rotate(start+arc/2);
-    ctx.textAlign='right';ctx.fillStyle='rgba(0,0,0,0.7)';ctx.font='bold 10px DM Mono, monospace';
+    ctx.textAlign='right';ctx.fillStyle='rgba(0,0,0,0.75)';ctx.font=`bold ${n>10?9:10}px DM Mono, monospace`;
     const label=task.name.length>18?task.name.slice(0,16)+'…':task.name;
     ctx.fillText(label,r-8,4);ctx.restore();
   });
@@ -757,7 +767,8 @@ function spinWheel(){
     else{
       spinning=false;document.getElementById('spin-btn').disabled=false;
       const n=currentSpinTasks.length;const arc=(2*Math.PI)/n;
-      const normalizedAngle=((-wheelAngle)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
+      const pointerAngle=-Math.PI/2;
+      const normalizedAngle=((-(wheelAngle+pointerAngle))%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
       const idx=Math.floor(normalizedAngle/arc)%n;
       showResult(currentSpinTasks[idx]);
     }
