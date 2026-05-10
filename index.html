@@ -329,7 +329,7 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 
 <!-- COACH -->
 <div class="screen" id="screen-coach">
-  <div class="page-header"><h1>Coach</h1><p>POWERED BY CLAUDE</p></div>
+  <div class="page-header"><h1>Coach</h1><p>STATS + CHECK-IN + PROMPTS</p></div>
   <div id="coach-content"></div>
 </div>
 
@@ -723,9 +723,21 @@ function renderCoach(){
   const doneHtml=done.length?done.map(t=>`<span class="ctx-done">✓ ${t}</span>`).join('<br>'):'<span style="color:var(--hint)">Nothing yet</span>';
   const pendingHtml=pending.slice(0,4).map(t=>`<span class="ctx-pending">○ ${t}</span>`).join('<br>')+(pending.length>4?`<br><span style="color:var(--hint)">+${pending.length-4} more</span>`:'');
   const summary=`Daily check-in — ${DAYS[ti]} — ${pct}% complete — ${streak} day streak\nRoutine done: ${done.join(', ')||'nothing yet'}\nPending: ${pending.join(', ')||'all done'}\nDog care done: ${dogDone.join(', ')||'none yet'}`;
+  const todayPct=dayPct(ti);
+  let wt=0,wd=0;for(let i=0;i<7;i++){const s=getScheduleFor(i);const t=s.reduce((a,sec)=>a+sec.tasks.length,0);wt+=t;wd+=Math.min(Object.values(getDayData(i)).filter(Boolean).length,t);}
+  const wp=wt?Math.round((wd/wt)*100):0;
+  const bars=SHORT.map((d,i)=>{const p=dayPct(i);const isT=i===ti;return `<div class="week-bar-wrap${isT?' today':''}"><div class="week-bar-bg"><div class="week-bar-fill" style="height:${Math.max(p,2)}%"></div></div><div class="week-bar-label">${d}</div></div>`;}).join('');
+
   document.getElementById('coach-content').innerHTML=`
+    <div class="stats-grid" style="margin-bottom:16px;">
+      <div class="stat-card"><div class="s-label">Today</div><div class="s-val">${todayPct}<span class="s-unit">%</span></div></div>
+      <div class="stat-card"><div class="s-label">This week</div><div class="s-val">${wp}<span class="s-unit">%</span></div></div>
+      <div class="stat-card"><div class="s-label">Streak</div><div class="s-val">${calcStreak()}<span class="s-unit"> days</span></div></div>
+      <div class="stat-card"><div class="s-label">Best streak</div><div class="s-val">${calcBestStreak()}<span class="s-unit"> days</span></div></div>
+      <div class="stat-card full"><div class="s-label">Week overview</div><div class="week-bars">${bars}</div></div>
+    </div>
     <div class="coach-card">
-      <h2>Your context</h2>
+      <h2>Check in</h2>
       <div class="context-box">
         <div class="ctx-label">${DAYS[ti]} — ${pct}% — ${streak} day streak</div>
         ${doneHtml}<br>${pendingHtml}
