@@ -442,17 +442,16 @@ const DEFAULT_SCHEDULE={
 const DEFAULT_DOG_TASKS={
   shared:{
     morning:[
-      {id:'dogs-snuggle',name:'Morning snuggles with Edna & Kronk',time:'Wake up'},
       {id:'dogs-feed-am',name:'Feed Edna & Kronk',time:'Morning'},
       {id:'dogs-walk-am',name:'Walk Edna & Kronk',time:'Before work'},
     ],
     evening:[
       {id:'dogs-feed-pm',name:'Feed Edna & Kronk',time:'Evening'},
       {id:'dogs-walk-pm',name:'Walk Edna & Kronk',time:'Evening'},
-      {id:'dogs-check',name:'Evening cuddle time',time:'Wind down'},
     ]
   },
   mental:[
+    {id:'m-snuggle',name:'Snuggle time with Edna & Kronk',time:'Anytime'},
     {id:'m-breath',name:'5 min breathing with the dogs',time:'Anytime'},
     {id:'m-play',name:'Backyard play session',time:'Anytime'},
     {id:'m-gratitude',name:'Grateful for Edna & Kronk',time:'Evening'},
@@ -1050,7 +1049,7 @@ function renderTaskManager(){
         <option value="false"${!t.repeat?' selected':''}>Once</option>
       </select>
       ${t.repeat?`<input class="time-in" type="number" value="${t.cooldown}" min="1" max="30" onchange="wheel['${spinCat}'].standalone[${i}].cooldown=parseInt(this.value)" style="width:45px;" title="Cooldown days"/>d`:''}
-      <button style="font-size:10px;padding:3px 8px;border-radius:99px;border:0.5px solid var(--teal);background:none;color:var(--teal);font-family:var(--mono);cursor:pointer;white-space:nowrap;" onclick="markDoneOutsideSpin('${t.id}')" title="Mark as done now">✓ done</button>
+      <button class="tm-done-btn" data-taskid="${t.id}" style="font-size:10px;padding:3px 8px;border-radius:99px;border:0.5px solid var(--teal);background:none;color:var(--teal);font-family:var(--mono);cursor:pointer;white-space:nowrap;" onclick="markDoneOutsideSpin('${t.id}')" title="Mark as done now">✓ done</button>
       <button class="tm-del" onclick="removeStandaloneTask('${spinCat}',${i})">×</button>
     </div>`;
   });
@@ -1074,7 +1073,7 @@ function renderTaskManager(){
           <option value="false"${!t.repeat?' selected':''}>Once</option>
         </select>
         ${t.repeat?`<input class="time-in" type="number" value="${t.cooldown}" min="1" max="30" onchange="wheel['${spinCat}'].projects[${pi}].tasks[${ti}].cooldown=parseInt(this.value)" style="width:45px;" title="Cooldown days"/>d`:''}
-        <button style="font-size:10px;padding:3px 8px;border-radius:99px;border:0.5px solid var(--teal);background:none;color:var(--teal);font-family:var(--mono);cursor:pointer;white-space:nowrap;" onclick="markDoneOutsideSpin('${t.id}')" title="Mark as done now">✓ done</button>
+        <button class="tm-done-btn" data-taskid="${t.id}" style="font-size:10px;padding:3px 8px;border-radius:99px;border:0.5px solid var(--teal);background:none;color:var(--teal);font-family:var(--mono);cursor:pointer;white-space:nowrap;" onclick="markDoneOutsideSpin('${t.id}')" title="Mark as done now">✓ done</button>
         <button class="tm-del" onclick="removeProjectTask('${spinCat}',${pi},${ti})">×</button>
       </div>`;
     });
@@ -1095,7 +1094,16 @@ function markDoneOutsideSpin(taskId){
   refreshWheel();
   renderAvoidanceTracker();
   if(selectedDay===new Date().getDay())renderToday();
-  setTimeout(()=>renderTaskManager(),800);
+  // just update the button inline — don't re-render the whole manager
+  const allBtns=document.querySelectorAll('.tm-done-btn');
+  allBtns.forEach(b=>{
+    if(b.dataset.taskid===taskId){
+      b.textContent='✓ done!';
+      b.style.background='var(--teal)';
+      b.style.color='#0e0e0f';
+      b.disabled=true;
+    }
+  });
 }
 
 function addStandaloneTask(cat){
