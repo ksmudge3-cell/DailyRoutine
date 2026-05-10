@@ -7,80 +7,77 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Daily Routine">
 <title>Daily Routine</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0e0e0f;
-  --surface: #18181b;
-  --surface2: #242428;
-  --border: rgba(255,255,255,0.08);
-  --border2: rgba(255,255,255,0.14);
-  --text: #f0ede8;
-  --muted: #888884;
-  --hint: #555552;
-  --teal: #2dd4a0;
-  --teal-dim: rgba(45,212,160,0.12);
-  --amber: #f5a623;
+  --bg: #0e0e0f; --surface: #18181b; --surface2: #242428;
+  --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+  --text: #f0ede8; --muted: #888884; --hint: #555552;
+  --teal: #2dd4a0; --teal-dim: rgba(45,212,160,0.12);
+  --amber: #f5a623; --amber-dim: rgba(245,166,35,0.12);
+  --coral: #f87171; --coral-dim: rgba(248,113,113,0.12);
+  --purple: #a78bfa; --purple-dim: rgba(167,139,250,0.12);
   --red: #ff5c5c;
-  --mono: 'DM Mono', monospace;
-  --serif: 'Fraunces', serif;
-  --radius: 12px;
-  --radius-sm: 8px;
+  --mono: 'DM Mono', monospace; --serif: 'Fraunces', serif;
+  --radius: 12px; --radius-sm: 8px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { background: var(--bg); }
 body { font-family: var(--mono); background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 120px; }
 
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(14,14,15,0.95); backdrop-filter: blur(20px); border-top: 0.5px solid var(--border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
-.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 6px; cursor: pointer; color: var(--hint); font-size: 10px; font-family: var(--mono); border: none; background: none; transition: color 0.15s; }
+.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 6px; cursor: pointer; color: var(--hint); font-size: 9px; font-family: var(--mono); border: none; background: none; transition: color 0.15s; }
 .nav-btn.active { color: var(--teal); }
-.nav-icon { font-size: 20px; line-height: 1; }
+.nav-icon { font-size: 18px; line-height: 1; }
 
 .screen { display: none; padding: 0 16px; padding-top: env(safe-area-inset-top, 16px); }
 .screen.active { display: block; }
-
 .page-header { padding: 24px 0 16px; }
 .page-header h1 { font-family: var(--serif); font-size: 28px; font-weight: 300; color: var(--text); }
 .page-header p { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 0.05em; }
 
+/* DATE STRIP */
 .date-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 16px; scrollbar-width: none; }
 .date-strip::-webkit-scrollbar { display: none; }
 .date-pill { flex-shrink: 0; padding: 6px 12px; border-radius: 99px; border: 0.5px solid var(--border); background: none; color: var(--muted); font-family: var(--mono); font-size: 11px; cursor: pointer; transition: all 0.12s; }
 .date-pill.active { background: var(--teal); color: #0e0e0f; border-color: var(--teal); font-weight: 500; }
 .date-pill.done { border-color: var(--teal); color: var(--teal); }
 
+/* PROGRESS */
 .progress-ring-wrap { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding: 16px; background: var(--surface); border-radius: var(--radius); border: 0.5px solid var(--border); }
-.ring-svg { flex-shrink: 0; }
 .ring-bg { fill: none; stroke: var(--surface2); stroke-width: 4; }
 .ring-fill { fill: none; stroke: var(--teal); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.4s ease; transform-origin: center; transform: rotate(-90deg); }
 .ring-text { font-family: var(--serif); font-size: 18px; fill: var(--text); dominant-baseline: central; text-anchor: middle; }
 .ring-sub { font-family: var(--mono); font-size: 8px; fill: var(--muted); dominant-baseline: central; text-anchor: middle; letter-spacing: 0.05em; }
-.progress-meta { flex: 1; }
 .progress-meta .big { font-family: var(--serif); font-size: 22px; font-weight: 300; color: var(--text); }
 .progress-meta .small { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.streak-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11px; color: var(--amber); }
+.streak-row { margin-top: 8px; font-size: 11px; color: var(--amber); }
 
-.section-label { font-size: 10px; letter-spacing: 0.1em; color: var(--hint); text-transform: uppercase; margin: 20px 0 8px; }
-
+/* TASKS */
+.section-label { font-size: 10px; letter-spacing: 0.1em; color: var(--hint); text-transform: uppercase; margin: 20px 0 8px; display: flex; align-items: center; justify-content: space-between; }
 .task { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; transition: all 0.12s; user-select: none; }
 .task:active { transform: scale(0.98); }
-.task.done { opacity: 0.55; }
+.task.done { opacity: 0.5; }
 .task.done .task-name { text-decoration: line-through; color: var(--muted); }
 .check { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
 .task.done .check { background: var(--teal); border-color: var(--teal); }
 .check-mark { display: none; color: #0e0e0f; font-size: 12px; }
 .task.done .check-mark { display: block; }
-.task-info { flex: 1; min-width: 0; }
 .task-name { font-size: 13px; color: var(--text); }
 .task-time { font-size: 10px; color: var(--hint); margin-top: 2px; }
+.task-tag { font-size: 9px; padding: 2px 7px; border-radius: 99px; margin-left: auto; flex-shrink: 0; }
+.tag-dog { background: var(--amber-dim); color: var(--amber); }
+.tag-self { background: var(--purple-dim); color: var(--purple); }
+.congrats-banner { background: var(--teal-dim); border: 0.5px solid rgba(45,212,160,0.25); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px; color: var(--teal); margin-bottom: 12px; text-align: center; }
+.btn-ghost { background: none; color: var(--muted); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 8px 16px; font-family: var(--mono); font-size: 12px; cursor: pointer; }
 
+/* STATS */
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
 .stat-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; }
 .stat-card.full { grid-column: 1/-1; }
-.stat-card .s-label { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
-.stat-card .s-val { font-family: var(--serif); font-size: 32px; font-weight: 300; color: var(--text); }
-.stat-card .s-unit { font-size: 12px; color: var(--muted); }
+.s-label { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+.s-val { font-family: var(--serif); font-size: 32px; font-weight: 300; color: var(--text); }
+.s-unit { font-size: 12px; color: var(--muted); }
 .week-bars { display: flex; align-items: flex-end; gap: 6px; height: 60px; margin-top: 12px; }
 .week-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
 .week-bar-bg { flex: 1; width: 100%; background: var(--surface2); border-radius: 4px; overflow: hidden; display: flex; align-items: flex-end; }
@@ -88,27 +85,81 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .week-bar-label { font-size: 9px; color: var(--hint); }
 .week-bar-wrap.today .week-bar-label { color: var(--teal); }
 
-/* COACH */
-.coach-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; }
-.coach-card h2 { font-family: var(--serif); font-size: 20px; font-weight: 300; margin-bottom: 8px; color: var(--text); }
-.coach-card p { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 16px; }
-.coach-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 14px; background: var(--teal); color: #0e0e0f; border: none; border-radius: var(--radius-sm); font-family: var(--mono); font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; text-decoration: none; }
-.coach-btn:hover { opacity: 0.9; }
-.coach-btn-ghost { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; background: none; color: var(--muted); border: 0.5px solid var(--border); border-radius: var(--radius-sm); font-family: var(--mono); font-size: 12px; cursor: pointer; margin-top: 8px; text-decoration: none; }
-.context-box { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 16px; font-size: 11px; color: var(--muted); line-height: 1.8; }
-.context-box .ctx-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hint); margin-bottom: 6px; }
-.ctx-done { color: var(--teal); }
-.ctx-pending { color: var(--amber); }
-.quick-prompts { display: flex; flex-direction: column; gap: 6px; }
-.qp-btn { display: block; width: 100%; padding: 11px 14px; background: none; border: 0.5px solid var(--border); border-radius: var(--radius-sm); color: var(--muted); font-family: var(--mono); font-size: 12px; cursor: pointer; text-align: left; transition: all 0.12s; text-decoration: none; }
-.qp-btn:hover { border-color: var(--teal); color: var(--teal); }
+/* DOGS */
+.dog-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.dog-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.dog-avatar.edna { background: var(--amber-dim); }
+.dog-avatar.kronk { background: var(--coral-dim); }
+.dog-name { font-family: var(--serif); font-size: 18px; font-weight: 300; }
+.dog-streak { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.dog-section { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+.dog-task { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; user-select: none; transition: opacity 0.12s; }
+.dog-task:last-child { border-bottom: none; padding-bottom: 0; }
+.dog-task.done { opacity: 0.45; }
+.dog-task.done .dog-task-name { text-decoration: line-through; color: var(--muted); }
+.dog-check { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.dog-task.done .dog-check { background: var(--amber); border-color: var(--amber); }
+.dog-task-name { font-size: 13px; color: var(--text); flex: 1; }
+.dog-task-time { font-size: 10px; color: var(--hint); }
+.grooming-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+.grooming-card h3 { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 12px; }
+.groom-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 0.5px solid var(--border); font-size: 12px; }
+.groom-row:last-child { border-bottom: none; }
+.groom-name { color: var(--muted); }
+.groom-due { color: var(--amber); font-size: 11px; }
+.groom-done { color: var(--teal); font-size: 11px; }
+.groom-btn { font-size: 11px; padding: 4px 10px; border-radius: 99px; border: 0.5px solid var(--border2); background: none; color: var(--muted); font-family: var(--mono); cursor: pointer; }
+.groom-btn:hover { border-color: var(--teal); color: var(--teal); }
+.mental-card { background: var(--purple-dim); border: 0.5px solid rgba(167,139,250,0.2); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+.mental-card h3 { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--purple); margin-bottom: 12px; }
+.mental-task { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid rgba(167,139,250,0.1); cursor: pointer; user-select: none; }
+.mental-task:last-child { border-bottom: none; }
+.mental-task.done { opacity: 0.45; }
+.mental-task.done .mental-name { text-decoration: line-through; }
+.mental-check { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid rgba(167,139,250,0.3); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; transition: all 0.15s; }
+.mental-task.done .mental-check { background: var(--purple); border-color: var(--purple); color: #0e0e0f; }
+.mental-name { font-size: 13px; color: var(--text); }
+
+/* SPINNER */
+.spinner-wrap { display: flex; flex-direction: column; align-items: center; padding: 16px 0; }
+.wheel-container { position: relative; width: 280px; height: 280px; margin: 0 auto 20px; }
+.wheel-canvas { border-radius: 50%; }
+.wheel-pointer { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 24px solid var(--text); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+.spin-btn { background: var(--teal); color: #0e0e0f; border: none; border-radius: var(--radius-sm); padding: 14px 40px; font-family: var(--mono); font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; margin-bottom: 20px; }
+.spin-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.spin-result { width: 100%; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center; display: none; }
+.spin-result.show { display: block; }
+.spin-result-label { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+.spin-result-task { font-family: var(--serif); font-size: 22px; font-weight: 300; color: var(--text); margin-bottom: 16px; }
+.timer-display { font-family: var(--serif); font-size: 48px; font-weight: 300; color: var(--teal); margin-bottom: 16px; }
+.timer-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.timer-btn { padding: 8px 16px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: none; color: var(--text); font-family: var(--mono); font-size: 12px; cursor: pointer; }
+.timer-btn.primary { background: var(--teal); color: #0e0e0f; border-color: var(--teal); font-weight: 500; }
+.timer-btn.danger { border-color: var(--red); color: var(--red); }
+.spin-duration-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+.dur-btn { padding: 6px 14px; border-radius: 99px; border: 0.5px solid var(--border); background: none; color: var(--muted); font-family: var(--mono); font-size: 11px; cursor: pointer; }
+.dur-btn.active { border-color: var(--teal); color: var(--teal); }
+.manage-btn { background: none; border: 0.5px dashed var(--border2); border-radius: var(--radius-sm); color: var(--muted); font-family: var(--mono); font-size: 12px; padding: 10px; width: 100%; cursor: pointer; margin-top: 12px; }
+.manage-btn:hover { border-color: var(--teal); color: var(--teal); }
+.task-manager { width: 100%; margin-top: 12px; display: none; }
+.task-manager.show { display: block; }
+.tm-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.tm-row input { flex: 1; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 8px 12px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; }
+.tm-row input:focus { border-color: var(--teal); }
+.tm-del { background: none; border: none; color: var(--hint); font-size: 18px; cursor: pointer; }
+.tm-del:hover { color: var(--red); }
+.tm-add { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; background: none; border: 0.5px dashed var(--border2); border-radius: var(--radius-sm); color: var(--muted); font-family: var(--mono); font-size: 12px; cursor: pointer; margin-bottom: 8px; }
+.tm-save { background: var(--teal); color: #0e0e0f; border: none; border-radius: var(--radius-sm); padding: 10px; font-family: var(--mono); font-size: 12px; font-weight: 500; cursor: pointer; width: 100%; }
 
 /* EDIT */
+.section-toggle { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.stab { flex: 1; min-width: 70px; padding: 8px; background: none; border: 0.5px solid var(--border); border-radius: var(--radius-sm); color: var(--muted); font-family: var(--mono); font-size: 11px; cursor: pointer; }
+.stab.active { background: var(--surface); border-color: var(--border2); color: var(--text); }
 .edit-task-row { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; }
 .edit-task-row input { flex: 1; background: none; border: none; color: var(--text); font-family: var(--mono); font-size: 13px; outline: none; }
 .edit-task-row input::placeholder { color: var(--hint); }
-.edit-task-row .time-in { width: 80px; font-size: 11px; color: var(--muted); background: var(--surface2); border: 0.5px solid var(--border); border-radius: 6px; padding: 4px 8px; }
-.del-btn { background: none; border: none; color: var(--hint); font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1; }
+.time-in { width: 80px; font-size: 11px; color: var(--muted); background: var(--surface2); border: 0.5px solid var(--border); border-radius: 6px; padding: 4px 8px; font-family: var(--mono); }
+.del-btn { background: none; border: none; color: var(--hint); font-size: 18px; cursor: pointer; padding: 0 4px; }
 .del-btn:hover { color: var(--red); }
 .add-task-btn { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: none; border: 0.5px dashed var(--border2); border-radius: var(--radius-sm); color: var(--muted); font-family: var(--mono); font-size: 12px; cursor: pointer; width: 100%; margin-bottom: 6px; }
 .add-task-btn:hover { border-color: var(--teal); color: var(--teal); }
@@ -120,15 +171,25 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .toggle.on { background: var(--teal); border-color: var(--teal); }
 .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); transition: transform 0.15s, background 0.15s; }
 .toggle.on::after { transform: translateX(16px); background: #0e0e0f; }
-.section-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
-.stab { flex: 1; padding: 8px; background: none; border: 0.5px solid var(--border); border-radius: var(--radius-sm); color: var(--muted); font-family: var(--mono); font-size: 11px; cursor: pointer; }
-.stab.active { background: var(--surface); border-color: var(--border2); color: var(--text); }
-.congrats-banner { background: var(--teal-dim); border: 0.5px solid rgba(45,212,160,0.25); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px; color: var(--teal); margin-bottom: 12px; text-align: center; }
-.btn-ghost { background: none; color: var(--muted); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 8px 16px; font-family: var(--mono); font-size: 12px; cursor: pointer; }
+
+/* COACH */
+.coach-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; }
+.coach-card h2 { font-family: var(--serif); font-size: 20px; font-weight: 300; margin-bottom: 8px; }
+.coach-card p { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 16px; }
+.coach-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 14px; background: var(--teal); color: #0e0e0f; border: none; border-radius: var(--radius-sm); font-family: var(--mono); font-size: 13px; font-weight: 500; cursor: pointer; text-decoration: none; margin-bottom: 8px; }
+.coach-btn-ghost { display: flex; align-items: center; justify-content: center; width: 100%; padding: 12px; background: none; color: var(--muted); border: 0.5px solid var(--border); border-radius: var(--radius-sm); font-family: var(--mono); font-size: 12px; cursor: pointer; text-decoration: none; }
+.context-box { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 16px; font-size: 11px; color: var(--muted); line-height: 1.8; }
+.ctx-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hint); margin-bottom: 6px; }
+.ctx-done { color: var(--teal); }
+.ctx-pending { color: var(--amber); }
+.quick-prompts { display: flex; flex-direction: column; gap: 6px; }
+.qp-btn { display: block; width: 100%; padding: 11px 14px; background: none; border: 0.5px solid var(--border); border-radius: var(--radius-sm); color: var(--muted); font-family: var(--mono); font-size: 12px; cursor: pointer; text-align: left; text-decoration: none; }
+.qp-btn:hover { border-color: var(--teal); color: var(--teal); }
 </style>
 </head>
 <body>
 
+<!-- TODAY -->
 <div class="screen active" id="screen-today">
   <div class="page-header">
     <h1 id="today-heading">Monday</h1>
@@ -136,7 +197,7 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
   </div>
   <div class="date-strip" id="date-strip"></div>
   <div class="progress-ring-wrap">
-    <svg class="ring-svg" width="64" height="64" viewBox="0 0 64 64">
+    <svg width="64" height="64" viewBox="0 0 64 64">
       <circle class="ring-bg" cx="32" cy="32" r="28"/>
       <circle class="ring-fill" id="ring-fill" cx="32" cy="32" r="28" stroke-dasharray="175.9" stroke-dashoffset="175.9"/>
       <text class="ring-text" x="32" y="30" id="ring-pct">0%</text>
@@ -148,393 +209,424 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
       <div class="streak-row" id="streak-row">&#9679; 0 day streak</div>
     </div>
   </div>
-  <div id="congrats-banner" class="congrats-banner" style="display:none">&#10003; Day complete — well done.</div>
+  <div id="congrats-banner" class="congrats-banner" style="display:none">&#10003; Day complete — Edna and Kronk are proud of you.</div>
   <div id="task-list"></div>
   <div style="margin-top:16px;"><button class="btn-ghost" onclick="resetToday()">Reset today</button></div>
 </div>
 
+<!-- STATS -->
 <div class="screen" id="screen-stats">
   <div class="page-header"><h1>Progress</h1><p>YOUR WEEK AT A GLANCE</p></div>
   <div class="stats-grid" id="stats-grid"></div>
 </div>
 
+<!-- DOGS -->
+<div class="screen" id="screen-dogs">
+  <div class="page-header"><h1>Edna & Kronk</h1><p>DAILY DOG CARE</p></div>
+  <div id="dog-content"></div>
+</div>
+
+<!-- SPINNER -->
+<div class="screen" id="screen-spin">
+  <div class="page-header"><h1>Spin</h1><p>FEELING MOTIVATED? LET'S GO.</p></div>
+  <div class="spinner-wrap">
+    <div class="wheel-container">
+      <div class="wheel-pointer"></div>
+      <canvas id="wheel-canvas" class="wheel-canvas" width="280" height="280"></canvas>
+    </div>
+    <div class="spin-duration-row">
+      <button class="dur-btn active" onclick="setDuration(10,this)">10 min</button>
+      <button class="dur-btn" onclick="setDuration(15,this)">15 min</button>
+      <button class="dur-btn" onclick="setDuration(20,this)">20 min</button>
+    </div>
+    <button class="spin-btn" id="spin-btn" onclick="spinWheel()">Spin</button>
+    <div class="spin-result" id="spin-result">
+      <div class="spin-result-label">Your challenge</div>
+      <div class="spin-result-task" id="result-task"></div>
+      <div class="timer-display" id="timer-display">10:00</div>
+      <div class="timer-row">
+        <button class="timer-btn primary" id="timer-start-btn" onclick="toggleTimer()">Start timer</button>
+        <button class="timer-btn" onclick="spinWheel()">Re-spin</button>
+        <button class="timer-btn danger" onclick="hideResult()">Skip</button>
+      </div>
+    </div>
+    <button class="manage-btn" onclick="toggleTaskManager()">+ manage tasks on wheel</button>
+    <div class="task-manager" id="task-manager">
+      <div id="tm-list"></div>
+      <button class="tm-add" onclick="addSpinTask()">+ add task</button>
+      <button class="tm-save" onclick="saveSpinTasks()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- COACH -->
 <div class="screen" id="screen-coach">
   <div class="page-header"><h1>Coach</h1><p>POWERED BY CLAUDE</p></div>
   <div id="coach-content"></div>
 </div>
 
-<div class="screen" id="screen-edit">
-  <div class="page-header"><h1>Routine</h1><p>CUSTOMIZE YOUR SCHEDULE</p></div>
-  <div class="section-toggle">
-    <button class="stab active" onclick="setEditTab('weekday',this)">Weekday</button>
-    <button class="stab" onclick="setEditTab('weekend',this)">Weekend</button>
-    <button class="stab" onclick="setEditTab('notifications',this)">Reminders</button>
-  </div>
-  <div id="edit-content"></div>
-</div>
-
+<!-- NAV -->
 <nav class="bottom-nav">
-  <button class="nav-btn active" onclick="showScreen('today',this)">
-    <span class="nav-icon">&#9711;</span>today
-  </button>
-  <button class="nav-btn" onclick="showScreen('stats',this)">
-    <span class="nav-icon">&#9636;</span>stats
-  </button>
-  <button class="nav-btn" onclick="showScreen('coach',this)">
-    <span class="nav-icon">&#9670;</span>coach
-  </button>
-  <button class="nav-btn" onclick="showScreen('edit',this)">
-    <span class="nav-icon">&#9651;</span>routine
-  </button>
+  <button class="nav-btn active" onclick="showScreen('today',this)"><span class="nav-icon">&#9711;</span>today</button>
+  <button class="nav-btn" onclick="showScreen('stats',this)"><span class="nav-icon">&#9636;</span>stats</button>
+  <button class="nav-btn" onclick="showScreen('dogs',this)"><span class="nav-icon">&#9829;</span>dogs</button>
+  <button class="nav-btn" onclick="showScreen('spin',this)"><span class="nav-icon">&#9670;</span>spin</button>
+  <button class="nav-btn" onclick="showScreen('coach',this)"><span class="nav-icon">&#9651;</span>coach</button>
 </nav>
 
 <script>
-const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-const DEFAULT_SCHEDULE = {
-  weekday: [
-    { section: 'Morning', tasks: [
-      { id: 'wakeup', name: 'Wake up at 5:30 AM', time: '5:30 AM' },
-      { id: 'gym', name: 'Gym (40 min)', time: '5:35–6:15 AM' },
-      { id: 'shower', name: 'Shower', time: '6:15 AM' },
-      { id: 'facewash', name: 'Face wash', time: 'In shower' },
-      { id: 'moisturize', name: 'Moisturize + sunscreen', time: 'After shower' },
-      { id: 'teeth', name: 'Brush teeth + floss', time: 'At sink' },
-      { id: 'deodorant', name: 'Deodorant', time: 'At sink' },
-      { id: 'breakfast', name: 'Eat breakfast', time: '6:40 AM' },
-      { id: 'intentions', name: 'Set 3 daily intentions', time: '6:55 AM' },
-      { id: 'leave', name: 'Leave for work', time: '7:15 AM' },
+const DEFAULT_SCHEDULE={
+  weekday:[
+    {section:'Morning',tasks:[
+      {id:'wakeup',name:'Wake up at 5:30 AM',time:'5:30 AM'},
+      {id:'gym',name:'Gym (40 min)',time:'5:35–6:15 AM'},
+      {id:'shower',name:'Shower',time:'6:15 AM'},
+      {id:'facewash',name:'Face wash',time:'In shower'},
+      {id:'moisturize',name:'Moisturize + sunscreen',time:'After shower'},
+      {id:'teeth',name:'Brush teeth + floss',time:'At sink'},
+      {id:'deodorant',name:'Deodorant',time:'At sink'},
+      {id:'breakfast',name:'Eat breakfast',time:'6:40 AM'},
+      {id:'intentions',name:'Set 3 daily intentions',time:'6:55 AM'},
+      {id:'leave',name:'Leave for work',time:'7:15 AM'},
     ]},
-    { section: 'Workday', tasks: [
-      { id: 'work', name: 'Work + real lunch break', time: '8 AM–4:30 PM' },
+    {section:'Workday',tasks:[
+      {id:'work',name:'Work + real lunch break',time:'8 AM–4:30 PM'},
     ]},
-    { section: 'Evening', tasks: [
-      { id: 'home', name: 'Home — change clothes', time: 'Before 5 PM' },
-      { id: 'dinner', name: 'Dinner + downtime', time: '5–6:30 PM' },
-      { id: 'personal', name: 'Personal time', time: '6:30–8:30 PM' },
-      { id: 'nightprep', name: 'Night prep (bag, outfit, lunch)', time: '8:30 PM' },
-      { id: 'nightwash', name: 'Evening face wash', time: '9:00 PM' },
-      { id: 'nightteeth', name: 'Brush + floss + mouthwash', time: '9:10 PM' },
-      { id: 'winddown', name: 'No screens — wind down', time: '9:15 PM' },
-      { id: 'sleep', name: 'Lights out', time: '9:30–10 PM' },
+    {section:'Evening',tasks:[
+      {id:'home',name:'Home — change clothes',time:'Before 5 PM'},
+      {id:'dinner',name:'Dinner + downtime',time:'5–6:30 PM'},
+      {id:'personal',name:'Personal time',time:'6:30–8:30 PM'},
+      {id:'nightprep',name:'Night prep (bag, outfit, lunch)',time:'8:30 PM'},
+      {id:'nightwash',name:'Evening face wash',time:'9:00 PM'},
+      {id:'nightteeth',name:'Brush + floss + mouthwash',time:'9:10 PM'},
+      {id:'winddown',name:'No screens — wind down',time:'9:15 PM'},
+      {id:'sleep',name:'Lights out',time:'9:30–10 PM'},
     ]}
   ],
-  weekend: [
-    { section: 'Morning', tasks: [
-      { id: 'wakeup', name: 'Wake up by 6:30 AM', time: '6:30 AM' },
-      { id: 'shower', name: 'Shower', time: 'Morning' },
-      { id: 'facewash', name: 'Face wash', time: 'In shower' },
-      { id: 'moisturize', name: 'Moisturize + sunscreen', time: 'After shower' },
-      { id: 'teeth', name: 'Brush teeth + floss', time: 'At sink' },
-      { id: 'deodorant', name: 'Deodorant', time: 'At sink' },
-      { id: 'breakfast', name: 'Proper breakfast', time: 'Morning' },
+  weekend:[
+    {section:'Morning',tasks:[
+      {id:'wakeup',name:'Wake up by 6:30 AM',time:'6:30 AM'},
+      {id:'shower',name:'Shower',time:'Morning'},
+      {id:'facewash',name:'Face wash',time:'In shower'},
+      {id:'moisturize',name:'Moisturize + sunscreen',time:'After shower'},
+      {id:'teeth',name:'Brush teeth + floss',time:'At sink'},
+      {id:'deodorant',name:'Deodorant',time:'At sink'},
+      {id:'breakfast',name:'Proper breakfast',time:'Morning'},
     ]},
-    { section: 'Daytime', tasks: [
-      { id: 'gym', name: 'Gym or active activity', time: 'Morning/afternoon' },
-      { id: 'errands', name: 'Errands or meal prep', time: 'Afternoon' },
-      { id: 'personal', name: 'Personal time', time: 'Afternoon' },
+    {section:'Daytime',tasks:[
+      {id:'gym',name:'Gym or active activity',time:'Morning/afternoon'},
+      {id:'errands',name:'Errands or meal prep',time:'Afternoon'},
+      {id:'personal',name:'Personal time',time:'Afternoon'},
     ]},
-    { section: 'Evening', tasks: [
-      { id: 'dinner', name: 'Dinner', time: 'Evening' },
-      { id: 'nightwash', name: 'Evening face wash', time: '9:00 PM' },
-      { id: 'nightteeth', name: 'Brush + floss + mouthwash', time: '9:10 PM' },
-      { id: 'nightprep', name: 'Night prep', time: '8:30 PM' },
-      { id: 'sleep', name: 'Lights out', time: '9:30–10 PM' },
+    {section:'Evening',tasks:[
+      {id:'dinner',name:'Dinner',time:'Evening'},
+      {id:'nightwash',name:'Evening face wash',time:'9:00 PM'},
+      {id:'nightteeth',name:'Brush + floss + mouthwash',time:'9:10 PM'},
+      {id:'nightprep',name:'Night prep',time:'8:30 PM'},
+      {id:'sleep',name:'Lights out',time:'9:30–10 PM'},
     ]}
   ]
 };
 
-const DEFAULT_NOTIFS = [
-  { id: 'n1', label: 'Wake up', time: '05:30', on: false },
-  { id: 'n2', label: 'Gym time', time: '05:35', on: false },
-  { id: 'n3', label: 'Leave for work', time: '07:10', on: false },
-  { id: 'n4', label: 'Night prep', time: '20:30', on: false },
-  { id: 'n5', label: 'Wind down', time: '21:15', on: false },
-  { id: 'n6', label: 'Lights out', time: '22:00', on: false },
+const DEFAULT_DOG_TASKS={
+  edna:{
+    morning:[
+      {id:'e-snuggle',name:'Morning snuggles with Edna',time:'Wake up'},
+      {id:'e-feed-am',name:'Feed Edna',time:'Morning'},
+      {id:'e-walk-am',name:'Walk Edna',time:'Before work'},
+    ],
+    evening:[
+      {id:'e-feed-pm',name:'Feed Edna',time:'Evening'},
+      {id:'e-walk-pm',name:'Walk Edna',time:'Evening'},
+      {id:'e-check',name:'Edna check-in — cuddle time',time:'Wind down'},
+    ]
+  },
+  kronk:{
+    morning:[
+      {id:'k-snuggle',name:'Morning snuggles with Kronk',time:'Wake up'},
+      {id:'k-feed-am',name:'Feed Kronk',time:'Morning'},
+      {id:'k-walk-am',name:'Walk Kronk',time:'Before work'},
+    ],
+    evening:[
+      {id:'k-feed-pm',name:'Feed Kronk',time:'Evening'},
+      {id:'k-walk-pm',name:'Walk Kronk',time:'Evening'},
+      {id:'k-check',name:'Kronk check-in — cuddle time',time:'Wind down'},
+    ]
+  },
+  mental:[
+    {id:'m-breath',name:'5 min breathing with the dogs',time:'Anytime'},
+    {id:'m-play',name:'Backyard play session',time:'Anytime'},
+    {id:'m-gratitude',name:'Grateful for these two',time:'Evening'},
+    {id:'m-photo',name:'Take a cute photo of Edna & Kronk',time:'Anytime'},
+  ],
+  grooming:[
+    {id:'g-e-bath',label:'Edna — bath',days:14},
+    {id:'g-e-brush',label:'Edna — brush',days:3},
+    {id:'g-e-nails',label:'Edna — nails',days:21},
+    {id:'g-k-bath',label:'Kronk — bath',days:14},
+    {id:'g-k-brush',label:'Kronk — brush',days:3},
+    {id:'g-k-nails',label:'Kronk — nails',days:21},
+  ]
+};
+
+const DEFAULT_SPIN_TASKS=[
+  'Wipe down kitchen counters','Do a load of laundry','Vacuum one room','Unload the dishwasher',
+  'Clean the bathroom sink','Take out trash','Organize one drawer','Sweep the floor',
+  'Wipe down stovetop','Clean microwave','Reply to 3 emails','Schedule one appointment',
+  'Pay a bill','Clear your desk','Water the plants','Wipe down mirrors',
+  'Quick fridge clean-out','Tidy the living room','Do 10 min of organizing','Check in on a friend'
 ];
 
-function load(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
-function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
+const DEFAULT_NOTIFS=[
+  {id:'n1',label:'Wake up',time:'05:30',on:false},
+  {id:'n2',label:'Gym time',time:'05:35',on:false},
+  {id:'n3',label:'Leave for work',time:'07:10',on:false},
+  {id:'n4',label:'Feed dogs (AM)',time:'06:30',on:false},
+  {id:'n5',label:'Feed dogs (PM)',time:'17:00',on:false},
+  {id:'n6',label:'Night prep',time:'20:30',on:false},
+  {id:'n7',label:'Wind down',time:'21:15',on:false},
+  {id:'n8',label:'Lights out',time:'22:00',on:false},
+];
 
-let state = load('dr-state', {});
-let schedule = load('dr-schedule', DEFAULT_SCHEDULE);
-let notifs = load('dr-notifs', DEFAULT_NOTIFS);
-let selectedDay = new Date().getDay();
-let editTab = 'weekday';
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 
-function dayKey(dayIdx) {
-  const today = new Date();
-  const diff = dayIdx - today.getDay();
-  const d = new Date(today);
-  d.setDate(today.getDate() + diff);
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-}
+let state=load('dr-state',{});
+let schedule=load('dr-schedule',DEFAULT_SCHEDULE);
+let dogTasks=load('dr-dog-tasks',DEFAULT_DOG_TASKS);
+let dogState=load('dr-dog-state',{});
+let groomState=load('dr-groom-state',{});
+let notifs=load('dr-notifs',DEFAULT_NOTIFS);
+let spinTasks=load('dr-spin-tasks',DEFAULT_SPIN_TASKS);
+let selectedDay=new Date().getDay();
+let editTab='weekday';
+let spinDuration=10;
+let timerInterval=null;
+let timerSeconds=0;
+let timerRunning=false;
+let managerOpen=false;
 
-function getScheduleFor(idx) {
-  return (idx === 0 || idx === 6) ? schedule.weekend : schedule.weekday;
-}
+function dayKey(idx){const t=new Date(),d=new Date(t);d.setDate(t.getDate()+(idx-t.getDay()));return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}
+function todayKeyStr(){const d=new Date();return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}
+function getScheduleFor(idx){return(idx===0||idx===6)?schedule.weekend:schedule.weekday;}
+function getDayData(idx){const k=dayKey(idx);if(!state[k])state[k]={};return state[k];}
+function getDogDayData(){const k=todayKeyStr();if(!dogState[k])dogState[k]={};return dogState[k];}
 
-function getDayData(idx) {
-  const k = dayKey(idx);
-  if (!state[k]) state[k] = {};
-  return state[k];
-}
+function toggleTask(dayIdx,taskId){const k=dayKey(dayIdx);if(!state[k])state[k]={};state[k][taskId]=!state[k][taskId];save('dr-state',state);renderToday();}
+function toggleDogTask(taskId){const k=todayKeyStr();if(!dogState[k])dogState[k]={};dogState[k][taskId]=!dogState[k][taskId];save('dr-dog-state',dogState);renderDogs();}
+function resetToday(){state[dayKey(new Date().getDay())]={};save('dr-state',state);renderToday();}
 
-function toggleTask(dayIdx, taskId) {
-  const k = dayKey(dayIdx);
-  if (!state[k]) state[k] = {};
-  state[k][taskId] = !state[k][taskId];
-  save('dr-state', state);
-  renderToday();
-}
+function calcStreak(){let s=0;const t=new Date();for(let i=0;i<60;i++){const d=new Date(t);d.setDate(t.getDate()-i);const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;const sc=getScheduleFor(d.getDay());const total=sc.reduce((a,s)=>a+s.tasks.length,0);const done=Object.values(state[k]||{}).filter(Boolean).length;if(i===0&&done===0)continue;if(done>=Math.ceil(total*0.8))s++;else if(i>0)break;}return s;}
+function calcBestStreak(){let b=0,c=0;const t=new Date();for(let i=59;i>=0;i--){const d=new Date(t);d.setDate(t.getDate()-i);const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;const sc=getScheduleFor(d.getDay());const total=sc.reduce((a,s)=>a+s.tasks.length,0);const done=Object.values(state[k]||{}).filter(Boolean).length;if(done>=Math.ceil(total*0.8)){c++;b=Math.max(b,c);}else c=0;}return b;}
+function dayPct(idx){const sc=getScheduleFor(idx);const total=sc.reduce((a,s)=>a+s.tasks.length,0);if(!total)return 0;const done=Object.values(getDayData(idx)).filter(Boolean).length;return Math.round((Math.min(done,total)/total)*100);}
 
-function resetToday() {
-  state[dayKey(new Date().getDay())] = {};
-  save('dr-state', state);
-  renderToday();
-}
-
-function calcStreak() {
-  let streak = 0;
-  const today = new Date();
-  for (let i = 0; i < 60; i++) {
-    const d = new Date(today); d.setDate(today.getDate() - i);
-    const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    const sched = getScheduleFor(d.getDay());
-    const total = sched.reduce((a,s)=>a+s.tasks.length,0);
-    const done = Object.values(state[k]||{}).filter(Boolean).length;
-    if (i===0 && done===0) continue;
-    if (done >= Math.ceil(total*0.8)) streak++;
-    else if (i>0) break;
-  }
-  return streak;
-}
-
-function calcBestStreak() {
-  let best=0, cur=0;
-  const today = new Date();
-  for (let i=59; i>=0; i--) {
-    const d = new Date(today); d.setDate(today.getDate()-i);
-    const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    const sched = getScheduleFor(d.getDay());
-    const total = sched.reduce((a,s)=>a+s.tasks.length,0);
-    const done = Object.values(state[k]||{}).filter(Boolean).length;
-    if (done>=Math.ceil(total*0.8)){cur++;best=Math.max(best,cur);}else cur=0;
-  }
-  return best;
-}
-
-function dayPct(dayIdx) {
-  const sched = getScheduleFor(dayIdx);
-  const total = sched.reduce((a,s)=>a+s.tasks.length,0);
-  if (!total) return 0;
-  const done = Object.values(getDayData(dayIdx)).filter(Boolean).length;
-  return Math.round((Math.min(done,total)/total)*100);
-}
-
-function buildClaudeUrl(prompt) {
-  return 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
-}
-
-function getContextPrompt(type) {
-  const todayIdx = new Date().getDay();
-  const sched = getScheduleFor(todayIdx);
-  const allTasks = sched.reduce((a,s)=>a.concat(s.tasks),[]);
-  const data = getDayData(todayIdx);
-  const doneTasks = allTasks.filter(t=>data[t.id]).map(t=>t.name);
-  const pendingTasks = allTasks.filter(t=>!data[t.id]).map(t=>t.name);
-  const streak = calcStreak();
-  const pct = dayPct(todayIdx);
-
-  const context = `My daily routine app context for ${DAYS[todayIdx]}:
-- Completed today (${pct}%): ${doneTasks.length ? doneTasks.join(', ') : 'nothing yet'}
-- Still pending: ${pendingTasks.length ? pendingTasks.join(', ') : 'all done!'}
-- Current streak: ${streak} days
-
-`;
-
-  const prompts = {
-    checkin: context + "Give me a quick coaching check-in based on where I'm at today. Be direct and practical, not cheesy.",
-    stuck: context + "I'm struggling to stay consistent with my routine. What's the most likely reason and what's one thing I can change right now?",
-    morning: context + "I just woke up and need a quick motivational push to get through my morning routine. Keep it short.",
-    evening: context + "I'm winding down for the night. Help me do a quick reflection on today and set up tomorrow for success.",
-    habit: context + "Which habit in my routine is most important to nail first, and why? Give me a specific strategy to make it automatic."
-  };
-  return prompts[type] || prompts.checkin;
-}
-
-function renderToday() {
-  const todayIdx = new Date().getDay();
-  document.getElementById('today-heading').textContent = DAYS[todayIdx];
-  document.getElementById('today-sub').textContent = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}).toUpperCase();
-
-  const strip = document.getElementById('date-strip');
-  strip.innerHTML = '';
-  for (let i=0; i<7; i++) {
-    const btn = document.createElement('button');
-    const pct = dayPct(i);
-    btn.className = 'date-pill'+(i===selectedDay?' active':'')+(pct===100&&i!==selectedDay?' done':'');
-    btn.textContent = SHORT[i]+(pct>0&&i!==selectedDay?' '+pct+'%':'');
-    btn.onclick = ()=>{ selectedDay=i; renderToday(); };
-    strip.appendChild(btn);
-  }
-
-  const sched = getScheduleFor(selectedDay);
-  const allTasks = sched.reduce((a,s)=>a.concat(s.tasks),[]);
-  const data = getDayData(selectedDay);
-  const done = allTasks.filter(t=>data[t.id]).length;
-  const total = allTasks.length;
-  const pct = total ? Math.round((done/total)*100) : 0;
-  const circ = 175.9;
-  document.getElementById('ring-fill').style.strokeDashoffset = circ-(circ*pct/100);
-  document.getElementById('ring-pct').textContent = pct+'%';
-  document.getElementById('prog-fraction').textContent = done+' / '+total;
-  document.getElementById('streak-row').textContent = '● '+calcStreak()+' day streak';
-  document.getElementById('congrats-banner').style.display = pct===100?'block':'none';
-
-  const list = document.getElementById('task-list');
-  list.innerHTML = '';
-  sched.forEach(section => {
-    const lbl = document.createElement('div');
-    lbl.className = 'section-label';
-    lbl.textContent = section.section;
-    list.appendChild(lbl);
-    section.tasks.forEach(task => {
-      const div = document.createElement('div');
-      div.className = 'task'+(data[task.id]?' done':'');
-      div.innerHTML = `<div class="check"><span class="check-mark">✓</span></div><div class="task-info"><div class="task-name">${task.name}</div><div class="task-time">${task.time}</div></div>`;
-      div.onclick = ()=>toggleTask(selectedDay, task.id);
-      list.appendChild(div);
+function renderToday(){
+  const ti=new Date().getDay();
+  document.getElementById('today-heading').textContent=DAYS[ti];
+  document.getElementById('today-sub').textContent=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}).toUpperCase();
+  const strip=document.getElementById('date-strip');strip.innerHTML='';
+  for(let i=0;i<7;i++){const btn=document.createElement('button');const p=dayPct(i);btn.className='date-pill'+(i===selectedDay?' active':'')+(p===100&&i!==selectedDay?' done':'');btn.textContent=SHORT[i]+(p>0&&i!==selectedDay?' '+p+'%':'');btn.onclick=()=>{selectedDay=i;renderToday();};strip.appendChild(btn);}
+  const sc=getScheduleFor(selectedDay);const allT=sc.reduce((a,s)=>a.concat(s.tasks),[]);const data=getDayData(selectedDay);
+  const done=allT.filter(t=>data[t.id]).length;const total=allT.length;const pct=total?Math.round((done/total)*100):0;
+  const circ=175.9;document.getElementById('ring-fill').style.strokeDashoffset=circ-(circ*pct/100);
+  document.getElementById('ring-pct').textContent=pct+'%';document.getElementById('prog-fraction').textContent=done+' / '+total;
+  document.getElementById('streak-row').textContent='● '+calcStreak()+' day streak';
+  document.getElementById('congrats-banner').style.display=pct===100?'block':'none';
+  const list=document.getElementById('task-list');list.innerHTML='';
+  sc.forEach(section=>{
+    const lbl=document.createElement('div');lbl.className='section-label';lbl.textContent=section.section;list.appendChild(lbl);
+    section.tasks.forEach(task=>{
+      const div=document.createElement('div');div.className='task'+(data[task.id]?' done':'');
+      div.innerHTML=`<div class="check"><span class="check-mark">✓</span></div><div class="task-info"><div class="task-name">${task.name}</div><div class="task-time">${task.time}</div></div>`;
+      div.onclick=()=>toggleTask(selectedDay,task.id);list.appendChild(div);
     });
   });
 }
 
-function renderStats() {
-  const grid = document.getElementById('stats-grid');
-  const todayIdx = new Date().getDay();
-  const todayPct = dayPct(todayIdx);
-  let weekTotal=0, weekDone=0;
-  for (let i=0;i<7;i++){const s=getScheduleFor(i);const t=s.reduce((a,sec)=>a+sec.tasks.length,0);weekTotal+=t;weekDone+=Math.min(Object.values(getDayData(i)).filter(Boolean).length,t);}
-  const weekPct = weekTotal?Math.round((weekDone/weekTotal)*100):0;
-  const bars = SHORT.map((d,i)=>{
-    const p=dayPct(i); const isToday=i===todayIdx;
-    return `<div class="week-bar-wrap${isToday?' today':''}"><div class="week-bar-bg"><div class="week-bar-fill" style="height:${Math.max(p,2)}%"></div></div><div class="week-bar-label">${d}</div></div>`;
-  }).join('');
-  grid.innerHTML = `
-    <div class="stat-card"><div class="s-label">Today</div><div class="s-val">${todayPct}<span class="s-unit">%</span></div></div>
-    <div class="stat-card"><div class="s-label">This week</div><div class="s-val">${weekPct}<span class="s-unit">%</span></div></div>
-    <div class="stat-card"><div class="s-label">Streak</div><div class="s-val">${calcStreak()}<span class="s-unit"> days</span></div></div>
-    <div class="stat-card"><div class="s-label">Best streak</div><div class="s-val">${calcBestStreak()}<span class="s-unit"> days</span></div></div>
-    <div class="stat-card full"><div class="s-label">Week overview</div><div class="week-bars">${bars}</div></div>`;
+function renderStats(){
+  const grid=document.getElementById('stats-grid');const ti=new Date().getDay();
+  let wt=0,wd=0;for(let i=0;i<7;i++){const s=getScheduleFor(i);const t=s.reduce((a,sec)=>a+sec.tasks.length,0);wt+=t;wd+=Math.min(Object.values(getDayData(i)).filter(Boolean).length,t);}
+  const wp=wt?Math.round((wd/wt)*100):0;
+  const bars=SHORT.map((d,i)=>{const p=dayPct(i);const isT=i===ti;return `<div class="week-bar-wrap${isT?' today':''}"><div class="week-bar-bg"><div class="week-bar-fill" style="height:${Math.max(p,2)}%"></div></div><div class="week-bar-label">${d}</div></div>`;}).join('');
+  grid.innerHTML=`<div class="stat-card"><div class="s-label">Today</div><div class="s-val">${dayPct(ti)}<span class="s-unit">%</span></div></div><div class="stat-card"><div class="s-label">This week</div><div class="s-val">${wp}<span class="s-unit">%</span></div></div><div class="stat-card"><div class="s-label">Streak</div><div class="s-val">${calcStreak()}<span class="s-unit"> days</span></div></div><div class="stat-card"><div class="s-label">Best streak</div><div class="s-val">${calcBestStreak()}<span class="s-unit"> days</span></div></div><div class="stat-card full"><div class="s-label">Week overview</div><div class="week-bars">${bars}</div></div>`;
 }
 
-function renderCoach() {
-  const todayIdx = new Date().getDay();
-  const sched = getScheduleFor(todayIdx);
-  const allTasks = sched.reduce((a,s)=>a.concat(s.tasks),[]);
-  const data = getDayData(todayIdx);
-  const doneTasks = allTasks.filter(t=>data[t.id]).map(t=>t.name);
-  const pendingTasks = allTasks.filter(t=>!data[t.id]).map(t=>t.name);
-  const pct = dayPct(todayIdx);
-  const streak = calcStreak();
+function renderDogs(){
+  const data=getDogDayData();
+  const renderDogTasks=(tasks,dog)=>tasks.map(t=>`<div class="dog-task${data[t.id]?' done':''}" onclick="toggleDogTask('${t.id}')"><div class="dog-check"><span class="check-mark" style="display:${data[t.id]?'block':'none'};color:#0e0e0f;font-size:10px;">✓</span></div><div class="dog-task-name">${t.name}</div><div class="dog-task-time">${t.time}</div></div>`).join('');
+  const groomHTML=dogTasks.grooming.map(g=>{
+    const last=groomState[g.id];const now=Date.now();
+    const overdue=last&&((now-last)/(1000*60*60*24)>=g.days);
+    const dueIn=last?Math.max(0,g.days-Math.floor((now-last)/(1000*60*60*24))):0;
+    const status=!last?`<span class="groom-due">Not done yet</span>`:overdue?`<span class="groom-due">Overdue</span>`:`<span class="groom-done">Due in ${dueIn}d</span>`;
+    return `<div class="groom-row"><span class="groom-name">${g.label}</span>${status}<button class="groom-btn" onclick="markGrooming('${g.id}')">Done today</button></div>`;
+  }).join('');
+  const mentalHTML=dogTasks.mental.map(t=>`<div class="mental-task${data[t.id]?' done':''}" onclick="toggleDogTask('${t.id}')"><div class="mental-check">${data[t.id]?'✓':''}</div><div class="mental-name">${t.name}</div></div>`).join('');
 
-  const doneHtml = doneTasks.length ? doneTasks.map(t=>`<span class="ctx-done">✓ ${t}</span>`).join('<br>') : '<span style="color:var(--hint)">Nothing checked off yet</span>';
-  const pendingHtml = pendingTasks.length ? pendingTasks.slice(0,4).map(t=>`<span class="ctx-pending">○ ${t}</span>`).join('<br>')+(pendingTasks.length>4?`<br><span style="color:var(--hint)">+${pendingTasks.length-4} more</span>`:'') : '<span class="ctx-done">All done!</span>';
+  document.getElementById('dog-content').innerHTML=`
+    <div class="dog-section">
+      <div class="dog-header"><div class="dog-avatar edna">🐾</div><div><div class="dog-name">Edna</div><div class="dog-streak">Morning + evening care</div></div></div>
+      <div class="section-label" style="margin-top:0;margin-bottom:8px;">Morning</div>
+      ${renderDogTasks(dogTasks.edna.morning,'edna')}
+      <div class="section-label" style="margin-bottom:8px;">Evening</div>
+      ${renderDogTasks(dogTasks.edna.evening,'edna')}
+    </div>
+    <div class="dog-section">
+      <div class="dog-header"><div class="dog-avatar kronk" style="background:var(--coral-dim);">🐾</div><div><div class="dog-name">Kronk</div><div class="dog-streak">Morning + evening care</div></div></div>
+      <div class="section-label" style="margin-top:0;margin-bottom:8px;">Morning</div>
+      ${renderDogTasks(dogTasks.kronk.morning,'kronk')}
+      <div class="section-label" style="margin-bottom:8px;">Evening</div>
+      ${renderDogTasks(dogTasks.kronk.evening,'kronk')}
+    </div>
+    <div class="mental-card">
+      <h3>Mental health moments</h3>
+      ${mentalHTML}
+    </div>
+    <div class="grooming-card">
+      <h3>Grooming tracker</h3>
+      ${groomHTML}
+    </div>`;
+}
 
-  const summary = `Daily check-in — ${DAYS[todayIdx]} — ${pct}% complete — ${streak} day streak\nDone: ${doneTasks.length ? doneTasks.join(', ') : 'nothing yet'}\nPending: ${pendingTasks.length ? pendingTasks.join(', ') : 'all done!'}`;
+function markGrooming(id){groomState[id]=Date.now();save('dr-groom-state',groomState);renderDogs();}
 
-  document.getElementById('coach-content').innerHTML = `
+/* SPINNER */
+const COLORS=['#2dd4a0','#f5a623','#a78bfa','#f87171','#38bdf8','#fb923c','#4ade80','#f472b6','#facc15','#60a5fa','#34d399','#c084fc'];
+let currentSpinTasks=[...spinTasks];
+let wheelAngle=0;let spinning=false;
+
+function drawWheel(){
+  const canvas=document.getElementById('wheel-canvas');const ctx=canvas.getContext('2d');
+  const cx=140,cy=140,r=130;const n=currentSpinTasks.length;if(n===0)return;
+  ctx.clearRect(0,0,280,280);
+  const arc=(2*Math.PI)/n;
+  currentSpinTasks.forEach((task,i)=>{
+    const start=wheelAngle+i*arc;const end=start+arc;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
+    ctx.fillStyle=COLORS[i%COLORS.length];ctx.fill();
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(start+arc/2);
+    ctx.textAlign='right';ctx.fillStyle='rgba(0,0,0,0.7)';ctx.font='bold 10px DM Mono, monospace';
+    const label=task.length>18?task.slice(0,16)+'…':task;
+    ctx.fillText(label,r-8,4);ctx.restore();
+  });
+  ctx.beginPath();ctx.arc(cx,cy,18,0,2*Math.PI);ctx.fillStyle='#0e0e0f';ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy,18,0,2*Math.PI);ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;ctx.stroke();
+}
+
+function spinWheel(){
+  if(spinning||currentSpinTasks.length===0)return;
+  spinning=true;document.getElementById('spin-btn').disabled=true;
+  document.getElementById('spin-result').classList.remove('show');
+  stopTimer();
+  const extraSpins=5+Math.random()*5;const extraAngle=extraSpins*2*Math.PI+Math.random()*2*Math.PI;
+  const totalAngle=wheelAngle+extraAngle;const duration=3000;const start=performance.now();const startAngle=wheelAngle;
+  function animate(now){
+    const elapsed=now-start;const progress=Math.min(elapsed/duration,1);
+    const ease=1-Math.pow(1-progress,4);
+    wheelAngle=startAngle+extraAngle*ease;
+    drawWheel();
+    if(progress<1){requestAnimationFrame(animate);}
+    else{
+      spinning=false;document.getElementById('spin-btn').disabled=false;
+      const n=currentSpinTasks.length;const arc=(2*Math.PI)/n;
+      const normalizedAngle=((-wheelAngle)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
+      const idx=Math.floor(normalizedAngle/arc)%n;
+      showResult(currentSpinTasks[idx]);
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function showResult(task){
+  document.getElementById('result-task').textContent=task;
+  timerSeconds=spinDuration*60;
+  document.getElementById('timer-display').textContent=formatTime(timerSeconds);
+  document.getElementById('timer-display').style.color='var(--teal)';
+  document.getElementById('timer-start-btn').textContent='Start timer';
+  document.getElementById('spin-result').classList.add('show');
+}
+
+function hideResult(){document.getElementById('spin-result').classList.remove('show');stopTimer();}
+
+function formatTime(s){const m=Math.floor(s/60);const sec=s%60;return `${m}:${sec.toString().padStart(2,'0')}`;}
+
+function toggleTimer(){
+  if(timerRunning){clearInterval(timerInterval);timerRunning=false;document.getElementById('timer-start-btn').textContent='Resume';}
+  else{
+    timerRunning=true;document.getElementById('timer-start-btn').textContent='Pause';
+    timerInterval=setInterval(()=>{
+      timerSeconds--;document.getElementById('timer-display').textContent=formatTime(timerSeconds);
+      if(timerSeconds<=0){clearInterval(timerInterval);timerRunning=false;document.getElementById('timer-display').textContent='Done!';document.getElementById('timer-display').style.color='var(--teal)';document.getElementById('timer-start-btn').textContent='Start timer';}
+    },1000);
+  }
+}
+
+function stopTimer(){if(timerInterval)clearInterval(timerInterval);timerRunning=false;timerSeconds=0;}
+
+function setDuration(min,el){spinDuration=min;document.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');if(document.getElementById('spin-result').classList.contains('show')){timerSeconds=min*60;document.getElementById('timer-display').textContent=formatTime(timerSeconds);}}
+
+function toggleTaskManager(){managerOpen=!managerOpen;document.getElementById('task-manager').classList.toggle('show',managerOpen);if(managerOpen)renderTaskManager();}
+
+function renderTaskManager(){
+  const list=document.getElementById('tm-list');
+  list.innerHTML=currentSpinTasks.map((t,i)=>`<div class="tm-row"><input type="text" value="${t}" onchange="currentSpinTasks[${i}]=this.value" /><button class="tm-del" onclick="removeSpinTask(${i})">×</button></div>`).join('');
+}
+
+function addSpinTask(){currentSpinTasks.push('New task');renderTaskManager();drawWheel();}
+function removeSpinTask(i){currentSpinTasks.splice(i,1);renderTaskManager();drawWheel();}
+function saveSpinTasks(){spinTasks=[...currentSpinTasks];save('dr-spin-tasks',spinTasks);drawWheel();const btn=document.querySelector('.tm-save');btn.textContent='Saved!';setTimeout(()=>btn.textContent='Save',1500);}
+
+/* COACH */
+function buildClaudeUrl(p){return 'https://claude.ai/new?q='+encodeURIComponent(p);}
+function getContextPrompt(type){
+  const ti=new Date().getDay();const sc=getScheduleFor(ti);const allT=sc.reduce((a,s)=>a.concat(s.tasks),[]);
+  const data=getDayData(ti);const done=allT.filter(t=>data[t.id]).map(t=>t.name);const pending=allT.filter(t=>!data[t.id]).map(t=>t.name);
+  const streak=calcStreak();const pct=dayPct(ti);
+  const dogData=getDogDayData();const allDog=[...dogTasks.edna.morning,...dogTasks.edna.evening,...dogTasks.kronk.morning,...dogTasks.kronk.evening,...dogTasks.mental];
+  const dogDone=allDog.filter(t=>dogData[t.id]).map(t=>t.name);
+  const ctx=`My routine context for ${DAYS[ti]}:\n- Routine: ${pct}% done. Completed: ${done.join(', ')||'nothing yet'}. Pending: ${pending.join(', ')||'all done'}.\n- Dog care done: ${dogDone.join(', ')||'none yet'}.\n- Streak: ${streak} days.\n\n`;
+  const map={checkin:ctx+'Quick coaching check-in based on where I am today. Direct and practical.',stuck:ctx+"I'm struggling to stay consistent. What's the most likely reason and one fix?",morning:ctx+'Quick motivational push for my morning routine. Keep it short.',evening:ctx+'Help me reflect on today and set up tomorrow.',habit:ctx+'Which habit should I nail first and how do I make it automatic?'};
+  return map[type]||map.checkin;
+}
+
+function renderCoach(){
+  const ti=new Date().getDay();const sc=getScheduleFor(ti);const allT=sc.reduce((a,s)=>a.concat(s.tasks),[]);
+  const data=getDayData(ti);const done=allT.filter(t=>data[t.id]).map(t=>t.name);const pending=allT.filter(t=>!data[t.id]).map(t=>t.name);
+  const pct=dayPct(ti);const streak=calcStreak();
+  const dogData=getDogDayData();const allDog=[...dogTasks.edna.morning,...dogTasks.edna.evening,...dogTasks.kronk.morning,...dogTasks.kronk.evening];
+  const dogDone=allDog.filter(t=>dogData[t.id]).map(t=>t.name);
+  const doneHtml=done.length?done.map(t=>`<span class="ctx-done">✓ ${t}</span>`).join('<br>'):'<span style="color:var(--hint)">Nothing yet</span>';
+  const pendingHtml=pending.slice(0,4).map(t=>`<span class="ctx-pending">○ ${t}</span>`).join('<br>')+(pending.length>4?`<br><span style="color:var(--hint)">+${pending.length-4} more</span>`:'');
+  const summary=`Daily check-in — ${DAYS[ti]} — ${pct}% complete — ${streak} day streak\nRoutine done: ${done.join(', ')||'nothing yet'}\nPending: ${pending.join(', ')||'all done'}\nDog care done: ${dogDone.join(', ')||'none yet'}`;
+  document.getElementById('coach-content').innerHTML=`
     <div class="coach-card">
       <h2>Your context</h2>
       <div class="context-box">
-        <div class="ctx-label">Today — ${DAYS[todayIdx]} — ${pct}% complete — ${streak} day streak</div>
+        <div class="ctx-label">${DAYS[ti]} — ${pct}% — ${streak} day streak</div>
         ${doneHtml}<br>${pendingHtml}
+        ${dogDone.length?`<br><span class="ctx-done">🐾 Dog care: ${dogDone.join(', ')}</span>`:''}
       </div>
-      <p>Copy your check-in summary and paste it into your Claude project — Claude already knows your full routine and will coach you from there.</p>
-      <button class="coach-btn" onclick="copyCheckin(this, \`${summary.replace(/`/g,"'")}\`)">Copy check-in summary</button>
+      <p>Copy your check-in and paste it into this Claude project — all your routine and dog care context comes with it.</p>
+      <button class="coach-btn" onclick="copyCheckin(this,\`${summary.replace(/`/g,"'")}\`)">Copy check-in summary</button>
       <a class="coach-btn-ghost" href="https://claude.ai" target="_blank">Open Claude project ↗</a>
     </div>
     <div class="coach-card">
       <h2>Quick prompts</h2>
-      <p>Or open Claude directly with context pre-loaded — no pasting needed.</p>
+      <p>Open Claude with your context already loaded.</p>
       <div class="quick-prompts">
-        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('checkin'))}" target="_blank">&#9675; Daily check-in</a>
-        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('morning'))}" target="_blank">&#9675; Morning motivation push</a>
-        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('stuck'))}" target="_blank">&#9675; I'm struggling to stay consistent</a>
-        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('evening'))}" target="_blank">&#9675; Evening reflection + tomorrow prep</a>
-        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('habit'))}" target="_blank">&#9675; Which habit should I focus on first?</a>
+        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('checkin'))}" target="_blank">○ Daily check-in</a>
+        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('morning'))}" target="_blank">○ Morning motivation push</a>
+        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('stuck'))}" target="_blank">○ I'm struggling to stay consistent</a>
+        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('evening'))}" target="_blank">○ Evening reflection + tomorrow prep</a>
+        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('habit'))}" target="_blank">○ Which habit should I focus on first?</a>
       </div>
     </div>`;
 }
 
-function setEditTab(tab, el) {
-  editTab = tab;
-  document.querySelectorAll('.stab').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  renderEdit();
-}
-
-function renderEdit() {
-  const content = document.getElementById('edit-content');
-  if (editTab === 'notifications') {
-    let html = '<div style="margin-bottom:8px;font-size:11px;color:var(--muted);">Set reminders for key parts of your routine.</div>';
-    notifs.forEach(n => {
-      html += `<div class="notif-row"><div><span>${n.label}</span><div class="nt">${n.time}</div></div><div class="toggle${n.on?' on':''}" onclick="toggleNotif('${n.id}')"></div></div>`;
-    });
-    html += `<button class="save-btn" onclick="requestNotifPermission()">Enable notifications</button>`;
-    content.innerHTML = html;
-    return;
-  }
-  const sched = editTab==='weekday' ? schedule.weekday : schedule.weekend;
-  let html = '';
-  sched.forEach((section,si)=>{
-    html += `<div class="section-label">${section.section}</div>`;
-    section.tasks.forEach((task,ti)=>{
-      html += `<div class="edit-task-row">
-        <input type="text" value="${task.name}" onchange="updateTask('${editTab}',${si},${ti},'name',this.value)" />
-        <input class="time-in" type="text" value="${task.time}" onchange="updateTask('${editTab}',${si},${ti},'time',this.value)" />
-        <button class="del-btn" onclick="deleteTask('${editTab}',${si},${ti})">×</button>
-      </div>`;
-    });
-    html += `<button class="add-task-btn" onclick="addTask('${editTab}',${si})">+ add task</button>`;
-  });
-  html += `<button class="save-btn" onclick="saveSchedule()">Save routine</button>`;
-  content.innerHTML = html;
-}
-
-function updateTask(type,si,ti,field,val){schedule[type][si].tasks[ti][field]=val;}
-function deleteTask(type,si,ti){schedule[type][si].tasks.splice(ti,1);save('dr-schedule',schedule);renderEdit();}
-function addTask(type,si){const id='task_'+Date.now();schedule[type][si].tasks.push({id,name:'New task',time:''});save('dr-schedule',schedule);renderEdit();}
-function saveSchedule(){save('dr-schedule',schedule);renderToday();const btn=document.querySelector('.save-btn');if(btn){btn.textContent='Saved!';setTimeout(()=>btn.textContent='Save routine',1500);}}
-function toggleNotif(id){const n=notifs.find(x=>x.id===id);if(n){n.on=!n.on;save('dr-notifs',notifs);renderEdit();}}
-
-async function requestNotifPermission(){
-  if(!('Notification' in window)){alert('Notifications not supported in this browser.');return;}
-  const perm=await Notification.requestPermission();
-  if(perm==='granted'){scheduleNotifications();alert('Notifications enabled!');}
-  else alert('Permission denied. Allow notifications in browser settings.');
-}
-
-function scheduleNotifications(){
-  notifs.filter(n=>n.on).forEach(n=>{
-    const [h,m]=n.time.split(':').map(Number);
-    const now=new Date(),next=new Date();
-    next.setHours(h,m,0,0);
-    if(next<=now)next.setDate(next.getDate()+1);
-    setTimeout(()=>new Notification('Daily Routine',{body:n.label}),next-now);
-  });
-}
-
-function copyCheckin(btn, text) {
-  navigator.clipboard.writeText(text).then(()=>{
-    const orig = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(()=>btn.textContent=orig, 2000);
-  }).catch(()=>{
-    prompt('Copy this and paste into Claude:', text);
-  });
-}
+function copyCheckin(btn,text){navigator.clipboard.writeText(text).then(()=>{const o=btn.textContent;btn.textContent='Copied!';setTimeout(()=>btn.textContent=o,2000);}).catch(()=>prompt('Copy this:',text));}
 
 function showScreen(name,btn){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -543,12 +635,14 @@ function showScreen(name,btn){
   btn.classList.add('active');
   if(name==='today')renderToday();
   if(name==='stats')renderStats();
+  if(name==='dogs')renderDogs();
+  if(name==='spin'){currentSpinTasks=[...spinTasks];drawWheel();}
   if(name==='coach')renderCoach();
-  if(name==='edit')renderEdit();
 }
 
 renderToday();
-if(Notification.permission==='granted')scheduleNotifications();
+setTimeout(drawWheel,100);
+if(Notification.permission==='granted'){notifs.filter(n=>n.on).forEach(n=>{const[h,m]=n.time.split(':').map(Number);const now=new Date(),next=new Date();next.setHours(h,m,0,0);if(next<=now)next.setDate(next.getDate()+1);setTimeout(()=>new Notification('Daily Routine',{body:n.label}),next-now);});}
 </script>
 </body>
 </html>
