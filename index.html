@@ -442,6 +442,8 @@ function renderCoach() {
   const doneHtml = doneTasks.length ? doneTasks.map(t=>`<span class="ctx-done">✓ ${t}</span>`).join('<br>') : '<span style="color:var(--hint)">Nothing checked off yet</span>';
   const pendingHtml = pendingTasks.length ? pendingTasks.slice(0,4).map(t=>`<span class="ctx-pending">○ ${t}</span>`).join('<br>')+(pendingTasks.length>4?`<br><span style="color:var(--hint)">+${pendingTasks.length-4} more</span>`:'') : '<span class="ctx-done">All done!</span>';
 
+  const summary = `Daily check-in — ${DAYS[todayIdx]} — ${pct}% complete — ${streak} day streak\nDone: ${doneTasks.length ? doneTasks.join(', ') : 'nothing yet'}\nPending: ${pendingTasks.length ? pendingTasks.join(', ') : 'all done!'}`;
+
   document.getElementById('coach-content').innerHTML = `
     <div class="coach-card">
       <h2>Your context</h2>
@@ -449,13 +451,15 @@ function renderCoach() {
         <div class="ctx-label">Today — ${DAYS[todayIdx]} — ${pct}% complete — ${streak} day streak</div>
         ${doneHtml}<br>${pendingHtml}
       </div>
-      <p>Tap below to open Claude with your full routine context pre-loaded. Claude already knows what you've done today and what's still pending.</p>
-      <a class="coach-btn" href="${buildClaudeUrl(getContextPrompt('checkin'))}" target="_blank">Open daily check-in ↗</a>
+      <p>Copy your check-in summary and paste it into your Claude project — Claude already knows your full routine and will coach you from there.</p>
+      <button class="coach-btn" onclick="copyCheckin(this, \`${summary.replace(/`/g,"'")}\`)">Copy check-in summary</button>
+      <a class="coach-btn-ghost" href="https://claude.ai" target="_blank">Open Claude project ↗</a>
     </div>
     <div class="coach-card">
       <h2>Quick prompts</h2>
-      <p>One tap to start a focused conversation about a specific part of your routine.</p>
+      <p>Or open Claude directly with context pre-loaded — no pasting needed.</p>
       <div class="quick-prompts">
+        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('checkin'))}" target="_blank">&#9675; Daily check-in</a>
         <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('morning'))}" target="_blank">&#9675; Morning motivation push</a>
         <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('stuck'))}" target="_blank">&#9675; I'm struggling to stay consistent</a>
         <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('evening'))}" target="_blank">&#9675; Evening reflection + tomorrow prep</a>
@@ -519,6 +523,16 @@ function scheduleNotifications(){
     next.setHours(h,m,0,0);
     if(next<=now)next.setDate(next.getDate()+1);
     setTimeout(()=>new Notification('Daily Routine',{body:n.label}),next-now);
+  });
+}
+
+function copyCheckin(btn, text) {
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(()=>btn.textContent=orig, 2000);
+  }).catch(()=>{
+    prompt('Copy this and paste into Claude:', text);
   });
 }
 
