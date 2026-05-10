@@ -280,9 +280,9 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
         <button class="dur-btn" onclick="setDuration(0,this)">Any</button>
       </div>
     </div>
-    <div class="wheel-container">
-      <div class="wheel-pointer" style="position:absolute;right:-14px;top:50%;transform:translateY(-50%) rotate(90deg);"></div>
+    <div class="wheel-container" style="position:relative;">
       <canvas id="wheel-canvas" class="wheel-canvas" width="280" height="280"></canvas>
+      <div style="position:absolute;right:-16px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:12px solid transparent;border-bottom:12px solid transparent;border-right:20px solid var(--text);filter:drop-shadow(0 1px 3px rgba(0,0,0,0.5));"></div>
     </div>
     <div id="wheel-empty" style="display:none;font-size:13px;color:var(--muted);text-align:center;padding:12px 0;">No available tasks — add some below or adjust your filter.</div>
     <button class="spin-btn" id="spin-btn" onclick="spinWheel()">Spin</button>
