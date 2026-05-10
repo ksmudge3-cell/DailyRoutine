@@ -286,9 +286,9 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
     <button onclick="addInboxItem()">Add</button>
   </div>
   <div id="inbox-list"></div>
-  <a id="inbox-sort-link" class="inbox-sort-btn" href="#" target="_blank" style="display:none">
-    ○ Sort my inbox with Claude ↗
-  </a>
+  <button id="inbox-sort-btn" class="inbox-sort-btn" onclick="copyInbox(this)" style="display:none;border:none;">
+    ○ Copy inbox to sort with Claude
+  </button>
 </div>
 
 <!-- COACH -->
@@ -728,12 +728,13 @@ function deleteInboxItem(id){
 
 function renderInbox(){
   const list=document.getElementById('inbox-list');
-  const sortLink=document.getElementById('inbox-sort-link');
+  const sortBtn=document.getElementById('inbox-sort-btn');
   const navBtn=document.getElementById('inbox-nav-btn');
   if(!list)return;
+  const sortBtn=document.getElementById('inbox-sort-btn');
   if(inbox.length===0){
     list.innerHTML='<div class="inbox-empty">Nothing here yet.<br>Add anything on your mind — tasks, ideas, errands.</div>';
-    sortLink.style.display='none';
+    sortBtn.style.display='none';
     navBtn.querySelector('.nav-icon').innerHTML='&#9632;';
     return;
   }
@@ -745,10 +746,17 @@ function renderInbox(){
       </div>
       <button class="inbox-del" onclick="deleteInboxItem('${item.id}')">×</button>
     </div>`).join('');
-  const prompt=`I have ${inbox.length} items in my task inbox that need sorting. Here they are:\n\n${inbox.map((i,n)=>`${n+1}. ${i.text}`).join('\n')}\n\nFor each one, suggest: which wheel category (Clean, Admin, Mental Health, or Daily Routine), whether it's one-time or repeating, and estimated time. Be brief and practical.`;
-  sortLink.href='https://claude.ai/new?q='+encodeURIComponent(prompt);
-  sortLink.style.display='flex';
+  sortBtn.style.display='flex';
   navBtn.querySelector('.nav-icon').innerHTML='&#9632;<span class="inbox-count">'+inbox.length+'</span>';
+}
+
+function copyInbox(btn){
+  const text=`Let's sort my inbox\n\nI have ${inbox.length} items to sort:\n\n${inbox.map((i,n)=>`${n+1}. ${i.text}`).join('\n')}`;
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig=btn.textContent.trim();
+    btn.textContent='Copied! Paste it into this Claude project.';
+    setTimeout(()=>btn.textContent=orig,3000);
+  }).catch(()=>prompt('Copy this and paste into Claude:',text));
 }
 
 function handleInboxEnter(e){if(e.key==='Enter')addInboxItem();}
