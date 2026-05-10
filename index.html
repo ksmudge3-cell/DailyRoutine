@@ -651,19 +651,16 @@ function toggleDogTask(taskId){
   if(!dogState[k])dogState[k]={};
   dogState[k][taskId]=!dogState[k][taskId];
   save('dr-dog-state',dogState);
-  // mirror into today's state so Today tab reflects it
-  if(!state[k])state[k]={};
-  state[k]['dog_'+taskId]=dogState[k][taskId];
-  save('dr-state',state);
   renderDogs();
-  // refresh today ring if we're on today's date
   if(selectedDay===new Date().getDay())renderToday();
 }
 function resetToday(){state[dayKey(new Date().getDay())]={};save('dr-state',state);renderToday();}
 
-function calcStreak(){let s=0;const t=new Date();for(let i=0;i<60;i++){const d=new Date(t);d.setDate(t.getDate()-i);const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;const sc=getScheduleFor(d.getDay());const total=sc.reduce((a,s)=>a+s.tasks.length,0);const done=Object.values(state[k]||{}).filter(Boolean).length;if(i===0&&done===0)continue;if(done>=Math.ceil(total*0.8))s++;else if(i>0)break;}return s;}
-function calcBestStreak(){let b=0,c=0;const t=new Date();for(let i=59;i>=0;i--){const d=new Date(t);d.setDate(t.getDate()-i);const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;const sc=getScheduleFor(d.getDay());const total=sc.reduce((a,s)=>a+s.tasks.length,0);const done=Object.values(state[k]||{}).filter(Boolean).length;if(done>=Math.ceil(total*0.8)){c++;b=Math.max(b,c);}else c=0;}return b;}
-function dayPct(idx){const sc=getScheduleFor(idx);const total=sc.reduce((a,s)=>a+s.tasks.length,0);if(!total)return 0;const done=Object.values(getDayData(idx)).filter(Boolean).length;return Math.round((Math.min(done,total)/total)*100);}
+function getTaskIds(idx){return getScheduleFor(idx).reduce((a,s)=>a.concat(s.tasks.map(t=>t.id)),[]);}
+function countDone(idx){const ids=new Set(getTaskIds(idx));const data=state[dayKey(idx)]||{};return Object.entries(data).filter(([k,v])=>v&&ids.has(k)).length;}
+function calcStreak(){let s=0;const t=new Date();for(let i=0;i<60;i++){const d=new Date(t);d.setDate(t.getDate()-i);const idx=d.getDay();const total=getTaskIds(idx).length;const done=countDone(i===0?new Date().getDay():idx);if(i===0&&done===0)continue;if(total>0&&done>=Math.ceil(total*0.8))s++;else if(i>0)break;}return s;}
+function calcBestStreak(){let b=0,c=0;const t=new Date();for(let i=59;i>=0;i--){const d=new Date(t);d.setDate(t.getDate()-i);const idx=d.getDay();const total=getTaskIds(idx).length;const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;const ids=new Set(getScheduleFor(idx).reduce((a,s)=>a.concat(s.tasks.map(t=>t.id)),[]));const done=Object.entries(state[k]||{}).filter(([key,v])=>v&&ids.has(key)).length;if(total>0&&done>=Math.ceil(total*0.8)){c++;b=Math.max(b,c);}else c=0;}return b;}
+function dayPct(idx){const ids=getTaskIds(idx);if(!ids.length)return 0;const data=state[dayKey(idx)]||{};const done=ids.filter(id=>data[id]).length;return Math.round((done/ids.length)*100);}
 
 function renderToday(){
   const ti=new Date().getDay();
@@ -672,8 +669,7 @@ function renderToday(){
   const strip=document.getElementById('date-strip');strip.innerHTML='';
   for(let i=0;i<7;i++){const btn=document.createElement('button');const p=dayPct(i);btn.className='date-pill'+(i===selectedDay?' active':'')+(p===100&&i!==selectedDay?' done':'');btn.textContent=SHORT[i]+(p>0&&i!==selectedDay?' '+p+'%':'');btn.onclick=()=>{selectedDay=i;renderToday();};strip.appendChild(btn);}
   const sc=getScheduleFor(selectedDay);const allT=sc.reduce((a,s)=>a.concat(s.tasks),[]);const data=getDayData(selectedDay);
-  const done=allT.filter(t=>data[t.id]).length;const total=allT.length;const pct=total?Math.round((done/total)*100):0;
-  const circ=175.9;document.getElementById('ring-fill').style.strokeDashoffset=circ-(circ*pct/100);
+  const done=allT.filter(t=>data[t.id]).length;const total=allT.length;const pct=total?Math.round((done/total)*100):0;document.getElementById('ring-fill').style.strokeDashoffset=circ-(circ*pct/100);
   document.getElementById('ring-pct').textContent=pct+'%';document.getElementById('prog-fraction').textContent=done+' / '+total;
   document.getElementById('streak-row').textContent='● '+calcStreak()+' day streak';
   document.getElementById('congrats-banner').style.display=pct===100?'block':'none';
@@ -1092,17 +1088,13 @@ function markDoneOutsideSpin(taskId){
   save('dr-wheel-done',wheelDone);
   delete wheelSkips[taskId];
   save('dr-wheel-skips',wheelSkips);
-  // log to today's state
   const k=todayKeyStr();if(!state[k])state[k]={};
   state[k]['spin_'+taskId]=true;
   save('dr-state',state);
   refreshWheel();
   renderAvoidanceTracker();
   if(selectedDay===new Date().getDay())renderToday();
-  // visual feedback then re-render manager
-  const btns=document.querySelectorAll(`button[onclick*="${taskId}"]`);
-  btns.forEach(b=>{if(b.textContent.includes('done')){b.textContent='✓ done!';b.style.background='var(--teal)';b.style.color='#0e0e0f';}});
-  setTimeout(()=>renderTaskManager(),1200);
+  setTimeout(()=>renderTaskManager(),800);
 }
 
 function addStandaloneTask(cat){
@@ -1124,7 +1116,7 @@ function getContextPrompt(type){
   const ti=new Date().getDay();const sc=getScheduleFor(ti);const allT=sc.reduce((a,s)=>a.concat(s.tasks),[]);
   const data=getDayData(ti);const done=allT.filter(t=>data[t.id]).map(t=>t.name);const pending=allT.filter(t=>!data[t.id]).map(t=>t.name);
   const streak=calcStreak();const pct=dayPct(ti);
-  const dogData=getDogDayData();const allDog=[...dogTasks.edna.morning,...dogTasks.edna.evening,...dogTasks.kronk.morning,...dogTasks.kronk.evening,...dogTasks.mental];
+  const dogData=getDogDayData();const dtg=dogTasks.shared||{morning:[],evening:[]};const allDog=[...(dtg.morning||[]),...(dtg.evening||[])];
   const dogDone=allDog.filter(t=>dogData[t.id]).map(t=>t.name);
   const ctx=`My routine context for ${DAYS[ti]}:\n- Routine: ${pct}% done. Completed: ${done.join(', ')||'nothing yet'}. Pending: ${pending.join(', ')||'all done'}.\n- Dog care done: ${dogDone.join(', ')||'none yet'}.\n- Streak: ${streak} days.\n\n`;
   const map={checkin:ctx+'Quick coaching check-in based on where I am today. Direct and practical.',stuck:ctx+"I'm struggling to stay consistent. What's the most likely reason and one fix?",morning:ctx+'Quick motivational push for my morning routine. Keep it short.',evening:ctx+'Help me reflect on today and set up tomorrow.',habit:ctx+'Which habit should I nail first and how do I make it automatic?'};
