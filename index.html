@@ -578,7 +578,15 @@ async function loadFromSupabase(){
       const d=rows[0].data;
       if(d.state)state=d.state;
       if(d.schedule&&d.schedule.weekday&&d.schedule.weekday.length)schedule=d.schedule;
-      if(d.dogTasks)dogTasks=d.dogTasks;
+      if(d.dogTasks){
+        // migrate old edna/kronk structure to new shared structure
+        if(d.dogTasks.edna&&!d.dogTasks.shared){
+          dogTasks={shared:DEFAULT_DOG_TASKS.shared,mental:d.dogTasks.mental||DEFAULT_DOG_TASKS.mental,grooming:d.dogTasks.grooming||DEFAULT_DOG_TASKS.grooming};
+        } else {
+          dogTasks=d.dogTasks;
+          if(!dogTasks.shared)dogTasks.shared=DEFAULT_DOG_TASKS.shared;
+        }
+      }
       if(d.dogState)dogState=d.dogState;
       if(d.groomState)groomState=d.groomState;
       if(d.notifs)notifs=d.notifs;
@@ -1082,16 +1090,19 @@ function renderTaskManager(){
 function markDoneOutsideSpin(taskId){
   wheelDone[taskId]=Date.now();
   save('dr-wheel-done',wheelDone);
-  // also clear any skips for this task
   delete wheelSkips[taskId];
   save('dr-wheel-skips',wheelSkips);
+  // log to today's state
+  const k=todayKeyStr();if(!state[k])state[k]={};
+  state[k]['spin_'+taskId]=true;
+  save('dr-state',state);
   refreshWheel();
-  renderTaskManager();
   renderAvoidanceTracker();
-  // brief visual feedback
-  const btns=document.querySelectorAll(`[onclick="markDoneOutsideSpin('${taskId}')"]`);
-  btns.forEach(b=>{b.textContent='✓ done!';b.style.background='var(--teal)';b.style.color='#0e0e0f';});
-  setTimeout(()=>renderTaskManager(),1500);
+  if(selectedDay===new Date().getDay())renderToday();
+  // visual feedback then re-render manager
+  const btns=document.querySelectorAll(`button[onclick*="${taskId}"]`);
+  btns.forEach(b=>{if(b.textContent.includes('done')){b.textContent='✓ done!';b.style.background='var(--teal)';b.style.color='#0e0e0f';}});
+  setTimeout(()=>renderTaskManager(),1200);
 }
 
 function addStandaloneTask(cat){
