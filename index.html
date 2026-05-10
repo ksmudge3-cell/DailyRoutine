@@ -281,7 +281,7 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
       </div>
     </div>
     <div class="wheel-container">
-      <div class="wheel-pointer"></div>
+      <div class="wheel-pointer" style="position:absolute;right:-14px;top:50%;transform:translateY(-50%) rotate(90deg);"></div>
       <canvas id="wheel-canvas" class="wheel-canvas" width="280" height="280"></canvas>
     </div>
     <div id="wheel-empty" style="display:none;font-size:13px;color:var(--muted);text-align:center;padding:12px 0;">No available tasks — add some below or adjust your filter.</div>
@@ -736,10 +736,8 @@ function drawWheel(){
   ctx.clearRect(0,0,size,size);
   if(n===0)return;
   const arc=(2*Math.PI)/n;
-  // pointer is at top (270deg = -PI/2), so offset wheel start
-  const pointerAngle=-Math.PI/2;
   currentSpinTasks.forEach((task,i)=>{
-    const start=wheelAngle+pointerAngle+i*arc;const end=start+arc;
+    const start=wheelAngle+i*arc;const end=start+arc;
     ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
     ctx.fillStyle=COLORS[i%COLORS.length];ctx.fill();
     ctx.save();ctx.translate(cx,cy);ctx.rotate(start+arc/2);
@@ -767,8 +765,8 @@ function spinWheel(){
     else{
       spinning=false;document.getElementById('spin-btn').disabled=false;
       const n=currentSpinTasks.length;const arc=(2*Math.PI)/n;
-      const pointerAngle=-Math.PI/2;
-      const normalizedAngle=((-(wheelAngle+pointerAngle))%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
+      // pointer is at angle 0 (right). find which segment is at angle 0.
+      const normalizedAngle=((-wheelAngle)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
       const idx=Math.floor(normalizedAngle/arc)%n;
       showResult(currentSpinTasks[idx]);
     }
