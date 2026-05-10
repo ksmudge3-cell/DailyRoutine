@@ -172,6 +172,21 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); transition: transform 0.15s, background 0.15s; }
 .toggle.on::after { transform: translateX(16px); background: #0e0e0f; }
 
+.shop-item { display: flex; align-items: center; gap: 10px; padding: 11px 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; }
+.shop-item.checked { opacity: 0.45; }
+.shop-item.checked .shop-name { text-decoration: line-through; color: var(--muted); }
+.shop-check { width: 20px; height: 20px; border-radius: 4px; border: 1.5px solid var(--border2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.12s; }
+.shop-item.checked .shop-check { background: var(--teal); border-color: var(--teal); color: #0e0e0f; font-size: 11px; }
+.shop-name { flex: 1; font-size: 13px; color: var(--text); }
+.shop-cat-badge { font-size: 9px; padding: 2px 7px; border-radius: 99px; flex-shrink: 0; }
+.cat-grocery { background: var(--teal-dim); color: var(--teal); }
+.cat-household { background: var(--amber-dim); color: var(--amber); }
+.cat-pharmacy { background: var(--coral-dim); color: var(--coral); }
+.cat-other { background: var(--surface2); color: var(--muted); }
+.shop-del { background: none; border: none; color: var(--hint); font-size: 16px; cursor: pointer; }
+.shop-del:hover { color: var(--red); }
+.cat-select { background: var(--surface2); border: 0.5px solid var(--border); border-radius: 6px; padding: 4px 8px; color: var(--muted); font-family: var(--mono); font-size: 11px; cursor: pointer; }
+
 /* INBOX */
 .inbox-capture { display: flex; gap: 8px; margin-bottom: 20px; }
 .inbox-capture input { flex: 1; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 12px 14px; color: var(--text); font-family: var(--mono); font-size: 13px; outline: none; }
@@ -291,6 +306,27 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
   </button>
 </div>
 
+<!-- SHOP -->
+<div class="screen" id="screen-shop">
+  <div class="page-header"><h1>Shopping</h1><p>CAPTURE + SHOP</p></div>
+  <div class="inbox-capture">
+    <input type="text" id="shop-input" placeholder="Add item..." />
+    <button onclick="addShopItem()">Add</button>
+  </div>
+  <div class="section-toggle" id="shop-cat-tabs">
+    <button class="stab active" onclick="setShopCat('all',this)">All</button>
+    <button class="stab" onclick="setShopCat('grocery',this)">Grocery</button>
+    <button class="stab" onclick="setShopCat('household',this)">House</button>
+    <button class="stab" onclick="setShopCat('pharmacy',this)">Pharmacy</button>
+    <button class="stab" onclick="setShopCat('other',this)">Other</button>
+  </div>
+  <div id="shop-list"></div>
+  <div style="display:flex;gap:8px;margin-top:12px;">
+    <button class="btn-ghost" onclick="clearCheckedShop()">Clear checked</button>
+    <button class="btn-ghost" onclick="clearAllShop()">Clear all</button>
+  </div>
+</div>
+
 <!-- COACH -->
 <div class="screen" id="screen-coach">
   <div class="page-header"><h1>Coach</h1><p>POWERED BY CLAUDE</p></div>
@@ -300,10 +336,10 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 <!-- NAV -->
 <nav class="bottom-nav">
   <button class="nav-btn active" onclick="showScreen('today',this)"><span class="nav-icon">&#9711;</span>today</button>
-  <button class="nav-btn" onclick="showScreen('stats',this)"><span class="nav-icon">&#9636;</span>stats</button>
   <button class="nav-btn" onclick="showScreen('dogs',this)"><span class="nav-icon">&#9829;</span>dogs</button>
   <button class="nav-btn" onclick="showScreen('spin',this)"><span class="nav-icon">&#9670;</span>spin</button>
   <button class="nav-btn" id="inbox-nav-btn" onclick="showScreen('inbox',this)"><span class="nav-icon">&#9632;</span>inbox</button>
+  <button class="nav-btn" onclick="showScreen('shop',this)"><span class="nav-icon">&#9635;</span>shop</button>
   <button class="nav-btn" onclick="showScreen('coach',this)"><span class="nav-icon">&#9651;</span>coach</button>
 </nav>
 
@@ -436,7 +472,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,notifs,spinTasks,inbox},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,notifs,spinTasks,inbox,shopItems},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -456,11 +492,13 @@ async function loadFromSupabase(){
       if(d.groomState)groomState=d.groomState;
       if(d.notifs)notifs=d.notifs;
       if(d.spinTasks)spinTasks=d.spinTasks;
-    if(d.inbox)inbox=d.inbox;
+      if(d.inbox)inbox=d.inbox;
+      if(d.shopItems)shopItems=d.shopItems;
       saveLocal('dr-state',state);saveLocal('dr-schedule',schedule);
       saveLocal('dr-dog-tasks',dogTasks);saveLocal('dr-dog-state',dogState);
       saveLocal('dr-groom-state',groomState);saveLocal('dr-notifs',notifs);
       saveLocal('dr-spin-tasks',spinTasks);saveLocal('dr-inbox',inbox);
+      saveLocal('dr-shop',shopItems);
       return true;
     }
   }catch(e){console.warn('Load from Supabase failed',e);}
@@ -483,6 +521,8 @@ let groomState=load('dr-groom-state',{});
 let notifs=load('dr-notifs',DEFAULT_NOTIFS);
 let spinTasks=load('dr-spin-tasks',DEFAULT_SPIN_TASKS);
 let inbox=load('dr-inbox',[]);
+let shopItems=load('dr-shop',[]);
+let shopCat='all';
 let selectedDay=new Date().getDay();
 let editTab='weekday';
 let spinDuration=10;
@@ -760,6 +800,67 @@ function copyInbox(btn){
 
 function handleInboxEnter(e){if(e.key==='Enter')addInboxItem();}
 
+function addShopItem(){
+  const input=document.getElementById('shop-input');
+  const text=input.value.trim();
+  if(!text)return;
+  shopItems.unshift({id:'s_'+Date.now(),name:text,cat:shopCat==='all'?'other':shopCat,checked:false});
+  input.value='';
+  save('dr-shop',shopItems);
+  renderShop();
+}
+
+function toggleShopItem(id){
+  const item=shopItems.find(i=>i.id===id);
+  if(item){item.checked=!item.checked;save('dr-shop',shopItems);renderShop();}
+}
+
+function deleteShopItem(id){
+  shopItems=shopItems.filter(i=>i.id!==id);
+  save('dr-shop',shopItems);renderShop();
+}
+
+function clearCheckedShop(){
+  shopItems=shopItems.filter(i=>!i.checked);
+  save('dr-shop',shopItems);renderShop();
+}
+
+function clearAllShop(){
+  if(confirm('Clear all items?')){shopItems=[];save('dr-shop',shopItems);renderShop();}
+}
+
+function setShopCat(cat,el){
+  shopCat=cat;
+  document.querySelectorAll('#shop-cat-tabs .stab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderShop();
+}
+
+function renderShop(){
+  const list=document.getElementById('shop-list');
+  if(!list)return;
+  const filtered=shopCat==='all'?shopItems:shopItems.filter(i=>i.cat===shopCat);
+  if(filtered.length===0){list.innerHTML='<div class="inbox-empty">Nothing here yet.</div>';return;}
+  const cats={grocery:'cat-grocery',household:'cat-household',pharmacy:'cat-pharmacy',other:'cat-other'};
+  list.innerHTML=filtered.map(item=>`
+    <div class="shop-item${item.checked?' checked':''}">
+      <div class="shop-check" onclick="toggleShopItem('${item.id}')">${item.checked?'✓':''}</div>
+      <span class="shop-name">${item.name}</span>
+      <select class="cat-select" onchange="changeShopCat('${item.id}',this.value)">
+        <option value="grocery"${item.cat==='grocery'?' selected':''}>Grocery</option>
+        <option value="household"${item.cat==='household'?' selected':''}>House</option>
+        <option value="pharmacy"${item.cat==='pharmacy'?' selected':''}>Pharmacy</option>
+        <option value="other"${item.cat==='other'?' selected':''}>Other</option>
+      </select>
+      <button class="shop-del" onclick="deleteShopItem('${item.id}')">×</button>
+    </div>`).join('');
+}
+
+function changeShopCat(id,cat){
+  const item=shopItems.find(i=>i.id===id);
+  if(item){item.cat=cat;save('dr-shop',shopItems);renderShop();}
+}
+
 function showScreen(name,btn){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
@@ -770,17 +871,19 @@ function showScreen(name,btn){
   if(name==='dogs')renderDogs();
   if(name==='spin'){currentSpinTasks=[...spinTasks];drawWheel();}
   if(name==='inbox'){renderInbox();setTimeout(()=>{const inp=document.getElementById('inbox-input');if(inp){inp.onkeydown=handleInboxEnter;}},50);}
+  if(name==='shop'){renderShop();setTimeout(()=>{const inp=document.getElementById('shop-input');if(inp){inp.onkeydown=(e)=>{if(e.key==='Enter')addShopItem();};}},50);}
+  if(name==='coach')renderCoach();
 }
 
 async function init(){
   const synced=await loadFromSupabase();
   if(synced){
-    // refresh vars from updated locals
     state=load('dr-state',{});schedule=load('dr-schedule',DEFAULT_SCHEDULE);
     dogTasks=load('dr-dog-tasks',DEFAULT_DOG_TASKS);dogState=load('dr-dog-state',{});
     groomState=load('dr-groom-state',{});notifs=load('dr-notifs',DEFAULT_NOTIFS);
     spinTasks=load('dr-spin-tasks',DEFAULT_SPIN_TASKS);
     inbox=load('dr-inbox',[]);
+    shopItems=load('dr-shop',[]);
   }
   renderToday();
   renderInbox();
