@@ -294,9 +294,14 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
       <div class="timer-row">
         <button class="timer-btn primary" id="timer-start-btn" onclick="toggleTimer()">Start timer</button>
         <button class="timer-btn" onclick="markSpinDone()">Done ✓</button>
-        <button class="timer-btn" onclick="spinWheel()">Re-spin</button>
-        <button class="timer-btn danger" onclick="hideResult()">Skip</button>
+        <button class="timer-btn" id="respin-btn" onclick="reSpinWheel()">Re-spin (<span id="respin-count">3</span>)</button>
+        <button class="timer-btn danger" onclick="skipTask()">Skip</button>
       </div>
+    </div>
+    <!-- Avoidance tracker -->
+    <div id="avoidance-wrap" style="width:100%;margin-top:8px;display:none;">
+      <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--red);margin-bottom:8px;">⚠ Tasks you keep avoiding</div>
+      <div id="avoidance-list"></div>
     </div>
     <!-- Task manager -->
     <button class="manage-btn" onclick="toggleTaskManager()">+ manage tasks</button>
@@ -570,7 +575,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,notifs,wheel,wheelDone,inbox,shopItems},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,notifs,wheel,wheelDone,wheelSkips,inbox,shopItems},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -591,12 +596,14 @@ async function loadFromSupabase(){
       if(d.notifs)notifs=d.notifs;
       if(d.wheel&&d.wheel.clean)wheel=d.wheel;
       if(d.wheelDone)wheelDone=d.wheelDone;
+      if(d.wheelSkips)wheelSkips=d.wheelSkips;
       if(d.inbox)inbox=d.inbox;
       if(d.shopItems)shopItems=d.shopItems;
       saveLocal('dr-state',state);saveLocal('dr-schedule',schedule);
       saveLocal('dr-dog-tasks',dogTasks);saveLocal('dr-dog-state',dogState);
       saveLocal('dr-groom-state',groomState);saveLocal('dr-notifs',notifs);
       saveLocal('dr-wheel',wheel);saveLocal('dr-wheel-done',wheelDone);
+      saveLocal('dr-wheel-skips',wheelSkips);
       saveLocal('dr-inbox',inbox);saveLocal('dr-shop',shopItems);
       return true;
     }
@@ -620,6 +627,7 @@ let groomState=load('dr-groom-state',{});
 let notifs=load('dr-notifs',DEFAULT_NOTIFS);
 let wheel=load('dr-wheel',DEFAULT_WHEEL);
 let wheelDone=load('dr-wheel-done',{});
+let wheelSkips=load('dr-wheel-skips',{});// {taskId: skipCount}
 let inbox=load('dr-inbox',[]);
 let shopItems=load('dr-shop',[]);
 let shopCat='all';
@@ -633,6 +641,7 @@ let timerSeconds=0;
 let timerRunning=false;
 let managerOpen=false;
 let currentSpinTask=null;
+let reSpinsLeft=3;
 
 function dayKey(idx){const t=new Date(),d=new Date(t);d.setDate(t.getDate()+(idx-t.getDay()));return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}
 function todayKeyStr(){const d=new Date();return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}
@@ -776,6 +785,7 @@ function drawWheel(){
 
 function spinWheel(){
   if(spinning||currentSpinTasks.length===0)return;
+  reSpinsLeft=3;updateReSpinBtn();
   spinning=true;document.getElementById('spin-btn').disabled=true;
   document.getElementById('spin-result').classList.remove('show');
   stopTimer();
@@ -784,13 +794,11 @@ function spinWheel(){
   function animate(now){
     const elapsed=now-start;const progress=Math.min(elapsed/duration,1);
     const ease=1-Math.pow(1-progress,4);
-    wheelAngle=startAngle+extraAngle*ease;
-    drawWheel();
+    wheelAngle=startAngle+extraAngle*ease;drawWheel();
     if(progress<1){requestAnimationFrame(animate);}
     else{
       spinning=false;document.getElementById('spin-btn').disabled=false;
       const n=currentSpinTasks.length;const arc=(2*Math.PI)/n;
-      // pointer is at angle 0 (right). find which segment is at angle 0.
       const normalizedAngle=((-wheelAngle)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
       const idx=Math.floor(normalizedAngle/arc)%n;
       showResult(currentSpinTasks[idx]);
@@ -798,6 +806,70 @@ function spinWheel(){
   }
   requestAnimationFrame(animate);
 }
+
+function reSpinWheel(){
+  if(reSpinsLeft<=0||spinning||currentSpinTasks.length===0)return;
+  if(currentSpinTask){wheelSkips[currentSpinTask.id]=(wheelSkips[currentSpinTask.id]||0)+1;save('dr-wheel-skips',wheelSkips);}
+  reSpinsLeft--;updateReSpinBtn();
+  spinning=true;document.getElementById('spin-result').classList.remove('show');stopTimer();
+  const extraAngle=(3+Math.random()*3)*2*Math.PI+Math.random()*2*Math.PI;
+  const duration=2000;const start=performance.now();const startAngle=wheelAngle;
+  function animate(now){
+    const elapsed=now-start;const progress=Math.min(elapsed/duration,1);
+    const ease=1-Math.pow(1-progress,4);
+    wheelAngle=startAngle+extraAngle*ease;drawWheel();
+    if(progress<1){requestAnimationFrame(animate);}
+    else{
+      spinning=false;
+      const n=currentSpinTasks.length;const arc=(2*Math.PI)/n;
+      const normalizedAngle=((-wheelAngle)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
+      const idx=Math.floor(normalizedAngle/arc)%n;
+      showResult(currentSpinTasks[idx]);renderAvoidanceTracker();
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function skipTask(){
+  if(currentSpinTask){wheelSkips[currentSpinTask.id]=(wheelSkips[currentSpinTask.id]||0)+1;save('dr-wheel-skips',wheelSkips);}
+  hideResult();renderAvoidanceTracker();
+}
+
+function updateReSpinBtn(){
+  const btn=document.getElementById('respin-btn');const count=document.getElementById('respin-count');
+  if(!btn||!count)return;
+  count.textContent=reSpinsLeft;
+  btn.disabled=reSpinsLeft<=0;btn.style.opacity=reSpinsLeft<=0?'0.4':'1';
+  if(reSpinsLeft===0)btn.title='No re-spins left — do it or skip it!';
+}
+
+function renderAvoidanceTracker(){
+  const wrap=document.getElementById('avoidance-wrap');const list=document.getElementById('avoidance-list');
+  if(!wrap||!list)return;
+  const avoided=[];
+  ['clean','admin','mental','bonus'].forEach(cat=>{
+    [...wheel[cat].standalone,...wheel[cat].projects.flatMap(p=>p.tasks)].forEach(t=>{
+      const skips=wheelSkips[t.id]||0;
+      if(skips>=3)avoided.push({...t,skips,cat});
+    });
+  });
+  avoided.sort((a,b)=>b.skips-a.skips);
+  if(avoided.length===0){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  list.innerHTML=avoided.map(t=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:0.5px solid rgba(255,92,92,0.25);border-radius:var(--radius-sm);margin-bottom:6px;">
+      <div style="flex:1;"><div style="font-size:13px;color:var(--text);">${t.name}</div><div style="font-size:10px;color:var(--red);">Skipped ${t.skips}×</div></div>
+      <button style="font-size:11px;padding:4px 10px;border-radius:99px;border:0.5px solid var(--teal);background:none;color:var(--teal);font-family:var(--mono);cursor:pointer;" onclick="forceSpin('${t.id}','${t.cat}')">Do it now</button>
+      <button style="font-size:11px;padding:4px 10px;border-radius:99px;border:0.5px solid var(--border);background:none;color:var(--muted);font-family:var(--mono);cursor:pointer;" onclick="clearSkips('${t.id}')">Clear</button>
+    </div>`).join('');
+}
+
+function forceSpin(taskId,cat){
+  const task=[...wheel[cat].standalone,...wheel[cat].projects.flatMap(p=>p.tasks)].find(t=>t.id===taskId);
+  if(task){showResult(task);document.getElementById('spin-result').scrollIntoView({behavior:'smooth'});}
+}
+
+function clearSkips(taskId){delete wheelSkips[taskId];save('dr-wheel-skips',wheelSkips);renderAvoidanceTracker();}
 
 function showResult(task){
   currentSpinTask=task;
@@ -1212,7 +1284,7 @@ function showScreen(name,btn){
   if(name==='today')renderToday();
   if(name==='stats')renderStats();
   if(name==='dogs')renderDogs();
-  if(name==='spin'){updateProjectDropdown();refreshWheel();}
+  if(name==='spin'){updateProjectDropdown();refreshWheel();renderAvoidanceTracker();}
   if(name==='inbox'){renderInbox();setTimeout(()=>{const inp=document.getElementById('inbox-input');if(inp){inp.onkeydown=handleInboxEnter;}},50);}
   if(name==='shop'){renderShop();setTimeout(()=>{const inp=document.getElementById('shop-input');if(inp){inp.onkeydown=(e)=>{if(e.key==='Enter')addShopItem();};}},50);}
   if(name==='coach')renderCoach();
@@ -1227,6 +1299,7 @@ async function init(){
     spinTasks=load('dr-spin-tasks',[]);
     wheel=load('dr-wheel',DEFAULT_WHEEL);
     wheelDone=load('dr-wheel-done',{});
+    wheelSkips=load('dr-wheel-skips',{});
     inbox=load('dr-inbox',[]);
     shopItems=load('dr-shop',[]);
   }
