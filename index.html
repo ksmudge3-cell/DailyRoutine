@@ -22,7 +22,6 @@
   --teal: #2dd4a0;
   --teal-dim: rgba(45,212,160,0.12);
   --amber: #f5a623;
-  --amber-dim: rgba(245,166,35,0.12);
   --red: #ff5c5c;
   --mono: 'DM Mono', monospace;
   --serif: 'Fraunces', serif;
@@ -33,22 +32,18 @@
 html { background: var(--bg); }
 body { font-family: var(--mono); background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 120px; }
 
-/* NAV */
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(14,14,15,0.95); backdrop-filter: blur(20px); border-top: 0.5px solid var(--border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
 .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 6px; cursor: pointer; color: var(--hint); font-size: 10px; font-family: var(--mono); border: none; background: none; transition: color 0.15s; }
 .nav-btn.active { color: var(--teal); }
 .nav-icon { font-size: 20px; line-height: 1; }
 
-/* SCREENS */
 .screen { display: none; padding: 0 16px; padding-top: env(safe-area-inset-top, 16px); }
 .screen.active { display: block; }
 
-/* HEADER */
 .page-header { padding: 24px 0 16px; }
 .page-header h1 { font-family: var(--serif); font-size: 28px; font-weight: 300; color: var(--text); }
 .page-header p { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 0.05em; }
 
-/* TODAY SCREEN */
 .date-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 16px; scrollbar-width: none; }
 .date-strip::-webkit-scrollbar { display: none; }
 .date-pill { flex-shrink: 0; padding: 6px 12px; border-radius: 99px; border: 0.5px solid var(--border); background: none; color: var(--muted); font-family: var(--mono); font-size: 11px; cursor: pointer; transition: all 0.12s; }
@@ -80,7 +75,6 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .task-name { font-size: 13px; color: var(--text); }
 .task-time { font-size: 10px; color: var(--hint); margin-top: 2px; }
 
-/* STATS SCREEN */
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
 .stat-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; }
 .stat-card.full { grid-column: 1/-1; }
@@ -94,25 +88,22 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .week-bar-label { font-size: 9px; color: var(--hint); }
 .week-bar-wrap.today .week-bar-label { color: var(--teal); }
 
-/* COACH SCREEN */
-.coach-messages { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; min-height: 200px; }
-.msg { max-width: 85%; padding: 10px 14px; border-radius: var(--radius); font-size: 13px; line-height: 1.6; }
-.msg.ai { background: var(--surface); border: 0.5px solid var(--border); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; }
-.msg.user { background: var(--teal-dim); border: 0.5px solid rgba(45,212,160,0.2); color: var(--teal); align-self: flex-end; border-bottom-right-radius: 4px; }
-.msg.typing { color: var(--muted); font-style: italic; }
-.coach-input-row { display: flex; gap: 8px; position: sticky; bottom: 80px; background: var(--bg); padding: 8px 0; }
-.coach-input-row input { flex: 1; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text); font-family: var(--mono); font-size: 13px; outline: none; }
-.coach-input-row input:focus { border-color: var(--teal); }
-.coach-input-row input::placeholder { color: var(--hint); }
-.send-btn { background: var(--teal); color: #0e0e0f; border: none; border-radius: var(--radius-sm); padding: 0 16px; font-family: var(--mono); font-size: 13px; cursor: pointer; font-weight: 500; }
-.api-setup { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
-.api-setup p { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
-.api-setup input { width: 100%; background: var(--surface2); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; margin-bottom: 8px; }
-.api-setup input:focus { border-color: var(--teal); }
-.btn-primary { background: var(--teal); color: #0e0e0f; border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-family: var(--mono); font-size: 13px; cursor: pointer; font-weight: 500; width: 100%; }
-.btn-ghost { background: none; color: var(--muted); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 8px 16px; font-family: var(--mono); font-size: 12px; cursor: pointer; }
+/* COACH */
+.coach-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; }
+.coach-card h2 { font-family: var(--serif); font-size: 20px; font-weight: 300; margin-bottom: 8px; color: var(--text); }
+.coach-card p { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 16px; }
+.coach-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 14px; background: var(--teal); color: #0e0e0f; border: none; border-radius: var(--radius-sm); font-family: var(--mono); font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; text-decoration: none; }
+.coach-btn:hover { opacity: 0.9; }
+.coach-btn-ghost { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; background: none; color: var(--muted); border: 0.5px solid var(--border); border-radius: var(--radius-sm); font-family: var(--mono); font-size: 12px; cursor: pointer; margin-top: 8px; text-decoration: none; }
+.context-box { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 16px; font-size: 11px; color: var(--muted); line-height: 1.8; }
+.context-box .ctx-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hint); margin-bottom: 6px; }
+.ctx-done { color: var(--teal); }
+.ctx-pending { color: var(--amber); }
+.quick-prompts { display: flex; flex-direction: column; gap: 6px; }
+.qp-btn { display: block; width: 100%; padding: 11px 14px; background: none; border: 0.5px solid var(--border); border-radius: var(--radius-sm); color: var(--muted); font-family: var(--mono); font-size: 12px; cursor: pointer; text-align: left; transition: all 0.12s; text-decoration: none; }
+.qp-btn:hover { border-color: var(--teal); color: var(--teal); }
 
-/* ROUTINE EDITOR */
+/* EDIT */
 .edit-task-row { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; }
 .edit-task-row input { flex: 1; background: none; border: none; color: var(--text); font-family: var(--mono); font-size: 13px; outline: none; }
 .edit-task-row input::placeholder { color: var(--hint); }
@@ -133,15 +124,15 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .stab { flex: 1; padding: 8px; background: none; border: 0.5px solid var(--border); border-radius: var(--radius-sm); color: var(--muted); font-family: var(--mono); font-size: 11px; cursor: pointer; }
 .stab.active { background: var(--surface); border-color: var(--border2); color: var(--text); }
 .congrats-banner { background: var(--teal-dim); border: 0.5px solid rgba(45,212,160,0.25); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px; color: var(--teal); margin-bottom: 12px; text-align: center; }
+.btn-ghost { background: none; color: var(--muted); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 8px 16px; font-family: var(--mono); font-size: 12px; cursor: pointer; }
 </style>
 </head>
 <body>
 
-<!-- TODAY -->
 <div class="screen active" id="screen-today">
   <div class="page-header">
     <h1 id="today-heading">Monday</h1>
-    <p id="today-sub">Loading...</p>
+    <p id="today-sub"></p>
   </div>
   <div class="date-strip" id="date-strip"></div>
   <div class="progress-ring-wrap">
@@ -153,46 +144,27 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
     </svg>
     <div class="progress-meta">
       <div class="big" id="prog-fraction">0 / 0</div>
-      <div class="small" id="prog-label">tasks completed</div>
+      <div class="small">tasks completed today</div>
       <div class="streak-row" id="streak-row">&#9679; 0 day streak</div>
     </div>
   </div>
   <div id="congrats-banner" class="congrats-banner" style="display:none">&#10003; Day complete — well done.</div>
   <div id="task-list"></div>
-  <div style="margin-top:16px;display:flex;gap:8px;">
-    <button class="btn-ghost" onclick="resetToday()">Reset today</button>
-  </div>
+  <div style="margin-top:16px;"><button class="btn-ghost" onclick="resetToday()">Reset today</button></div>
 </div>
 
-<!-- STATS -->
 <div class="screen" id="screen-stats">
-  <div class="page-header">
-    <h1>Progress</h1>
-    <p>YOUR WEEK AT A GLANCE</p>
-  </div>
+  <div class="page-header"><h1>Progress</h1><p>YOUR WEEK AT A GLANCE</p></div>
   <div class="stats-grid" id="stats-grid"></div>
 </div>
 
-<!-- COACH -->
 <div class="screen" id="screen-coach">
-  <div class="page-header">
-    <h1>Coach</h1>
-    <p>AI-POWERED DAILY CHECK-IN</p>
-  </div>
-  <div id="api-setup-wrap"></div>
-  <div class="coach-messages" id="coach-messages"></div>
-  <div class="coach-input-row" id="coach-input-row" style="display:none">
-    <input id="coach-input" type="text" placeholder="How's your day going..." />
-    <button class="send-btn" onclick="sendCoach()">Send</button>
-  </div>
+  <div class="page-header"><h1>Coach</h1><p>POWERED BY CLAUDE</p></div>
+  <div id="coach-content"></div>
 </div>
 
-<!-- EDIT -->
 <div class="screen" id="screen-edit">
-  <div class="page-header">
-    <h1>Routine</h1>
-    <p>CUSTOMIZE YOUR SCHEDULE</p>
-  </div>
+  <div class="page-header"><h1>Routine</h1><p>CUSTOMIZE YOUR SCHEDULE</p></div>
   <div class="section-toggle">
     <button class="stab active" onclick="setEditTab('weekday',this)">Weekday</button>
     <button class="stab" onclick="setEditTab('weekend',this)">Weekend</button>
@@ -201,7 +173,6 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
   <div id="edit-content"></div>
 </div>
 
-<!-- BOTTOM NAV -->
 <nav class="bottom-nav">
   <button class="nav-btn active" onclick="showScreen('today',this)">
     <span class="nav-icon">&#9711;</span>today
@@ -289,8 +260,6 @@ function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); 
 let state = load('dr-state', {});
 let schedule = load('dr-schedule', DEFAULT_SCHEDULE);
 let notifs = load('dr-notifs', DEFAULT_NOTIFS);
-let apiKey = load('dr-apikey', '');
-let chatHistory = [];
 let selectedDay = new Date().getDay();
 let editTab = 'weekday';
 
@@ -299,11 +268,6 @@ function dayKey(dayIdx) {
   const diff = dayIdx - today.getDay();
   const d = new Date(today);
   d.setDate(today.getDate() + diff);
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-}
-
-function todayKey() {
-  const d = new Date();
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
@@ -326,8 +290,7 @@ function toggleTask(dayIdx, taskId) {
 }
 
 function resetToday() {
-  const k = todayKey();
-  state[k] = {};
+  state[dayKey(new Date().getDay())] = {};
   save('dr-state', state);
   renderToday();
 }
@@ -336,77 +299,100 @@ function calcStreak() {
   let streak = 0;
   const today = new Date();
   for (let i = 0; i < 60; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
+    const d = new Date(today); d.setDate(today.getDate() - i);
     const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     const sched = getScheduleFor(d.getDay());
-    const total = sched.reduce((a, s) => a + s.tasks.length, 0);
-    const done = Object.values(state[k] || {}).filter(Boolean).length;
-    if (i === 0 && done === 0) continue;
-    if (done >= Math.ceil(total * 0.8)) streak++;
-    else if (i > 0) break;
+    const total = sched.reduce((a,s)=>a+s.tasks.length,0);
+    const done = Object.values(state[k]||{}).filter(Boolean).length;
+    if (i===0 && done===0) continue;
+    if (done >= Math.ceil(total*0.8)) streak++;
+    else if (i>0) break;
   }
   return streak;
 }
 
 function calcBestStreak() {
-  let best = 0, cur = 0;
+  let best=0, cur=0;
   const today = new Date();
-  for (let i = 59; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
+  for (let i=59; i>=0; i--) {
+    const d = new Date(today); d.setDate(today.getDate()-i);
     const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     const sched = getScheduleFor(d.getDay());
-    const total = sched.reduce((a, s) => a + s.tasks.length, 0);
-    const done = Object.values(state[k] || {}).filter(Boolean).length;
-    if (done >= Math.ceil(total * 0.8)) { cur++; best = Math.max(best, cur); }
-    else cur = 0;
+    const total = sched.reduce((a,s)=>a+s.tasks.length,0);
+    const done = Object.values(state[k]||{}).filter(Boolean).length;
+    if (done>=Math.ceil(total*0.8)){cur++;best=Math.max(best,cur);}else cur=0;
   }
   return best;
 }
 
 function dayPct(dayIdx) {
   const sched = getScheduleFor(dayIdx);
-  const total = sched.reduce((a, s) => a + s.tasks.length, 0);
+  const total = sched.reduce((a,s)=>a+s.tasks.length,0);
   if (!total) return 0;
   const done = Object.values(getDayData(dayIdx)).filter(Boolean).length;
-  return Math.round((Math.min(done, total) / total) * 100);
+  return Math.round((Math.min(done,total)/total)*100);
+}
+
+function buildClaudeUrl(prompt) {
+  return 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
+}
+
+function getContextPrompt(type) {
+  const todayIdx = new Date().getDay();
+  const sched = getScheduleFor(todayIdx);
+  const allTasks = sched.reduce((a,s)=>a.concat(s.tasks),[]);
+  const data = getDayData(todayIdx);
+  const doneTasks = allTasks.filter(t=>data[t.id]).map(t=>t.name);
+  const pendingTasks = allTasks.filter(t=>!data[t.id]).map(t=>t.name);
+  const streak = calcStreak();
+  const pct = dayPct(todayIdx);
+
+  const context = `My daily routine app context for ${DAYS[todayIdx]}:
+- Completed today (${pct}%): ${doneTasks.length ? doneTasks.join(', ') : 'nothing yet'}
+- Still pending: ${pendingTasks.length ? pendingTasks.join(', ') : 'all done!'}
+- Current streak: ${streak} days
+
+`;
+
+  const prompts = {
+    checkin: context + "Give me a quick coaching check-in based on where I'm at today. Be direct and practical, not cheesy.",
+    stuck: context + "I'm struggling to stay consistent with my routine. What's the most likely reason and what's one thing I can change right now?",
+    morning: context + "I just woke up and need a quick motivational push to get through my morning routine. Keep it short.",
+    evening: context + "I'm winding down for the night. Help me do a quick reflection on today and set up tomorrow for success.",
+    habit: context + "Which habit in my routine is most important to nail first, and why? Give me a specific strategy to make it automatic."
+  };
+  return prompts[type] || prompts.checkin;
 }
 
 function renderToday() {
   const todayIdx = new Date().getDay();
   document.getElementById('today-heading').textContent = DAYS[todayIdx];
-  document.getElementById('today-sub').textContent = new Date().toLocaleDateString('en-US', { weekday: undefined, month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase();
+  document.getElementById('today-sub').textContent = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}).toUpperCase();
 
-  // date strip
   const strip = document.getElementById('date-strip');
   strip.innerHTML = '';
-  for (let i = 0; i < 7; i++) {
+  for (let i=0; i<7; i++) {
     const btn = document.createElement('button');
     const pct = dayPct(i);
-    btn.className = 'date-pill' + (i === selectedDay ? ' active' : '') + (pct === 100 && i !== selectedDay ? ' done' : '');
-    btn.textContent = SHORT[i] + (pct > 0 && i !== selectedDay ? ' ' + pct + '%' : '');
-    btn.onclick = () => { selectedDay = i; renderToday(); };
+    btn.className = 'date-pill'+(i===selectedDay?' active':'')+(pct===100&&i!==selectedDay?' done':'');
+    btn.textContent = SHORT[i]+(pct>0&&i!==selectedDay?' '+pct+'%':'');
+    btn.onclick = ()=>{ selectedDay=i; renderToday(); };
     strip.appendChild(btn);
   }
 
-  // progress ring
   const sched = getScheduleFor(selectedDay);
-  const allTasks = sched.reduce((a, s) => a.concat(s.tasks), []);
+  const allTasks = sched.reduce((a,s)=>a.concat(s.tasks),[]);
   const data = getDayData(selectedDay);
-  const done = allTasks.filter(t => data[t.id]).length;
+  const done = allTasks.filter(t=>data[t.id]).length;
   const total = allTasks.length;
-  const pct = total ? Math.round((done / total) * 100) : 0;
+  const pct = total ? Math.round((done/total)*100) : 0;
   const circ = 175.9;
-  document.getElementById('ring-fill').style.strokeDashoffset = circ - (circ * pct / 100);
-  document.getElementById('ring-pct').textContent = pct + '%';
-  document.getElementById('prog-fraction').textContent = done + ' / ' + total;
-  document.getElementById('prog-label').textContent = 'tasks completed today';
-  const streak = calcStreak();
-  document.getElementById('streak-row').textContent = '● ' + streak + ' day streak';
-  document.getElementById('congrats-banner').style.display = pct === 100 ? 'block' : 'none';
+  document.getElementById('ring-fill').style.strokeDashoffset = circ-(circ*pct/100);
+  document.getElementById('ring-pct').textContent = pct+'%';
+  document.getElementById('prog-fraction').textContent = done+' / '+total;
+  document.getElementById('streak-row').textContent = '● '+calcStreak()+' day streak';
+  document.getElementById('congrats-banner').style.display = pct===100?'block':'none';
 
-  // tasks
   const list = document.getElementById('task-list');
   list.innerHTML = '';
   sched.forEach(section => {
@@ -416,9 +402,9 @@ function renderToday() {
     list.appendChild(lbl);
     section.tasks.forEach(task => {
       const div = document.createElement('div');
-      div.className = 'task' + (data[task.id] ? ' done' : '');
+      div.className = 'task'+(data[task.id]?' done':'');
       div.innerHTML = `<div class="check"><span class="check-mark">✓</span></div><div class="task-info"><div class="task-name">${task.name}</div><div class="task-time">${task.time}</div></div>`;
-      div.onclick = () => toggleTask(selectedDay, task.id);
+      div.onclick = ()=>toggleTask(selectedDay, task.id);
       list.appendChild(div);
     });
   });
@@ -426,132 +412,61 @@ function renderToday() {
 
 function renderStats() {
   const grid = document.getElementById('stats-grid');
-  const streak = calcStreak();
-  const best = calcBestStreak();
   const todayIdx = new Date().getDay();
   const todayPct = dayPct(todayIdx);
-  let weekTotal = 0, weekDone = 0;
-  for (let i = 0; i < 7; i++) { const s = getScheduleFor(i); const t = s.reduce((a,sec)=>a+sec.tasks.length,0); weekTotal += t; weekDone += Math.min(Object.values(getDayData(i)).filter(Boolean).length, t); }
-  const weekPct = weekTotal ? Math.round((weekDone/weekTotal)*100) : 0;
-
-  const bars = SHORT.map((d, i) => {
-    const p = dayPct(i);
-    const isToday = i === todayIdx;
+  let weekTotal=0, weekDone=0;
+  for (let i=0;i<7;i++){const s=getScheduleFor(i);const t=s.reduce((a,sec)=>a+sec.tasks.length,0);weekTotal+=t;weekDone+=Math.min(Object.values(getDayData(i)).filter(Boolean).length,t);}
+  const weekPct = weekTotal?Math.round((weekDone/weekTotal)*100):0;
+  const bars = SHORT.map((d,i)=>{
+    const p=dayPct(i); const isToday=i===todayIdx;
     return `<div class="week-bar-wrap${isToday?' today':''}"><div class="week-bar-bg"><div class="week-bar-fill" style="height:${Math.max(p,2)}%"></div></div><div class="week-bar-label">${d}</div></div>`;
   }).join('');
-
   grid.innerHTML = `
     <div class="stat-card"><div class="s-label">Today</div><div class="s-val">${todayPct}<span class="s-unit">%</span></div></div>
     <div class="stat-card"><div class="s-label">This week</div><div class="s-val">${weekPct}<span class="s-unit">%</span></div></div>
-    <div class="stat-card"><div class="s-label">Current streak</div><div class="s-val">${streak}<span class="s-unit"> days</span></div></div>
-    <div class="stat-card"><div class="s-label">Best streak</div><div class="s-val">${best}<span class="s-unit"> days</span></div></div>
-    <div class="stat-card full"><div class="s-label">Week overview</div><div class="week-bars">${bars}</div></div>
-  `;
+    <div class="stat-card"><div class="s-label">Streak</div><div class="s-val">${calcStreak()}<span class="s-unit"> days</span></div></div>
+    <div class="stat-card"><div class="s-label">Best streak</div><div class="s-val">${calcBestStreak()}<span class="s-unit"> days</span></div></div>
+    <div class="stat-card full"><div class="s-label">Week overview</div><div class="week-bars">${bars}</div></div>`;
 }
 
 function renderCoach() {
-  const wrap = document.getElementById('api-setup-wrap');
-  const inputRow = document.getElementById('coach-input-row');
-  const msgs = document.getElementById('coach-messages');
-
-  if (!apiKey) {
-    wrap.innerHTML = `<div class="api-setup">
-      <p>Enter your Anthropic API key to enable AI coaching. Your key is stored locally on this device only and never sent anywhere except Anthropic's servers.</p>
-      <input type="password" id="api-key-input" placeholder="sk-ant-..." />
-      <button class="btn-primary" onclick="saveApiKey()">Save & start coaching</button>
-    </div>`;
-    inputRow.style.display = 'none';
-    if (msgs.children.length === 0) {
-      msgs.innerHTML = '<div class="msg ai">Add your Anthropic API key above to start chatting with your coach.</div>';
-    }
-  } else {
-    wrap.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px;"><button class="btn-ghost" onclick="clearApiKey()">Change API key</button></div>`;
-    inputRow.style.display = 'flex';
-    if (msgs.children.length === 0) {
-      const todayIdx = new Date().getDay();
-      const pct = dayPct(todayIdx);
-      msgs.innerHTML = `<div class="msg ai">Hey — I'm your daily coach. You're at ${pct}% today. How's it going? Anything feeling hard to stick to?</div>`;
-    }
-    const input = document.getElementById('coach-input');
-    input.onkeydown = (e) => { if (e.key === 'Enter') sendCoach(); };
-  }
-}
-
-function saveApiKey() {
-  const val = document.getElementById('api-key-input').value.trim();
-  if (!val) return;
-  apiKey = val;
-  save('dr-apikey', apiKey);
-  renderCoach();
-}
-
-function clearApiKey() {
-  apiKey = '';
-  save('dr-apikey', '');
-  chatHistory = [];
-  document.getElementById('coach-messages').innerHTML = '';
-  renderCoach();
-}
-
-async function sendCoach() {
-  const input = document.getElementById('coach-input');
-  const text = input.value.trim();
-  if (!text || !apiKey) return;
-  input.value = '';
-
-  const msgs = document.getElementById('coach-messages');
-  const userMsg = document.createElement('div');
-  userMsg.className = 'msg user';
-  userMsg.textContent = text;
-  msgs.appendChild(userMsg);
-
-  const typing = document.createElement('div');
-  typing.className = 'msg ai typing';
-  typing.textContent = 'thinking...';
-  msgs.appendChild(typing);
-  msgs.scrollTop = msgs.scrollHeight;
-
-  chatHistory.push({ role: 'user', content: text });
-
   const todayIdx = new Date().getDay();
   const sched = getScheduleFor(todayIdx);
   const allTasks = sched.reduce((a,s)=>a.concat(s.tasks),[]);
   const data = getDayData(todayIdx);
   const doneTasks = allTasks.filter(t=>data[t.id]).map(t=>t.name);
   const pendingTasks = allTasks.filter(t=>!data[t.id]).map(t=>t.name);
+  const pct = dayPct(todayIdx);
   const streak = calcStreak();
 
-  const systemPrompt = `You are a friendly, direct daily routine coach. Keep replies short (2-4 sentences max). Be warm but not cheesy. No emojis.
+  const doneHtml = doneTasks.length ? doneTasks.map(t=>`<span class="ctx-done">✓ ${t}</span>`).join('<br>') : '<span style="color:var(--hint)">Nothing checked off yet</span>';
+  const pendingHtml = pendingTasks.length ? pendingTasks.slice(0,4).map(t=>`<span class="ctx-pending">○ ${t}</span>`).join('<br>')+(pendingTasks.length>4?`<br><span style="color:var(--hint)">+${pendingTasks.length-4} more</span>`:'') : '<span class="ctx-done">All done!</span>';
 
-User's routine context for today (${DAYS[todayIdx]}):
-- Completed: ${doneTasks.length > 0 ? doneTasks.join(', ') : 'nothing yet'}
-- Still pending: ${pendingTasks.length > 0 ? pendingTasks.join(', ') : 'all done'}
-- Current streak: ${streak} days
-- Completion: ${dayPct(todayIdx)}%
-
-Help them stay on track, troubleshoot obstacles, and build better habits. Reference their actual routine when relevant.`;
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 300, system: systemPrompt, messages: chatHistory })
-    });
-    const data2 = await res.json();
-    const reply = data2.content?.[0]?.text || 'Something went wrong. Check your API key.';
-    chatHistory.push({ role: 'assistant', content: reply });
-    typing.className = 'msg ai';
-    typing.textContent = reply;
-  } catch(e) {
-    typing.className = 'msg ai';
-    typing.textContent = 'Could not reach the API. Check your key and internet connection.';
-  }
-  msgs.scrollTop = msgs.scrollHeight;
+  document.getElementById('coach-content').innerHTML = `
+    <div class="coach-card">
+      <h2>Your context</h2>
+      <div class="context-box">
+        <div class="ctx-label">Today — ${DAYS[todayIdx]} — ${pct}% complete — ${streak} day streak</div>
+        ${doneHtml}<br>${pendingHtml}
+      </div>
+      <p>Tap below to open Claude with your full routine context pre-loaded. Claude already knows what you've done today and what's still pending.</p>
+      <a class="coach-btn" href="${buildClaudeUrl(getContextPrompt('checkin'))}" target="_blank">Open daily check-in ↗</a>
+    </div>
+    <div class="coach-card">
+      <h2>Quick prompts</h2>
+      <p>One tap to start a focused conversation about a specific part of your routine.</p>
+      <div class="quick-prompts">
+        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('morning'))}" target="_blank">&#9675; Morning motivation push</a>
+        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('stuck'))}" target="_blank">&#9675; I'm struggling to stay consistent</a>
+        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('evening'))}" target="_blank">&#9675; Evening reflection + tomorrow prep</a>
+        <a class="qp-btn" href="${buildClaudeUrl(getContextPrompt('habit'))}" target="_blank">&#9675; Which habit should I focus on first?</a>
+      </div>
+    </div>`;
 }
 
 function setEditTab(tab, el) {
   editTab = tab;
-  document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.stab').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
   renderEdit();
 }
@@ -559,23 +474,19 @@ function setEditTab(tab, el) {
 function renderEdit() {
   const content = document.getElementById('edit-content');
   if (editTab === 'notifications') {
-    let html = '<div style="margin-bottom:8px;font-size:11px;color:var(--muted);">Tap a toggle to enable browser notifications for that reminder.</div>';
+    let html = '<div style="margin-bottom:8px;font-size:11px;color:var(--muted);">Set reminders for key parts of your routine.</div>';
     notifs.forEach(n => {
-      html += `<div class="notif-row">
-        <div><span>${n.label}</span><div class="nt">${n.time}</div></div>
-        <div class="toggle${n.on?' on':''}" onclick="toggleNotif('${n.id}')"></div>
-      </div>`;
+      html += `<div class="notif-row"><div><span>${n.label}</span><div class="nt">${n.time}</div></div><div class="toggle${n.on?' on':''}" onclick="toggleNotif('${n.id}')"></div></div>`;
     });
     html += `<button class="save-btn" onclick="requestNotifPermission()">Enable notifications</button>`;
     content.innerHTML = html;
     return;
   }
-
-  const sched = editTab === 'weekday' ? schedule.weekday : schedule.weekend;
+  const sched = editTab==='weekday' ? schedule.weekday : schedule.weekend;
   let html = '';
-  sched.forEach((section, si) => {
+  sched.forEach((section,si)=>{
     html += `<div class="section-label">${section.section}</div>`;
-    section.tasks.forEach((task, ti) => {
+    section.tasks.forEach((task,ti)=>{
       html += `<div class="edit-task-row">
         <input type="text" value="${task.name}" onchange="updateTask('${editTab}',${si},${ti},'name',this.value)" />
         <input class="time-in" type="text" value="${task.time}" onchange="updateTask('${editTab}',${si},${ti},'time',this.value)" />
@@ -588,73 +499,42 @@ function renderEdit() {
   content.innerHTML = html;
 }
 
-function updateTask(type, si, ti, field, val) {
-  schedule[type][si].tasks[ti][field] = val;
+function updateTask(type,si,ti,field,val){schedule[type][si].tasks[ti][field]=val;}
+function deleteTask(type,si,ti){schedule[type][si].tasks.splice(ti,1);save('dr-schedule',schedule);renderEdit();}
+function addTask(type,si){const id='task_'+Date.now();schedule[type][si].tasks.push({id,name:'New task',time:''});save('dr-schedule',schedule);renderEdit();}
+function saveSchedule(){save('dr-schedule',schedule);renderToday();const btn=document.querySelector('.save-btn');if(btn){btn.textContent='Saved!';setTimeout(()=>btn.textContent='Save routine',1500);}}
+function toggleNotif(id){const n=notifs.find(x=>x.id===id);if(n){n.on=!n.on;save('dr-notifs',notifs);renderEdit();}}
+
+async function requestNotifPermission(){
+  if(!('Notification' in window)){alert('Notifications not supported in this browser.');return;}
+  const perm=await Notification.requestPermission();
+  if(perm==='granted'){scheduleNotifications();alert('Notifications enabled!');}
+  else alert('Permission denied. Allow notifications in browser settings.');
 }
 
-function deleteTask(type, si, ti) {
-  schedule[type][si].tasks.splice(ti, 1);
-  save('dr-schedule', schedule);
-  renderEdit();
-}
-
-function addTask(type, si) {
-  const id = 'task_' + Date.now();
-  schedule[type][si].tasks.push({ id, name: 'New task', time: '' });
-  save('dr-schedule', schedule);
-  renderEdit();
-}
-
-function saveSchedule() {
-  save('dr-schedule', schedule);
-  renderToday();
-  const btn = document.querySelector('.save-btn');
-  if (btn) { btn.textContent = 'Saved!'; setTimeout(() => btn.textContent = 'Save routine', 1500); }
-}
-
-function toggleNotif(id) {
-  const n = notifs.find(x => x.id === id);
-  if (n) { n.on = !n.on; save('dr-notifs', notifs); renderEdit(); }
-}
-
-async function requestNotifPermission() {
-  if (!('Notification' in window)) { alert('Notifications not supported in this browser.'); return; }
-  const perm = await Notification.requestPermission();
-  if (perm === 'granted') {
-    scheduleNotifications();
-    alert('Notifications enabled! They will appear at your set times.');
-  } else {
-    alert('Notification permission denied. You may need to allow it in browser settings.');
-  }
-}
-
-function scheduleNotifications() {
-  notifs.filter(n => n.on).forEach(n => {
-    const [h, m] = n.time.split(':').map(Number);
-    const now = new Date();
-    const next = new Date();
-    next.setHours(h, m, 0, 0);
-    if (next <= now) next.setDate(next.getDate() + 1);
-    const delay = next - now;
-    setTimeout(() => {
-      new Notification('Daily Routine', { body: n.label, icon: '' });
-    }, delay);
+function scheduleNotifications(){
+  notifs.filter(n=>n.on).forEach(n=>{
+    const [h,m]=n.time.split(':').map(Number);
+    const now=new Date(),next=new Date();
+    next.setHours(h,m,0,0);
+    if(next<=now)next.setDate(next.getDate()+1);
+    setTimeout(()=>new Notification('Daily Routine',{body:n.label}),next-now);
   });
 }
 
-function showScreen(name, btn) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + name).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+function showScreen(name,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  if (name === 'today') renderToday();
-  if (name === 'stats') renderStats();
-  if (name === 'coach') renderCoach();
-  if (name === 'edit') renderEdit();
+  if(name==='today')renderToday();
+  if(name==='stats')renderStats();
+  if(name==='coach')renderCoach();
+  if(name==='edit')renderEdit();
 }
 
 renderToday();
-if (Notification.permission === 'granted') scheduleNotifications();
+if(Notification.permission==='granted')scheduleNotifications();
 </script>
 </body>
 </html>
