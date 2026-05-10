@@ -302,10 +302,22 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
     <button class="manage-btn" onclick="toggleTaskManager()">+ manage tasks</button>
     <div class="task-manager" id="task-manager">
       <div id="tm-cat-label" style="font-size:11px;color:var(--muted);margin-bottom:10px;"></div>
+      <!-- Bulk import -->
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;">
+        <div style="font-size:10px;color:var(--hint);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Bulk import</div>
+        <textarea id="bulk-import-input" placeholder="One task per line. Format: Task name | duration | repeat | cooldown&#10;Example: Clean bathroom sink | 10 | repeat | 3&#10;Or just: Clean bathroom sink (defaults: 10min, repeat, 3day cooldown)" style="width:100%;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;resize:vertical;min-height:80px;line-height:1.6;"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+          <select id="bulk-import-target" class="cat-select" style="flex:1;padding:8px 10px;font-size:12px;">
+            <option value="standalone">Standalone tasks</option>
+          </select>
+          <button class="tm-save" style="width:auto;padding:8px 14px;margin-top:0;" onclick="bulkImport()">Import</button>
+        </div>
+        <div id="bulk-import-result" style="font-size:11px;color:var(--teal);margin-top:6px;display:none;"></div>
+      </div>
       <!-- Add project -->
       <div style="display:flex;gap:8px;margin-bottom:10px;">
         <input id="new-project-input" type="text" placeholder="New project name..." style="flex:1;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;" />
-        <button class="tm-save" style="width:auto;padding:8px 14px;margin-top:0;" onclick="addProject()">Add</button>
+        <button class="tm-save" style="width:auto;padding:8px 14px;margin-top:0;" onclick="addProject()">Add project</button>
       </div>
       <div id="tm-list"></div>
     </div>
@@ -864,6 +876,50 @@ function toggleTaskManager(){
   if(managerOpen)renderTaskManager();
 }
 
+function bulkImport(){
+  const raw=document.getElementById('bulk-import-input').value.trim();
+  const target=document.getElementById('bulk-import-target').value;
+  const result=document.getElementById('bulk-import-result');
+  if(!raw){return;}
+  const lines=raw.split('\n').filter(l=>l.trim());
+  let count=0;
+  lines.forEach(line=>{
+    const parts=line.split('|').map(p=>p.trim());
+    const name=parts[0];if(!name)return;
+    const dur=parseInt(parts[1])||10;
+    const repeat=parts[2]?parts[2].toLowerCase().includes('repeat'):true;
+    const cooldown=parseInt(parts[3])||3;
+    const id='t_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+    const task={id,name,dur,repeat,cooldown};
+    if(target==='standalone'){
+      wheel[spinCat].standalone.push(task);
+    } else {
+      const proj=wheel[spinCat].projects.find(p=>p.id===target);
+      if(proj)proj.tasks.push(task);
+    }
+    count++;
+  });
+  save('dr-wheel',wheel);
+  document.getElementById('bulk-import-input').value='';
+  result.textContent=`✓ Imported ${count} task${count===1?'':'s'}`;
+  result.style.display='block';
+  setTimeout(()=>result.style.display='none',3000);
+  renderTaskManager();
+  refreshWheel();
+}
+
+function updateBulkImportTargets(){
+  const sel=document.getElementById('bulk-import-target');
+  if(!sel)return;
+  const cat=wheel[spinCat];
+  sel.innerHTML='<option value="standalone">Standalone tasks</option>';
+  cat.projects.forEach(p=>{
+    const opt=document.createElement('option');
+    opt.value=p.id;opt.textContent=p.name;
+    sel.appendChild(opt);
+  });
+}
+
 function addProject(){
   const input=document.getElementById('new-project-input');
   const name=input.value.trim();if(!name)return;
@@ -880,6 +936,7 @@ function renderTaskManager(){
   const lbl=document.getElementById('tm-cat-label');
   const catNames={clean:'🧹 Clean',admin:'📋 Admin',mental:'🧠 Mental Health',bonus:'💪 Bonus'};
   if(lbl)lbl.textContent='Editing: '+catNames[spinCat];
+  updateBulkImportTargets();
   const cat=wheel[spinCat];
   let html='<div style="font-size:10px;color:var(--hint);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Standalone tasks</div>';
   cat.standalone.forEach((t,i)=>{
