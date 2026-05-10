@@ -391,8 +391,58 @@ const DEFAULT_NOTIFS=[
   {id:'n8',label:'Lights out',time:'22:00',on:false},
 ];
 
-function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
-function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+const SUPABASE_URL='https://udfeyrpayakrovhyfjsc.supabase.co';
+const SUPABASE_KEY='sb_publishable_1cXhDN-47XCBRY0v25rDmA_Twd_WDU6';
+const SYNC_ID='main';
+
+function loadLocal(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function saveLocal(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+async function syncToSupabase(){
+  const payload={
+    state,schedule,dogTasks,dogState,groomState,notifs,spinTasks
+  };
+  try{
+    await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify({id:SYNC_ID,data:payload,updated_at:new Date().toISOString()})
+    });
+  }catch(e){console.warn('Sync failed',e);}
+}
+
+async function loadFromSupabase(){
+  try{
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/routine_data?id=eq.${SYNC_ID}&select=data`,{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    const rows=await res.json();
+    if(rows&&rows.length&&rows[0].data){
+      const d=rows[0].data;
+      if(d.state)state=d.state;
+      if(d.schedule)schedule=d.schedule;
+      if(d.dogTasks)dogTasks=d.dogTasks;
+      if(d.dogState)dogState=d.dogState;
+      if(d.groomState)groomState=d.groomState;
+      if(d.notifs)notifs=d.notifs;
+      if(d.spinTasks)spinTasks=d.spinTasks;
+      saveLocal('dr-state',state);saveLocal('dr-schedule',schedule);
+      saveLocal('dr-dog-tasks',dogTasks);saveLocal('dr-dog-state',dogState);
+      saveLocal('dr-groom-state',groomState);saveLocal('dr-notifs',notifs);
+      saveLocal('dr-spin-tasks',spinTasks);
+      return true;
+    }
+  }catch(e){console.warn('Load from Supabase failed',e);}
+  return false;
+}
+
+let syncTimer=null;
+function save(k,v){
+  saveLocal(k,v);
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(syncToSupabase,1500);
+}
+function load(k,d){return loadLocal(k,d);}
 
 let state=load('dr-state',{});
 let schedule=load('dr-schedule',DEFAULT_SCHEDULE);
@@ -640,9 +690,20 @@ function showScreen(name,btn){
   if(name==='coach')renderCoach();
 }
 
-renderToday();
-setTimeout(drawWheel,100);
-if(Notification.permission==='granted'){notifs.filter(n=>n.on).forEach(n=>{const[h,m]=n.time.split(':').map(Number);const now=new Date(),next=new Date();next.setHours(h,m,0,0);if(next<=now)next.setDate(next.getDate()+1);setTimeout(()=>new Notification('Daily Routine',{body:n.label}),next-now);});}
+async function init(){
+  const synced=await loadFromSupabase();
+  if(synced){
+    // refresh vars from updated locals
+    state=load('dr-state',{});schedule=load('dr-schedule',DEFAULT_SCHEDULE);
+    dogTasks=load('dr-dog-tasks',DEFAULT_DOG_TASKS);dogState=load('dr-dog-state',{});
+    groomState=load('dr-groom-state',{});notifs=load('dr-notifs',DEFAULT_NOTIFS);
+    spinTasks=load('dr-spin-tasks',DEFAULT_SPIN_TASKS);
+  }
+  renderToday();
+  setTimeout(drawWheel,100);
+  if(Notification.permission==='granted'){notifs.filter(n=>n.on).forEach(n=>{const[h,m]=n.time.split(':').map(Number);const now=new Date(),next=new Date();next.setHours(h,m,0,0);if(next<=now)next.setDate(next.getDate()+1);setTimeout(()=>new Notification('Daily Routine',{body:n.label}),next-now);});}
+}
+init();
 </script>
 </body>
 </html>
