@@ -641,7 +641,19 @@ function getDayData(idx){const k=dayKey(idx);if(!state[k])state[k]={};return sta
 function getDogDayData(){const k=todayKeyStr();if(!dogState[k])dogState[k]={};return dogState[k];}
 
 function toggleTask(dayIdx,taskId){const k=dayKey(dayIdx);if(!state[k])state[k]={};state[k][taskId]=!state[k][taskId];save('dr-state',state);renderToday();}
-function toggleDogTask(taskId){const k=todayKeyStr();if(!dogState[k])dogState[k]={};dogState[k][taskId]=!dogState[k][taskId];save('dr-dog-state',dogState);renderDogs();}
+function toggleDogTask(taskId){
+  const k=todayKeyStr();
+  if(!dogState[k])dogState[k]={};
+  dogState[k][taskId]=!dogState[k][taskId];
+  save('dr-dog-state',dogState);
+  // mirror into today's state so Today tab reflects it
+  if(!state[k])state[k]={};
+  state[k]['dog_'+taskId]=dogState[k][taskId];
+  save('dr-state',state);
+  renderDogs();
+  // refresh today ring if we're on today's date
+  if(selectedDay===new Date().getDay())renderToday();
+}
 function resetToday(){state[dayKey(new Date().getDay())]={};save('dr-state',state);renderToday();}
 
 function calcStreak(){let s=0;const t=new Date();for(let i=0;i<60;i++){const d=new Date(t);d.setDate(t.getDate()-i);const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;const sc=getScheduleFor(d.getDay());const total=sc.reduce((a,s)=>a+s.tasks.length,0);const done=Object.values(state[k]||{}).filter(Boolean).length;if(i===0&&done===0)continue;if(done>=Math.ceil(total*0.8))s++;else if(i>0)break;}return s;}
@@ -669,6 +681,19 @@ function renderToday(){
       div.onclick=()=>toggleTask(selectedDay,task.id);list.appendChild(div);
     });
   });
+  // Dog care summary — only show for today
+  if(selectedDay===new Date().getDay()){
+    const dogData=getDogDayData();
+    const allDogTasks=[...dogTasks.edna.morning,...dogTasks.edna.evening,...dogTasks.kronk.morning,...dogTasks.kronk.evening,...dogTasks.mental];
+    const dogDone=allDogTasks.filter(t=>dogData[t.id]).length;
+    const dogTotal=allDogTasks.length;
+    const lbl=document.createElement('div');lbl.className='section-label';lbl.textContent='Dog Care';list.appendChild(lbl);
+    const div=document.createElement('div');
+    div.className='task'+(dogDone===dogTotal&&dogTotal>0?' done':'');
+    div.innerHTML=`<div class="check"><span class="check-mark">✓</span></div><div class="task-info"><div class="task-name">Edna & Kronk — ${dogDone}/${dogTotal} tasks done</div><div class="task-time">Tap Dogs tab to manage</div></div>`;
+    div.onclick=()=>{document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.nav-btn')[1].classList.add('active');showScreen('dogs',document.querySelectorAll('.nav-btn')[1]);};
+    list.appendChild(div);
+  }
 }
 
 function renderStats(){
