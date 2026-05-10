@@ -261,31 +261,53 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 <div class="screen" id="screen-spin">
   <div class="page-header"><h1>Spin</h1><p>FEELING MOTIVATED? LET'S GO.</p></div>
   <div class="spinner-wrap">
+    <!-- Category + Project selectors -->
+    <div style="width:100%;margin-bottom:12px;">
+      <div class="section-toggle" id="spin-cat-tabs">
+        <button class="stab active" onclick="setSpinCat('clean',this)">🧹 Clean</button>
+        <button class="stab" onclick="setSpinCat('admin',this)">📋 Admin</button>
+        <button class="stab" onclick="setSpinCat('mental',this)">🧠 Mental</button>
+        <button class="stab" onclick="setSpinCat('bonus',this)">💪 Bonus</button>
+      </div>
+      <select id="spin-project-select" class="cat-select" style="width:100%;padding:10px 12px;font-size:13px;margin-bottom:8px;" onchange="setSpinProject(this.value)">
+        <option value="all">All tasks in category</option>
+      </select>
+      <div class="spin-duration-row" style="margin-bottom:0;">
+        <button class="dur-btn active" onclick="setDuration(5,this)">5 min</button>
+        <button class="dur-btn" onclick="setDuration(10,this)">10 min</button>
+        <button class="dur-btn" onclick="setDuration(15,this)">15 min</button>
+        <button class="dur-btn" onclick="setDuration(20,this)">20 min</button>
+        <button class="dur-btn" onclick="setDuration(0,this)">Any</button>
+      </div>
+    </div>
     <div class="wheel-container">
       <div class="wheel-pointer"></div>
       <canvas id="wheel-canvas" class="wheel-canvas" width="280" height="280"></canvas>
     </div>
-    <div class="spin-duration-row">
-      <button class="dur-btn active" onclick="setDuration(10,this)">10 min</button>
-      <button class="dur-btn" onclick="setDuration(15,this)">15 min</button>
-      <button class="dur-btn" onclick="setDuration(20,this)">20 min</button>
-    </div>
+    <div id="wheel-empty" style="display:none;font-size:13px;color:var(--muted);text-align:center;padding:12px 0;">No available tasks — add some below or adjust your filter.</div>
     <button class="spin-btn" id="spin-btn" onclick="spinWheel()">Spin</button>
     <div class="spin-result" id="spin-result">
       <div class="spin-result-label">Your challenge</div>
       <div class="spin-result-task" id="result-task"></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;" id="result-meta"></div>
       <div class="timer-display" id="timer-display">10:00</div>
       <div class="timer-row">
         <button class="timer-btn primary" id="timer-start-btn" onclick="toggleTimer()">Start timer</button>
+        <button class="timer-btn" onclick="markSpinDone()">Done ✓</button>
         <button class="timer-btn" onclick="spinWheel()">Re-spin</button>
         <button class="timer-btn danger" onclick="hideResult()">Skip</button>
       </div>
     </div>
-    <button class="manage-btn" onclick="toggleTaskManager()">+ manage tasks on wheel</button>
+    <!-- Task manager -->
+    <button class="manage-btn" onclick="toggleTaskManager()">+ manage tasks</button>
     <div class="task-manager" id="task-manager">
+      <div id="tm-cat-label" style="font-size:11px;color:var(--muted);margin-bottom:10px;"></div>
+      <!-- Add project -->
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input id="new-project-input" type="text" placeholder="New project name..." style="flex:1;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;" />
+        <button class="tm-save" style="width:auto;padding:8px 14px;margin-top:0;" onclick="addProject()">Add</button>
+      </div>
       <div id="tm-list"></div>
-      <button class="tm-add" onclick="addSpinTask()">+ add task</button>
-      <button class="tm-save" onclick="saveSpinTasks()">Save</button>
     </div>
   </div>
 </div>
@@ -302,7 +324,7 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
   </div>
   <div id="inbox-list"></div>
   <button id="inbox-sort-btn" class="inbox-sort-btn" onclick="copyInbox(this)" style="display:none;border:none;">
-    ○ Copy inbox to sort with Claude
+    ○ Copy to sort in your Claude conversation
   </button>
 </div>
 
@@ -441,13 +463,77 @@ const DEFAULT_DOG_TASKS={
   ]
 };
 
-const DEFAULT_SPIN_TASKS=[
-  'Wipe down kitchen counters','Do a load of laundry','Vacuum one room','Unload the dishwasher',
-  'Clean the bathroom sink','Take out trash','Organize one drawer','Sweep the floor',
-  'Wipe down stovetop','Clean microwave','Reply to 3 emails','Schedule one appointment',
-  'Pay a bill','Clear your desk','Water the plants','Wipe down mirrors',
-  'Quick fridge clean-out','Tidy the living room','Do 10 min of organizing','Check in on a friend'
-];
+const DEFAULT_WHEEL={
+  clean:{
+    standalone:[
+      {id:'c1',name:'Wipe down kitchen counters',dur:10,repeat:true,cooldown:2},
+      {id:'c2',name:'Unload the dishwasher',dur:10,repeat:true,cooldown:1},
+      {id:'c3',name:'Sweep the floor',dur:10,repeat:true,cooldown:2},
+      {id:'c4',name:'Take out trash',dur:5,repeat:true,cooldown:2},
+      {id:'c5',name:'Wipe down stovetop',dur:10,repeat:true,cooldown:3},
+      {id:'c6',name:'Clean bathroom sink',dur:10,repeat:true,cooldown:3},
+      {id:'c7',name:'Wipe down mirrors',dur:5,repeat:true,cooldown:3},
+      {id:'c8',name:'Quick fridge clean-out',dur:15,repeat:true,cooldown:7},
+    ],
+    projects:[
+      {id:'p-deep',name:'Deep Clean',tasks:[
+        {id:'dc1',name:'Vacuum all rooms',dur:20,repeat:true,cooldown:7},
+        {id:'dc2',name:'Mop floors',dur:20,repeat:true,cooldown:7},
+        {id:'dc3',name:'Clean toilet',dur:10,repeat:true,cooldown:7},
+        {id:'dc4',name:'Scrub shower',dur:15,repeat:true,cooldown:14},
+        {id:'dc5',name:'Clean windows',dur:20,repeat:true,cooldown:30},
+      ]},
+      {id:'p-laundry',name:'Laundry',tasks:[
+        {id:'l1',name:'Do a load of laundry',dur:10,repeat:true,cooldown:2},
+        {id:'l2',name:'Fold and put away clothes',dur:15,repeat:true,cooldown:2},
+        {id:'l3',name:'Change bed sheets',dur:15,repeat:true,cooldown:7},
+      ]}
+    ]
+  },
+  admin:{
+    standalone:[
+      {id:'a1',name:'Reply to 3 emails',dur:15,repeat:true,cooldown:1},
+      {id:'a2',name:'Pay a bill',dur:10,repeat:false,cooldown:0},
+      {id:'a3',name:'Clear your desk',dur:10,repeat:true,cooldown:3},
+      {id:'a4',name:'Schedule one appointment',dur:10,repeat:false,cooldown:0},
+      {id:'a5',name:'Check in on a friend',dur:10,repeat:true,cooldown:3},
+      {id:'a6',name:'Organize one drawer',dur:15,repeat:true,cooldown:14},
+    ],
+    projects:[
+      {id:'p-finance',name:'Finance',tasks:[
+        {id:'f1',name:'Review recent transactions',dur:15,repeat:true,cooldown:7},
+        {id:'f2',name:'Check savings goal progress',dur:10,repeat:true,cooldown:7},
+        {id:'f3',name:'Update budget',dur:20,repeat:true,cooldown:7},
+      ]}
+    ]
+  },
+  mental:{
+    standalone:[
+      {id:'mh1',name:'5 min breathing exercise',dur:5,repeat:true,cooldown:1},
+      {id:'mh2',name:'Write 3 things I am grateful for',dur:5,repeat:true,cooldown:1},
+      {id:'mh3',name:'10 min walk outside',dur:10,repeat:true,cooldown:1},
+      {id:'mh4',name:'Journal for 10 min',dur:10,repeat:true,cooldown:1},
+      {id:'mh5',name:'Call someone I care about',dur:15,repeat:true,cooldown:3},
+      {id:'mh6',name:'Do something just for fun',dur:20,repeat:true,cooldown:2},
+    ],
+    projects:[
+      {id:'p-therapy',name:'Therapy Prep',tasks:[
+        {id:'tp1',name:'Write down what I want to discuss',dur:10,repeat:false,cooldown:0},
+        {id:'tp2',name:'Review last week\'s mood',dur:10,repeat:true,cooldown:7},
+        {id:'tp3',name:'Note any patterns I noticed',dur:10,repeat:true,cooldown:7},
+      ]}
+    ]
+  },
+  bonus:{
+    standalone:[
+      {id:'b1',name:'Try a new recipe',dur:20,repeat:true,cooldown:7},
+      {id:'b2',name:'Read for 20 min',dur:20,repeat:true,cooldown:1},
+      {id:'b3',name:'Watch something you\'ve been putting off',dur:20,repeat:true,cooldown:3},
+      {id:'b4',name:'Take Edna & Kronk on a long walk',dur:20,repeat:true,cooldown:2},
+    ],
+    projects:[]
+  }
+};
 
 const DEFAULT_NOTIFS=[
   {id:'n1',label:'Wake up',time:'05:30',on:false},
@@ -472,7 +558,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,notifs,spinTasks,inbox,shopItems},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,notifs,wheel,wheelDone,inbox,shopItems},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -491,14 +577,15 @@ async function loadFromSupabase(){
       if(d.dogState)dogState=d.dogState;
       if(d.groomState)groomState=d.groomState;
       if(d.notifs)notifs=d.notifs;
-      if(d.spinTasks)spinTasks=d.spinTasks;
+      if(d.wheel&&d.wheel.clean)wheel=d.wheel;
+      if(d.wheelDone)wheelDone=d.wheelDone;
       if(d.inbox)inbox=d.inbox;
       if(d.shopItems)shopItems=d.shopItems;
       saveLocal('dr-state',state);saveLocal('dr-schedule',schedule);
       saveLocal('dr-dog-tasks',dogTasks);saveLocal('dr-dog-state',dogState);
       saveLocal('dr-groom-state',groomState);saveLocal('dr-notifs',notifs);
-      saveLocal('dr-spin-tasks',spinTasks);saveLocal('dr-inbox',inbox);
-      saveLocal('dr-shop',shopItems);
+      saveLocal('dr-wheel',wheel);saveLocal('dr-wheel-done',wheelDone);
+      saveLocal('dr-inbox',inbox);saveLocal('dr-shop',shopItems);
       return true;
     }
   }catch(e){console.warn('Load from Supabase failed',e);}
@@ -519,17 +606,21 @@ let dogTasks=load('dr-dog-tasks',DEFAULT_DOG_TASKS);
 let dogState=load('dr-dog-state',{});
 let groomState=load('dr-groom-state',{});
 let notifs=load('dr-notifs',DEFAULT_NOTIFS);
-let spinTasks=load('dr-spin-tasks',DEFAULT_SPIN_TASKS);
+let wheel=load('dr-wheel',DEFAULT_WHEEL);
+let wheelDone=load('dr-wheel-done',{});
 let inbox=load('dr-inbox',[]);
 let shopItems=load('dr-shop',[]);
 let shopCat='all';
+let spinCat='clean';
+let spinProject='all';
 let selectedDay=new Date().getDay();
 let editTab='weekday';
-let spinDuration=10;
+let spinDuration=5;
 let timerInterval=null;
 let timerSeconds=0;
 let timerRunning=false;
 let managerOpen=false;
+let currentSpinTask=null;
 
 function dayKey(idx){const t=new Date(),d=new Date(t);d.setDate(t.getDate()+(idx-t.getDay()));return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}
 function todayKeyStr(){const d=new Date();return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}
@@ -617,7 +708,7 @@ function markGrooming(id){groomState[id]=Date.now();save('dr-groom-state',groomS
 
 /* SPINNER */
 const COLORS=['#2dd4a0','#f5a623','#a78bfa','#f87171','#38bdf8','#fb923c','#4ade80','#f472b6','#facc15','#60a5fa','#34d399','#c084fc'];
-let currentSpinTasks=[...spinTasks];
+let currentSpinTasks=[];
 let wheelAngle=0;let spinning=false;
 
 function drawWheel(){
@@ -631,7 +722,7 @@ function drawWheel(){
     ctx.fillStyle=COLORS[i%COLORS.length];ctx.fill();
     ctx.save();ctx.translate(cx,cy);ctx.rotate(start+arc/2);
     ctx.textAlign='right';ctx.fillStyle='rgba(0,0,0,0.7)';ctx.font='bold 10px DM Mono, monospace';
-    const label=task.length>18?task.slice(0,16)+'…':task;
+    const label=task.name.length>18?task.name.slice(0,16)+'…':task.name;
     ctx.fillText(label,r-8,4);ctx.restore();
   });
   ctx.beginPath();ctx.arc(cx,cy,18,0,2*Math.PI);ctx.fillStyle='#0e0e0f';ctx.fill();
@@ -644,7 +735,7 @@ function spinWheel(){
   document.getElementById('spin-result').classList.remove('show');
   stopTimer();
   const extraSpins=5+Math.random()*5;const extraAngle=extraSpins*2*Math.PI+Math.random()*2*Math.PI;
-  const totalAngle=wheelAngle+extraAngle;const duration=3000;const start=performance.now();const startAngle=wheelAngle;
+  const duration=3000;const start=performance.now();const startAngle=wheelAngle;
   function animate(now){
     const elapsed=now-start;const progress=Math.min(elapsed/duration,1);
     const ease=1-Math.pow(1-progress,4);
@@ -663,15 +754,30 @@ function spinWheel(){
 }
 
 function showResult(task){
-  document.getElementById('result-task').textContent=task;
-  timerSeconds=spinDuration*60;
+  currentSpinTask=task;
+  document.getElementById('result-task').textContent=task.name;
+  document.getElementById('result-meta').textContent=(task.repeat?`Repeating • every ${task.cooldown}d`:'One-time')+` • ${task.dur} min`;
+  const dur=spinDuration>0?spinDuration:task.dur;
+  timerSeconds=dur*60;
   document.getElementById('timer-display').textContent=formatTime(timerSeconds);
   document.getElementById('timer-display').style.color='var(--teal)';
   document.getElementById('timer-start-btn').textContent='Start timer';
   document.getElementById('spin-result').classList.add('show');
 }
 
-function hideResult(){document.getElementById('spin-result').classList.remove('show');stopTimer();}
+function hideResult(){document.getElementById('spin-result').classList.remove('show');stopTimer();currentSpinTask=null;}
+
+function markSpinDone(){
+  if(!currentSpinTask)return;
+  wheelDone[currentSpinTask.id]=Date.now();
+  save('dr-wheel-done',wheelDone);
+  // log to today summary
+  const k=todayKeyStr();if(!state[k])state[k]={};
+  state[k]['spin_'+currentSpinTask.id]=true;
+  save('dr-state',state);
+  hideResult();
+  refreshWheel();
+}
 
 function formatTime(s){const m=Math.floor(s/60);const sec=s%60;return `${m}:${sec.toString().padStart(2,'0')}`;}
 
@@ -687,19 +793,153 @@ function toggleTimer(){
 }
 
 function stopTimer(){if(timerInterval)clearInterval(timerInterval);timerRunning=false;timerSeconds=0;}
+function setDuration(min,el){spinDuration=min;document.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');refreshWheel();}
 
-function setDuration(min,el){spinDuration=min;document.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');if(document.getElementById('spin-result').classList.contains('show')){timerSeconds=min*60;document.getElementById('timer-display').textContent=formatTime(timerSeconds);}}
+function isTaskAvailable(task){
+  if(!task.repeat){return !wheelDone[task.id];}
+  const last=wheelDone[task.id];
+  if(!last)return true;
+  const daysSince=(Date.now()-last)/(1000*60*60*24);
+  return daysSince>=task.cooldown;
+}
 
-function toggleTaskManager(){managerOpen=!managerOpen;document.getElementById('task-manager').classList.toggle('show',managerOpen);if(managerOpen)renderTaskManager();}
+function getAvailableTasks(){
+  const cat=wheel[spinCat];if(!cat)return[];
+  let tasks=[];
+  if(spinProject==='all'){
+    tasks=[...cat.standalone,...cat.projects.flatMap(p=>p.tasks)];
+  } else {
+    const proj=cat.projects.find(p=>p.id===spinProject);
+    tasks=proj?proj.tasks:cat.standalone;
+  }
+  const durFilter=spinDuration>0;
+  return tasks.filter(t=>isTaskAvailable(t)&&(!durFilter||t.dur<=spinDuration));
+}
+
+function setSpinCat(cat,el){
+  spinCat=cat;spinProject='all';
+  document.querySelectorAll('#spin-cat-tabs .stab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  updateProjectDropdown();
+  refreshWheel();
+}
+
+function setSpinProject(val){spinProject=val;refreshWheel();}
+
+function updateProjectDropdown(){
+  const sel=document.getElementById('spin-project-select');
+  if(!sel)return;
+  const cat=wheel[spinCat];
+  sel.innerHTML='<option value="all">All tasks in category</option>';
+  if(cat&&cat.projects){
+    cat.projects.forEach(p=>{
+      const opt=document.createElement('option');
+      opt.value=p.id;opt.textContent=p.name;
+      sel.appendChild(opt);
+    });
+    const stOpt=document.createElement('option');
+    stOpt.value='standalone';stOpt.textContent='Standalone tasks only';
+    sel.appendChild(stOpt);
+  }
+  sel.value=spinProject;
+}
+
+function refreshWheel(){
+  currentSpinTasks=getAvailableTasks();
+  const empty=document.getElementById('wheel-empty');
+  const btn=document.getElementById('spin-btn');
+  if(currentSpinTasks.length===0){
+    if(empty)empty.style.display='block';
+    if(btn)btn.disabled=true;
+  } else {
+    if(empty)empty.style.display='none';
+    if(btn)btn.disabled=false;
+  }
+  drawWheel();
+}
+
+function toggleTaskManager(){
+  managerOpen=!managerOpen;
+  document.getElementById('task-manager').classList.toggle('show',managerOpen);
+  if(managerOpen)renderTaskManager();
+}
+
+function addProject(){
+  const input=document.getElementById('new-project-input');
+  const name=input.value.trim();if(!name)return;
+  const id='p_'+Date.now();
+  wheel[spinCat].projects.push({id,name,tasks:[]});
+  input.value='';
+  save('dr-wheel',wheel);
+  updateProjectDropdown();
+  renderTaskManager();
+}
 
 function renderTaskManager(){
   const list=document.getElementById('tm-list');
-  list.innerHTML=currentSpinTasks.map((t,i)=>`<div class="tm-row"><input type="text" value="${t}" onchange="currentSpinTasks[${i}]=this.value" /><button class="tm-del" onclick="removeSpinTask(${i})">×</button></div>`).join('');
+  const lbl=document.getElementById('tm-cat-label');
+  const catNames={clean:'🧹 Clean',admin:'📋 Admin',mental:'🧠 Mental Health',bonus:'💪 Bonus'};
+  if(lbl)lbl.textContent='Editing: '+catNames[spinCat];
+  const cat=wheel[spinCat];
+  let html='<div style="font-size:10px;color:var(--hint);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Standalone tasks</div>';
+  cat.standalone.forEach((t,i)=>{
+    html+=`<div class="tm-row">
+      <input type="text" value="${t.name}" onchange="wheel['${spinCat}'].standalone[${i}].name=this.value" style="flex:2"/>
+      <select class="cat-select" onchange="wheel['${spinCat}'].standalone[${i}].dur=parseInt(this.value)">
+        <option value="5"${t.dur===5?' selected':''}>5m</option>
+        <option value="10"${t.dur===10?' selected':''}>10m</option>
+        <option value="15"${t.dur===15?' selected':''}>15m</option>
+        <option value="20"${t.dur===20?' selected':''}>20m</option>
+      </select>
+      <select class="cat-select" onchange="wheel['${spinCat}'].standalone[${i}].repeat=this.value==='true';wheel['${spinCat}'].standalone[${i}].cooldown=this.value==='true'?wheel['${spinCat}'].standalone[${i}].cooldown:0">
+        <option value="true"${t.repeat?' selected':''}>Repeat</option>
+        <option value="false"${!t.repeat?' selected':''}>Once</option>
+      </select>
+      ${t.repeat?`<input class="time-in" type="number" value="${t.cooldown}" min="1" max="30" onchange="wheel['${spinCat}'].standalone[${i}].cooldown=parseInt(this.value)" style="width:45px;" title="Cooldown days"/>d`:''}
+      <button class="tm-del" onclick="removeStandaloneTask('${spinCat}',${i})">×</button>
+    </div>`;
+  });
+  html+=`<button class="tm-add" onclick="addStandaloneTask('${spinCat}')">+ add standalone task</button>`;
+  cat.projects.forEach((proj,pi)=>{
+    html+=`<div style="font-size:10px;color:var(--hint);letter-spacing:0.08em;text-transform:uppercase;margin:12px 0 8px;display:flex;align-items:center;justify-content:space-between;">
+      <span>Project: ${proj.name}</span>
+      <button class="tm-del" onclick="removeProject('${spinCat}',${pi})" style="font-size:12px;">× remove</button>
+    </div>`;
+    proj.tasks.forEach((t,ti)=>{
+      html+=`<div class="tm-row">
+        <input type="text" value="${t.name}" onchange="wheel['${spinCat}'].projects[${pi}].tasks[${ti}].name=this.value" style="flex:2"/>
+        <select class="cat-select" onchange="wheel['${spinCat}'].projects[${pi}].tasks[${ti}].dur=parseInt(this.value)">
+          <option value="5"${t.dur===5?' selected':''}>5m</option>
+          <option value="10"${t.dur===10?' selected':''}>10m</option>
+          <option value="15"${t.dur===15?' selected':''}>15m</option>
+          <option value="20"${t.dur===20?' selected':''}>20m</option>
+        </select>
+        <select class="cat-select" onchange="wheel['${spinCat}'].projects[${pi}].tasks[${ti}].repeat=this.value==='true'">
+          <option value="true"${t.repeat?' selected':''}>Repeat</option>
+          <option value="false"${!t.repeat?' selected':''}>Once</option>
+        </select>
+        ${t.repeat?`<input class="time-in" type="number" value="${t.cooldown}" min="1" max="30" onchange="wheel['${spinCat}'].projects[${pi}].tasks[${ti}].cooldown=parseInt(this.value)" style="width:45px;" title="Cooldown days"/>d`:''}
+        <button class="tm-del" onclick="removeProjectTask('${spinCat}',${pi},${ti})">×</button>
+      </div>`;
+    });
+    html+=`<button class="tm-add" onclick="addProjectTask('${spinCat}',${pi})">+ add task to ${proj.name}</button>`;
+  });
+  html+=`<button class="tm-save" onclick="saveWheel()">Save all changes</button>`;
+  list.innerHTML=html;
 }
 
-function addSpinTask(){currentSpinTasks.push('New task');renderTaskManager();drawWheel();}
-function removeSpinTask(i){currentSpinTasks.splice(i,1);renderTaskManager();drawWheel();}
-function saveSpinTasks(){spinTasks=[...currentSpinTasks];save('dr-spin-tasks',spinTasks);drawWheel();const btn=document.querySelector('.tm-save');btn.textContent='Saved!';setTimeout(()=>btn.textContent='Save',1500);}
+function addStandaloneTask(cat){
+  wheel[cat].standalone.push({id:'t_'+Date.now(),name:'New task',dur:10,repeat:true,cooldown:3});
+  renderTaskManager();drawWheel();
+}
+function removeStandaloneTask(cat,i){wheel[cat].standalone.splice(i,1);save('dr-wheel',wheel);renderTaskManager();refreshWheel();}
+function addProjectTask(cat,pi){
+  wheel[cat].projects[pi].tasks.push({id:'t_'+Date.now(),name:'New task',dur:10,repeat:true,cooldown:3});
+  renderTaskManager();
+}
+function removeProjectTask(cat,pi,ti){wheel[cat].projects[pi].tasks.splice(ti,1);save('dr-wheel',wheel);renderTaskManager();refreshWheel();}
+function removeProject(cat,pi){if(confirm('Remove this project and all its tasks?')){wheel[cat].projects.splice(pi,1);save('dr-wheel',wheel);updateProjectDropdown();renderTaskManager();refreshWheel();}}
+function saveWheel(){save('dr-wheel',wheel);refreshWheel();const btn=document.querySelector('.tm-save');if(btn){btn.textContent='Saved!';setTimeout(()=>btn.textContent='Save all changes',1500);}}
 
 /* COACH */
 function buildClaudeUrl(p){return 'https://claude.ai/new?q='+encodeURIComponent(p);}
@@ -802,12 +1042,12 @@ function renderInbox(){
 }
 
 function copyInbox(btn){
-  const text=`Let's sort my inbox\n\nI have ${inbox.length} items to sort:\n\n${inbox.map((i,n)=>`${n+1}. ${i.text}`).join('\n')}`;
+  const text=`Let's sort my inbox — paste this into our existing conversation, not a new chat.\n\nI have ${inbox.length} item${inbox.length===1?'':'s'} to sort:\n\n${inbox.map((i,n)=>`${n+1}. ${i.text}`).join('\n')}\n\nFor each one: shopping list, wheel category (Clean/Admin/Mental Health), daily routine, or idea to save? Also one-time or repeating, and estimated time.`;
   navigator.clipboard.writeText(text).then(()=>{
     const orig=btn.textContent.trim();
-    btn.textContent='Copied! Paste it into this Claude project.';
-    setTimeout(()=>btn.textContent=orig,3000);
-  }).catch(()=>prompt('Copy this and paste into Claude:',text));
+    btn.textContent='Copied! Paste into your existing Claude chat ↑';
+    setTimeout(()=>btn.textContent=orig,4000);
+  }).catch(()=>prompt('Copy this and paste into your existing Claude conversation:',text));
 }
 
 function handleInboxEnter(e){if(e.key==='Enter')addInboxItem();}
@@ -881,7 +1121,7 @@ function showScreen(name,btn){
   if(name==='today')renderToday();
   if(name==='stats')renderStats();
   if(name==='dogs')renderDogs();
-  if(name==='spin'){currentSpinTasks=[...spinTasks];drawWheel();}
+  if(name==='spin'){updateProjectDropdown();refreshWheel();}
   if(name==='inbox'){renderInbox();setTimeout(()=>{const inp=document.getElementById('inbox-input');if(inp){inp.onkeydown=handleInboxEnter;}},50);}
   if(name==='shop'){renderShop();setTimeout(()=>{const inp=document.getElementById('shop-input');if(inp){inp.onkeydown=(e)=>{if(e.key==='Enter')addShopItem();};}},50);}
   if(name==='coach')renderCoach();
@@ -893,13 +1133,16 @@ async function init(){
     state=load('dr-state',{});schedule=load('dr-schedule',DEFAULT_SCHEDULE);
     dogTasks=load('dr-dog-tasks',DEFAULT_DOG_TASKS);dogState=load('dr-dog-state',{});
     groomState=load('dr-groom-state',{});notifs=load('dr-notifs',DEFAULT_NOTIFS);
-    spinTasks=load('dr-spin-tasks',DEFAULT_SPIN_TASKS);
+    spinTasks=load('dr-spin-tasks',[]);
+    wheel=load('dr-wheel',DEFAULT_WHEEL);
+    wheelDone=load('dr-wheel-done',{});
     inbox=load('dr-inbox',[]);
     shopItems=load('dr-shop',[]);
   }
   renderToday();
   renderInbox();
-  setTimeout(drawWheel,100);
+  updateProjectDropdown();
+  refreshWheel();
   if(Notification.permission==='granted'){notifs.filter(n=>n.on).forEach(n=>{const[h,m]=n.time.split(':').map(Number);const now=new Date(),next=new Date();next.setHours(h,m,0,0);if(next<=now)next.setDate(next.getDate()+1);setTimeout(()=>new Notification('Daily Routine',{body:n.label}),next-now);});}
 }
 init();
