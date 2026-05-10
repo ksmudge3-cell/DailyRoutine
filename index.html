@@ -450,7 +450,7 @@ async function loadFromSupabase(){
     if(rows&&rows.length&&rows[0].data){
       const d=rows[0].data;
       if(d.state)state=d.state;
-      if(d.schedule)schedule=d.schedule;
+      if(d.schedule&&d.schedule.weekday&&d.schedule.weekday.length)schedule=d.schedule;
       if(d.dogTasks)dogTasks=d.dogTasks;
       if(d.dogState)dogState=d.dogState;
       if(d.groomState)groomState=d.groomState;
