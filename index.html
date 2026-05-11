@@ -206,6 +206,39 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 /* Confetti */
 .confetti-piece { position: fixed; width: 8px; height: 8px; top: -10px; border-radius: 2px; animation: confetti-fall linear forwards; pointer-events: none; z-index: 9999; }
 @keyframes confetti-fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+/* Rewards */
+.points-hero { background: linear-gradient(135deg, rgba(45,212,160,0.15), rgba(167,139,250,0.1)); border: 0.5px solid rgba(45,212,160,0.25); border-radius: var(--radius); padding: 24px 20px; margin-bottom: 16px; text-align: center; }
+.points-total { font-family: var(--serif); font-size: 56px; font-weight: 300; color: var(--teal); line-height: 1; }
+.points-label { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+.points-breakdown { display: flex; gap: 12px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+.pts-pill { font-size: 11px; color: var(--muted); background: var(--surface2); border-radius: 99px; padding: 4px 12px; }
+.pts-pill span { color: var(--teal); }
+.reward-tier { margin-bottom: 20px; }
+.tier-label { font-size: 10px; letter-spacing: 0.1em; color: var(--hint); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tier-label::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
+.reward-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; transition: all 0.12s; }
+.reward-item.affordable { border-color: rgba(45,212,160,0.3); }
+.reward-item.redeemed { opacity: 0.45; }
+.reward-emoji { font-size: 22px; flex-shrink: 0; width: 36px; text-align: center; }
+.reward-info { flex: 1; }
+.reward-name { font-size: 13px; color: var(--text); }
+.reward-cost { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.reward-cost.can-afford { color: var(--teal); }
+.redeem-btn { font-size: 11px; padding: 6px 14px; border-radius: 99px; border: 0.5px solid var(--teal); background: none; color: var(--teal); font-family: var(--mono); cursor: pointer; white-space: nowrap; }
+.redeem-btn:disabled { border-color: var(--border); color: var(--hint); cursor: not-allowed; }
+.redeem-btn.redeemed-btn { border-color: var(--border); color: var(--hint); }
+.pts-earned-toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--teal); color: #0e0e0f; font-family: var(--mono); font-size: 13px; font-weight: 500; padding: 10px 20px; border-radius: 99px; z-index: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+.pts-earned-toast.show { opacity: 1; }
+.pts-badge { display: inline-flex; align-items: center; gap: 4px; background: var(--teal-dim); border: 0.5px solid rgba(45,212,160,0.25); border-radius: 99px; padding: 3px 10px; font-size: 11px; color: var(--teal); font-family: var(--mono); }
+.reward-history { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.reward-history h3 { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.history-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 0.5px solid var(--border); font-size: 12px; }
+.history-row:last-child { border-bottom: none; }
+.history-name { color: var(--text); }
+.history-meta { color: var(--hint); font-size: 10px; }
+.spin-reward-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 14px; background: var(--amber-dim); border: 0.5px solid rgba(245,166,35,0.3); border-radius: var(--radius-sm); font-family: var(--mono); font-size: 13px; color: var(--amber); cursor: pointer; margin-bottom: 16px; }
+.spin-reward-btn:hover { background: rgba(245,166,35,0.2); }
+.daily-pts-wrap { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -225,6 +258,7 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
       <div class="big" id="prog-fraction">0 / 0</div>
       <div class="small">tasks completed today</div>
       <div class="streak-row" id="streak-row">&#9679; 0 day streak</div>
+      <div class="daily-pts-wrap"><span class="pts-badge" id="today-pts-badge">⭐ 0 pts</span></div>
     </div>
   </div>
   <div id="congrats-banner" class="congrats-banner" style="display:none">&#10003; Day complete — Edna and Kronk are proud of you!</div>
@@ -341,6 +375,12 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
   </div>
 </div>
 
+<!-- REWARDS -->
+<div class="screen" id="screen-rewards">
+  <div class="page-header"><h1>Rewards</h1><p>EARN POINTS · TREAT YOURSELF 🐾</p></div>
+  <div id="rewards-content"></div>
+</div>
+
 <!-- COACH -->
 <div class="screen" id="screen-coach">
   <div class="page-header"><h1>Coach</h1><p>STATS + CHECK-IN + PROMPTS</p></div>
@@ -364,12 +404,15 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
   </div>
 </div>
 
+<!-- Points toast -->
+<div class="pts-earned-toast" id="pts-toast"></div>
+
 <nav class="bottom-nav">
   <button class="nav-btn active" onclick="showScreen('today',this)"><span class="nav-icon">&#9711;</span>today</button>
   <button class="nav-btn" onclick="showScreen('dogs',this)"><span class="nav-icon">&#9829;</span>dogs</button>
   <button class="nav-btn" onclick="showScreen('spin',this)"><span class="nav-icon">&#9670;</span>spin</button>
   <button class="nav-btn" id="inbox-nav-btn" onclick="showScreen('inbox',this)"><span class="nav-icon">&#9632;</span>inbox</button>
-  <button class="nav-btn" onclick="showScreen('shop',this)"><span class="nav-icon">&#9635;</span>shop</button>
+  <button class="nav-btn" onclick="showScreen('rewards',this)"><span class="nav-icon">&#9733;</span>rewards</button>
   <button class="nav-btn" onclick="showScreen('coach',this)"><span class="nav-icon">&#9651;</span>coach</button>
 </nav>
 
@@ -380,7 +423,7 @@ const SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const CIRC=175.9;
 
 /* ─── DEFAULT DATA ──────────────────────────────────────────────────────── */
-const SUNDAY_PILL_TASK={id:'sunday-pillbox',name:'Fill weekly pill box',time:'Morning'};
+const SUNDAY_PILL_TASK={id:'sunday-pillbox',name:'Fill weekly pill box',time:'Evening'};
 
 const DEFAULT_SCHEDULE={
   weekday:[
@@ -467,10 +510,8 @@ const DEFAULT_DOG_TASKS={
     {id:'g-k-nails',label:'Kronk — nails',days:21},
   ],
   prevention:[
-    {id:'prev-e-flea',label:'Edna — flea/tick prevention',dayOfMonth:15},
-    {id:'prev-e-heart',label:'Edna — heartworm prevention',dayOfMonth:15},
-    {id:'prev-k-flea',label:'Kronk — flea/tick prevention',dayOfMonth:15},
-    {id:'prev-k-heart',label:'Kronk — heartworm prevention',dayOfMonth:15},
+    {id:'prev-e-monthly',label:'Edna — monthly prevention',dayOfMonth:15},
+    {id:'prev-k-monthly',label:'Kronk — monthly prevention',dayOfMonth:15},
   ]
 };
 
@@ -548,7 +589,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -560,13 +601,34 @@ async function loadFromSupabase(){
     if(rows&&rows.length&&rows[0].data){
       const d=rows[0].data;
       if(d.state)state=d.state;
-      if(d.schedule&&d.schedule.weekday&&d.schedule.weekday.length)schedule=d.schedule;
+      if(d.schedule&&d.schedule.weekday&&d.schedule.weekday.length){
+        schedule=d.schedule;
+        // MIGRATION: ensure meds tasks exist
+        const wdMorn=schedule.weekday.find(s=>s.section==='Morning');
+        const wdEve=schedule.weekday.find(s=>s.section==='Evening');
+        const weMorn=schedule.weekend.find(s=>s.section==='Morning');
+        const weEve=schedule.weekend.find(s=>s.section==='Evening');
+        if(wdMorn&&!wdMorn.tasks.find(t=>t.id==='meds-am'))wdMorn.tasks.unshift({id:'meds-am',name:'Morning medications',time:'5:30 AM'});
+        if(wdEve&&!wdEve.tasks.find(t=>t.id==='meds-pm')){const si=wdEve.tasks.findIndex(t=>t.id==='sleep');si>-1?wdEve.tasks.splice(si,0,{id:'meds-pm',name:'Evening medications',time:'9:10 PM'}):wdEve.tasks.push({id:'meds-pm',name:'Evening medications',time:'9:10 PM'});}
+        if(weMorn&&!weMorn.tasks.find(t=>t.id==='meds-am'))weMorn.tasks.unshift({id:'meds-am',name:'Morning medications',time:'Morning'});
+        if(weEve&&!weEve.tasks.find(t=>t.id==='meds-pm')){const si=weEve.tasks.findIndex(t=>t.id==='sleep');si>-1?weEve.tasks.splice(si,0,{id:'meds-pm',name:'Evening medications',time:'9:10 PM'}):weEve.tasks.push({id:'meds-pm',name:'Evening medications',time:'9:10 PM'});}
+      }
       if(d.dogTasks){
         dogTasks=d.dogTasks;
         if(!dogTasks.shared)dogTasks.shared=DEFAULT_DOG_TASKS.shared;
         if(!dogTasks.prevention)dogTasks.prevention=DEFAULT_DOG_TASKS.prevention;
         if(!dogTasks.mental)dogTasks.mental=DEFAULT_DOG_TASKS.mental;
+        // MIGRATION: remove mental/snuggle tasks from core shared morning/evening
+        const mentalIds=new Set((dogTasks.mental||[]).map(t=>t.id));
+        if(dogTasks.shared.morning)dogTasks.shared.morning=dogTasks.shared.morning.filter(t=>!mentalIds.has(t.id));
+        if(dogTasks.shared.evening)dogTasks.shared.evening=dogTasks.shared.evening.filter(t=>!mentalIds.has(t.id));
+        // MIGRATION: collapse prevention to 2 combined entries
+        const hasCombined=dogTasks.prevention.find(p=>p.id==='prev-e-monthly'||p.id==='prev-e-flea');
+        if(dogTasks.prevention.length>2||!hasCombined){
+          dogTasks.prevention=DEFAULT_DOG_TASKS.prevention;
+        }
       }
+      if(d.rewardsState)rewardsState={...DEFAULT_REWARDS_STATE,...d.rewardsState};
       if(d.dogState)dogState=d.dogState;
       if(d.groomState)groomState=d.groomState;
       if(d.prevState)prevState=d.prevState;
@@ -581,6 +643,7 @@ async function loadFromSupabase(){
       if(d.inbox)inbox=d.inbox;
       if(d.shopItems)shopItems=d.shopItems;
       ['state','schedule','dogTasks','dogState','groomState','prevState','notifs','wheel','wheelDone','wheelSkips','wheelPinned','inbox','shopItems'].forEach(k=>saveLocal('dr-'+k.replace(/([A-Z])/g,'-$1').toLowerCase(),eval(k)));
+      saveLocal('dr-rewards',rewardsState);
       return true;
     }
   }catch(e){console.warn('Load failed',e);}
@@ -635,9 +698,13 @@ function getBaseSchedule(idx){return isWeekend(idx)?schedule.weekend:schedule.we
 function getScheduleFor(idx){
   const base=JSON.parse(JSON.stringify(getBaseSchedule(idx)));
   if(isSunday(idx)){
-    const morn=base.find(s=>s.section==='Morning');
-    if(morn&&!morn.tasks.find(t=>t.id===SUNDAY_PILL_TASK.id)){
-      morn.tasks.unshift({...SUNDAY_PILL_TASK});
+    // Inject pill box into Evening section
+    const eve=base.find(s=>s.section==='Evening');
+    if(eve&&!eve.tasks.find(t=>t.id===SUNDAY_PILL_TASK.id)){
+      // Insert before "Lights out" if present, otherwise push
+      const lightsIdx=eve.tasks.findIndex(t=>t.id==='sleep');
+      if(lightsIdx>-1)eve.tasks.splice(lightsIdx,0,{...SUNDAY_PILL_TASK});
+      else eve.tasks.push({...SUNDAY_PILL_TASK});
     }
   }
   return base;
@@ -717,6 +784,7 @@ function toggleTask(dayIdx,taskId){
   if(state[k][taskId])state[k][taskId+'_ts']=Date.now();
   else delete state[k][taskId+'_ts'];
   save('dr-state',state);
+  maybeAwardTaskPoints(taskId,dayIdx);
   renderToday();
 }
 
@@ -855,6 +923,8 @@ function renderToday(){
   document.getElementById('ring-pct').textContent=pct+'%';
   document.getElementById('prog-fraction').textContent=done+' / '+total;
   document.getElementById('streak-row').textContent='● '+calcStreak()+' day streak';
+  const ptsBadge=document.getElementById('today-pts-badge');
+  if(ptsBadge)ptsBadge.textContent='⭐ '+getPoints()+' pts';
   const isComplete=pct===100&&total>0;
   document.getElementById('congrats-banner').style.display=isComplete?'block':'none';
   if(isComplete&&!wasComplete)fireConfetti();
@@ -924,6 +994,10 @@ function toggleDogTask(taskId){
   if(!dogState[k])dogState[k]={};
   dogState[k][taskId]=!dogState[k][taskId];
   save('dr-dog-state',dogState);
+  // Award points: mental health tasks get bonus pts, core care gets dog pts
+  const isMental=(dogTasks.mental||[]).find(t=>t.id===taskId);
+  if(isMental)maybeAwardBonusDogPoints(taskId);
+  else maybeAwardDogPoints(taskId);
   renderDogs();
   if(selectedDay===new Date().getDay())renderToday();
 }
@@ -1150,17 +1224,19 @@ function markSpinDone(){
   const k=todayStr();if(!state[k])state[k]={};
   state[k]['spin_'+currentSpinTask.id]=true;
   save('dr-state',state);
+  maybeAwardSpinPoints();
   hideResult();refreshWheel();renderAvoidance();
   if(selectedDay===new Date().getDay())renderBonusToday(selectedDay);
 }
 
 function markDoneOutsideSpin(taskId){
   const task=findWheelTask(taskId);
-  if(task&&task.cooldown!==0)wheelDone[taskId]=Date.now();
-  save('dr-wheel-done',wheelDone);
+  // cooldown=0 means always available — never store wheelDone for it
+  if(task&&task.cooldown!==0){wheelDone[taskId]=Date.now();save('dr-wheel-done',wheelDone);}
   delete wheelSkips[taskId];save('dr-wheel-skips',wheelSkips);
   const k=todayStr();if(!state[k])state[k]={};
   state[k]['spin_'+taskId]=true;save('dr-state',state);
+  maybeAwardSpinPoints();
   refreshWheel();renderAvoidance();renderTaskManager();
   if(selectedDay===new Date().getDay())renderBonusToday(selectedDay);
 }
@@ -1484,7 +1560,247 @@ function renderShop(){
     </div>`).join('');
 }
 
-/* ─── SCREEN NAV ────────────────────────────────────────────────────────── */
+/* ─── REWARDS DATA ───────────────────────────────────────────────────────── */
+const DEFAULT_REWARDS=[
+  // Small — 25–50 pts
+  {id:'r-snack',name:'Favorite snack',emoji:'🍫',cost:25,tier:'small',category:'you'},
+  {id:'r-gaming',name:'Extra hour of guilt-free gaming/TV',emoji:'🎮',cost:25,tier:'small',category:'you'},
+  {id:'r-dessert',name:'Order dessert without thinking about it',emoji:'🍰',cost:25,tier:'small',category:'you'},
+  {id:'r-coffee',name:'Fancy coffee',emoji:'☕',cost:30,tier:'small',category:'you'},
+  {id:'r-puppuccino',name:'Puppuccino run for Edna & Kronk',emoji:'🐾',cost:40,tier:'small',category:'dogs'},
+  // Medium — 100–150 pts
+  {id:'r-movie',name:'Movie night with special snacks',emoji:'🎬',cost:100,tier:'medium',category:'you'},
+  {id:'r-book',name:'A book or game you\'ve been eyeing',emoji:'📚',cost:100,tier:'medium',category:'you'},
+  {id:'r-thai',name:'Thai food night',emoji:'🍜',cost:120,tier:'medium',category:'you'},
+  {id:'r-restaurant',name:'Try a new restaurant',emoji:'🍽️',cost:120,tier:'medium',category:'you'},
+  {id:'r-dogtoy',name:'New toy for Edna or Kronk',emoji:'🧸',cost:100,tier:'medium',category:'dogs'},
+  {id:'r-collar',name:'New collar or bandana',emoji:'🎀',cost:100,tier:'medium',category:'dogs'},
+  {id:'r-barkbox',name:'Extra BarkBox toy for Kronk',emoji:'📦',cost:150,tier:'medium',category:'dogs'},
+  // Large — 250–300 pts
+  {id:'r-gear',name:'New workout gear',emoji:'💪',cost:250,tier:'large',category:'you'},
+  {id:'r-icecream',name:'Ice cream for the three of you',emoji:'🍦',cost:250,tier:'large',category:'dogs'},
+  {id:'r-patio',name:'Dog-friendly restaurant patio trip',emoji:'🌿',cost:250,tier:'large',category:'dogs'},
+  {id:'r-greenway',name:'Greenway adventure on a new trail',emoji:'🥾',cost:250,tier:'large',category:'dogs'},
+  {id:'r-playdate',name:'Doggy playdate',emoji:'🐕',cost:300,tier:'large',category:'dogs'},
+  // Epic — 500+ pts
+  {id:'r-daytrip',name:'Day trip somewhere nearby',emoji:'🗺️',cost:500,tier:'epic',category:'you'},
+  {id:'r-big',name:'Something big — you decide',emoji:'⭐',cost:750,tier:'epic',category:'you'},
+];
+
+// Points values
+const PTS={
+  task:2,           // per routine task completed
+  dogTask:3,        // per dog care task
+  spinTask:5,       // per spin wheel task done
+  bonusTask:3,      // per dog mental health task
+  streak7:20,       // 7-day streak bonus (awarded once per week)
+  streak30:100,     // 30-day streak bonus
+  dayComplete:10,   // 100% day bonus
+  weekComplete:50,  // all 7 days 80%+ bonus
+};
+
+const DEFAULT_REWARDS_STATE={
+  totalEarned:0,    // lifetime points earned
+  totalSpent:0,     // lifetime points spent
+  redeemed:[],      // [{rewardId, redeemedAt, cost}]
+  log:[],           // [{type, pts, label, ts}] — last 30 entries
+  lastStreakBonus7:null,   // date string of last 7-day bonus
+  lastStreakBonus30:null,  // date string of last 30-day bonus
+  lastWeekBonus:null,      // week string of last week bonus
+  lastDayBonuses:{},       // {dateStr: true} — 100% day bonuses awarded
+};
+
+let rewardsState=load('dr-rewards',DEFAULT_REWARDS_STATE);
+if(!rewardsState.log)rewardsState.log=[];
+if(!rewardsState.redeemed)rewardsState.redeemed=[];
+if(!rewardsState.lastDayBonuses)rewardsState.lastDayBonuses={};
+
+function getPoints(){return(rewardsState.totalEarned||0)-(rewardsState.totalSpent||0);}
+
+function awardPoints(pts,label,type){
+  rewardsState.totalEarned=(rewardsState.totalEarned||0)+pts;
+  rewardsState.log.unshift({type,pts,label,ts:Date.now()});
+  if(rewardsState.log.length>50)rewardsState.log=rewardsState.log.slice(0,50);
+  save('dr-rewards',rewardsState);
+  showPtsToast('+'+pts+' pts — '+label);
+  // Re-render points badge on today if visible
+  const badge=document.getElementById('today-pts-badge');
+  if(badge)badge.textContent='⭐ '+getPoints()+' pts';
+}
+
+function showPtsToast(msg){
+  const toast=document.getElementById('pts-toast');if(!toast)return;
+  toast.textContent=msg;toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'),2500);
+}
+
+// Called whenever a routine task is toggled ON
+function maybeAwardTaskPoints(taskId,dayIdx){
+  const k=dayKey(dayIdx);
+  // Award only when checking ON (not unchecking)
+  if(!(state[k]&&state[k][taskId]))return;
+  awardPoints(PTS.task,'Routine task',taskId);
+  // Check if day is now complete → award day bonus (once per day)
+  const dateStr=k;
+  if(!rewardsState.lastDayBonuses[dateStr]){
+    const pct=dayPct(dayIdx);
+    if(pct===100){
+      rewardsState.lastDayBonuses[dateStr]=true;
+      awardPoints(PTS.dayComplete,'100% day complete!','day-complete');
+    }
+  }
+  checkStreakBonuses();
+}
+
+function maybeAwardDogPoints(taskId){
+  const k=todayStr();
+  if(!(dogState[k]&&dogState[k][taskId]))return;
+  awardPoints(PTS.dogTask,'Dog care task','dog-task');
+}
+
+function maybeAwardSpinPoints(){
+  awardPoints(PTS.spinTask,'Spin wheel task done','spin-task');
+}
+
+function maybeAwardBonusDogPoints(taskId){
+  const k=todayStr();
+  if(!(dogState[k]&&dogState[k][taskId]))return;
+  awardPoints(PTS.bonusTask,'Dog mental health moment','bonus-dog');
+}
+
+function checkStreakBonuses(){
+  const streak=calcStreak();
+  const today=todayStr();
+  // 7-day streak bonus — once per week
+  if(streak>=7&&rewardsState.lastStreakBonus7!==today){
+    const lastDate=rewardsState.lastStreakBonus7?new Date(rewardsState.lastStreakBonus7):null;
+    const now=new Date();
+    if(!lastDate||(now-lastDate)>6*86400000){
+      rewardsState.lastStreakBonus7=today;
+      awardPoints(PTS.streak7,'7-day streak! 🔥','streak-7');
+    }
+  }
+  // 30-day streak bonus — once per month
+  if(streak>=30&&rewardsState.lastStreakBonus30!==today){
+    const lastDate=rewardsState.lastStreakBonus30?new Date(rewardsState.lastStreakBonus30):null;
+    const now=new Date();
+    if(!lastDate||(now-lastDate)>29*86400000){
+      rewardsState.lastStreakBonus30=today;
+      awardPoints(PTS.streak30,'30-day streak! 🏆','streak-30');
+    }
+  }
+}
+
+function redeemReward(rewardId){
+  const reward=DEFAULT_REWARDS.find(r=>r.id===rewardId);if(!reward)return;
+  const pts=getPoints();
+  if(pts<reward.cost){showPtsToast('Not enough points yet!');return;}
+  if(!confirm('Redeem "'+reward.name+'" for '+reward.cost+' pts?'))return;
+  rewardsState.totalSpent=(rewardsState.totalSpent||0)+reward.cost;
+  rewardsState.redeemed.push({rewardId,redeemedAt:Date.now(),cost:reward.cost});
+  rewardsState.log.unshift({type:'redeem',pts:-reward.cost,label:'Redeemed: '+reward.name,ts:Date.now()});
+  save('dr-rewards',rewardsState);
+  fireConfetti();
+  showPtsToast('🎉 Enjoy your '+reward.name+'!');
+  renderRewards();
+}
+
+function renderRewards(){
+  const wrap=document.getElementById('rewards-content');if(!wrap)return;
+  const pts=getPoints();
+  const earned=rewardsState.totalEarned||0;
+  const spent=rewardsState.totalSpent||0;
+
+  // Points breakdown pills
+  const todayKey=todayStr();
+  const todayLog=rewardsState.log.filter(e=>{
+    const d=new Date(e.ts);
+    return`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`===todayKey;
+  });
+  const todayPts=todayLog.reduce((a,e)=>a+(e.pts>0?e.pts:0),0);
+  const streak=calcStreak();
+
+  // Tiers
+  const tiers=[
+    {key:'small',label:'⭐ Small (25–50 pts)'},
+    {key:'medium',label:'⭐⭐ Medium (100–150 pts)'},
+    {key:'large',label:'⭐⭐⭐ Large (250–300 pts)'},
+    {key:'epic',label:'⭐⭐⭐⭐ Epic (500+ pts)'},
+  ];
+
+  const tierHtml=tiers.map(tier=>{
+    const rewards=DEFAULT_REWARDS.filter(r=>r.tier===tier.key);
+    const items=rewards.map(r=>{
+      const canAfford=pts>=r.cost;
+      const timesRedeemed=rewardsState.redeemed.filter(x=>x.rewardId===r.id).length;
+      return`<div class="reward-item${canAfford?' affordable':''}">
+        <div class="reward-emoji">${r.emoji}</div>
+        <div class="reward-info">
+          <div class="reward-name">${r.name}</div>
+          <div class="reward-cost${canAfford?' can-afford':''}">${r.cost} pts${timesRedeemed>0?' · redeemed '+timesRedeemed+'×':''}</div>
+        </div>
+        <button class="redeem-btn" onclick="redeemReward('${r.id}')" ${!canAfford?'disabled':''}>
+          ${canAfford?'Redeem':''+r.cost+' pts'}
+        </button>
+      </div>`;
+    }).join('');
+    return`<div class="reward-tier"><div class="tier-label">${tier.label}</div>${items}</div>`;
+  }).join('');
+
+  // Recent history
+  const recentLog=rewardsState.log.slice(0,8);
+  const historyHtml=recentLog.length?recentLog.map(e=>{
+    const d=new Date(e.ts);
+    const dateStr=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const timeStr=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    return`<div class="history-row">
+      <span class="history-name">${e.label}</span>
+      <span class="history-meta" style="color:${e.pts>0?'var(--teal)':'var(--red)'};">${e.pts>0?'+':''}${e.pts} pts <span style="color:var(--hint);">· ${dateStr}</span></span>
+    </div>`;
+  }).join(''):'<div style="font-size:12px;color:var(--hint);text-align:center;padding:12px;">No activity yet — start completing tasks!</div>';
+
+  // How to earn section
+  const earnHtml=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
+      ${[
+        ['Routine task','2 pts','✓'],
+        ['Dog care task','3 pts','🐾'],
+        ['Spin task done','5 pts','🔥'],
+        ['Dog mental moment','3 pts','💜'],
+        ['100% day','10 pts','⭐'],
+        ['7-day streak','20 pts','🔥'],
+        ['30-day streak','100 pts','🏆'],
+      ].map(([label,pts,icon])=>`<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:16px;">${icon}</span>
+        <div><div style="font-size:11px;color:var(--text);">${label}</div><div style="font-size:12px;color:var(--teal);font-weight:500;">${pts}</div></div>
+      </div>`).join('')}
+    </div>`;
+
+  wrap.innerHTML=`
+    <div class="points-hero">
+      <div class="points-total">${pts}</div>
+      <div class="points-label">points available</div>
+      <div class="points-breakdown">
+        <span class="pts-pill"><span>${earned}</span> earned</span>
+        <span class="pts-pill"><span>${spent}</span> spent</span>
+        <span class="pts-pill"><span>+${todayPts}</span> today</span>
+        <span class="pts-pill"><span>${streak}</span> day streak</span>
+      </div>
+    </div>
+    <div class="section-label" style="margin-top:0;">How to earn</div>
+    ${earnHtml}
+    <div class="section-label">Rewards</div>
+    ${tierHtml}
+    <div class="reward-history">
+      <h3>Recent activity</h3>
+      ${historyHtml}
+    </div>`;
+}
+
+/* ─── PATCH: award points when tasks are toggled ─────────────────────────── */
+// We'll hook into toggleTask, toggleDogTask, markSpinDone, toggleDogTask for mental
+
+/* ─── SCREEN NAV (updated) ───────────────────────────────────────────────── */
 function showScreen(name,btn){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
@@ -1495,7 +1811,7 @@ function showScreen(name,btn){
   if(name==='dogs')renderDogs();
   if(name==='spin'){updateProjectDropdown();refreshWheel();renderAvoidance();renderTaskManager();}
   if(name==='inbox'){renderInbox();setTimeout(()=>{const i=document.getElementById('inbox-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addInboxItem();};},50);}
-  if(name==='shop'){renderShop();setTimeout(()=>{const i=document.getElementById('shop-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addShopItem();};},50);}
+  if(name==='rewards')renderRewards();
   if(name==='coach')renderCoach();
 }
 
@@ -1505,7 +1821,7 @@ async function init(){
 
   const last=loadLocal('dr-last-screen','today');
   if(last&&last!=='today'){
-    const map={today:0,dogs:1,spin:2,inbox:3,shop:4,coach:5};
+    const map={today:0,dogs:1,spin:2,inbox:3,rewards:4,coach:5};
     const idx=map[last];
     if(idx!==undefined)showScreen(last,document.querySelectorAll('.nav-btn')[idx]);
   }
@@ -1527,12 +1843,13 @@ async function init(){
     inbox=load('dr-inbox',[]);
     shopItems=load('dr-shop',[]);
 
+    rewardsState=load('dr-rewards',DEFAULT_REWARDS_STATE);
     const cur=loadLocal('dr-last-screen','today');
     if(cur==='today')renderToday();
     else if(cur==='dogs')renderDogs();
     else if(cur==='spin'){refreshWheel();renderTaskManager();renderAvoidance();}
     else if(cur==='inbox')renderInbox();
-    else if(cur==='shop')renderShop();
+    else if(cur==='rewards')renderRewards();
     else if(cur==='coach')renderCoach();
   }
 
