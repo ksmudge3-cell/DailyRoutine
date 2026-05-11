@@ -1363,11 +1363,20 @@ function getPrompt(type){
   return({checkin:ctx+'Quick coaching check-in based on where I am today. Direct and practical.',stuck:ctx+"I'm struggling to stay consistent. What's the most likely reason and one fix?",morning:ctx+'Quick motivational push for my morning routine. Keep it short.',evening:ctx+'Help me reflect on today and set up tomorrow.',habit:ctx+'Which habit should I nail first and how do I make it automatic?'})[type]||ctx+'Coach me.';
 }
 
+// Stored outside DOM so special chars never corrupt innerHTML
+let _coachSummary='', _coachFullCtx='';
+function copyCoachSummary(btn){copyCb(btn,_coachSummary);}
+function copyCoachFullCtx(btn){copyCb(btn,_coachFullCtx);}
+
 function renderCoach(){
   const{ti,done,pending,dogDone,pct,streak,bonusCount}=getCoachCtx();
   const doneHtml=done.length?done.map(t=>`<span class="ctx-done">✓ ${t}</span>`).join('<br>'):'<span style="color:var(--hint)">Nothing yet</span>';
   const pendingHtml=pending.slice(0,4).map(t=>`<span class="ctx-pending">○ ${t}</span>`).join('<br>')+(pending.length>4?`<br><span style="color:var(--hint)">+${pending.length-4} more</span>`:'');
-  const summary=`Daily check-in — ${DAYS[ti]} — ${pct}% complete — ${streak} day streak\nDone: ${done.join(', ')||'nothing yet'}\nPending: ${pending.join(', ')||'all done'}\nDog care: ${dogDone.join(', ')||'none yet'}\nBonus tasks: ${bonusCount}`;
+
+  // Store in module-level vars — never embedded in HTML strings
+  _coachSummary=`Daily check-in — ${DAYS[ti]} — ${pct}% complete — ${streak} day streak\nDone: ${done.join(', ')||'nothing yet'}\nPending: ${pending.join(', ')||'all done'}\nDog care: ${dogDone.join(', ')||'none yet'}\nBonus tasks: ${bonusCount}`;
+  _coachFullCtx=getFullCtxText();
+
   let wt=0,wd=0;
   for(let i=0;i<7;i++){
     const s=getScheduleFor(i),ids=s.reduce((a,sec)=>a.concat(sec.tasks.map(t=>t.id)),[]),idSet=new Set(ids);
@@ -1375,7 +1384,15 @@ function renderCoach(){
   }
   const wp=wt?Math.round(wd/wt*100):0;
   const bars=SHORT.map((d,i)=>{const p=dayPct(i),isT=i===ti;return`<div class="week-bar-wrap${isT?' today':''}"><div class="week-bar-bg"><div class="week-bar-fill" style="height:${Math.max(p,2)}%"></div></div><div class="week-bar-label">${d}</div></div>`;}).join('');
-  const fullCtxEsc=getFullCtxText().replace(/\\/g,'\\\\').replace(/`/g,"'");
+
+  // Build quick-prompt URLs safely
+  const qpLinks=[
+    ['○ Daily check-in','checkin'],
+    ['○ Morning motivation push','morning'],
+    ['○ I\'m struggling to stay consistent','stuck'],
+    ['○ Evening reflection + tomorrow prep','evening'],
+    ['○ Which habit should I focus on first?','habit'],
+  ].map(([label,type])=>`<a class="qp-btn" href="${buildUrl(getPrompt(type))}" target="_blank">${label}</a>`).join('');
 
   document.getElementById('coach-content').innerHTML=`
     <div class="stats-grid" style="margin-bottom:16px;">
@@ -1394,20 +1411,14 @@ function renderCoach(){
         ${bonusCount?`<br><span style="color:var(--amber);">✨ ${bonusCount} bonus tasks done</span>`:''}
       </div>
       <p>Copy your check-in and paste it into this Claude project.</p>
-      <button class="coach-btn" onclick="copyCb(this,${JSON.stringify(summary)})">Copy check-in summary</button>
-      <button class="coach-btn-ghost" onclick="copyCb(this,\`${fullCtxEsc}\`)">Copy full app context</button>
+      <button class="coach-btn" onclick="copyCoachSummary(this)">Copy check-in summary</button>
+      <button class="coach-btn-ghost" onclick="copyCoachFullCtx(this)">Copy full app context</button>
       <a class="coach-btn-ghost" href="https://claude.ai" target="_blank">Open Claude project ↗</a>
     </div>
     <div class="coach-card">
       <h2>Quick prompts</h2>
       <p>Open Claude with your context pre-loaded.</p>
-      <div class="quick-prompts">
-        <a class="qp-btn" href="${buildUrl(getPrompt('checkin'))}" target="_blank">○ Daily check-in</a>
-        <a class="qp-btn" href="${buildUrl(getPrompt('morning'))}" target="_blank">○ Morning motivation push</a>
-        <a class="qp-btn" href="${buildUrl(getPrompt('stuck'))}" target="_blank">○ I'm struggling to stay consistent</a>
-        <a class="qp-btn" href="${buildUrl(getPrompt('evening'))}" target="_blank">○ Evening reflection + tomorrow prep</a>
-        <a class="qp-btn" href="${buildUrl(getPrompt('habit'))}" target="_blank">○ Which habit should I focus on first?</a>
-      </div>
+      <div class="quick-prompts">${qpLinks}</div>
     </div>`;
 }
 
