@@ -964,16 +964,16 @@ function getBonusData(){
 }
 
 function deductPoints(pts,label,type){
-  // Deduct from totalEarned — can't go below 0
+  // Add to totalSpent (not reduce totalEarned) so today's earned total stays accurate
   const current=getPoints();
   const deduct=Math.min(pts,current);
-  rewardsState.totalEarned=Math.max(0,(rewardsState.totalEarned||0)-deduct);
+  rewardsState.totalSpent=(rewardsState.totalSpent||0)+deduct;
   rewardsState.log.unshift({type,pts:-deduct,label,ts:Date.now()});
   if(rewardsState.log.length>50)rewardsState.log=rewardsState.log.slice(0,50);
   save('dr-rewards',rewardsState);
-  if(deduct>0)showPtsToast('-'+deduct+' pts — '+label);
+  if(deduct>0)showPtsToast('-'+deduct+' 🪙 — '+label);
   const badge=document.getElementById('today-pts-badge');
-  if(badge)badge.textContent='⭐ '+getPoints()+' pts';
+  if(badge)badge.textContent='🪙 '+getPoints()+' coins';
 }
 
 function undoBonusSpin(taskId){
