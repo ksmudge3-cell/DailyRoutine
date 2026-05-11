@@ -10,16 +10,19 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0e0e0f; --surface: #18181b; --surface2: #242428;
-  --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
-  --text: #f0ede8; --muted: #888884; --hint: #555552;
-  --teal: #2dd4a0; --teal-dim: rgba(45,212,160,0.12);
-  --amber: #f5a623; --amber-dim: rgba(245,166,35,0.12);
-  --coral: #f87171; --coral-dim: rgba(248,113,113,0.12);
-  --purple: #a78bfa; --purple-dim: rgba(167,139,250,0.12);
+  --bg: #0a0a0c; --surface: #111116; --surface2: #1a1a22;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+  --text: #e8e4dc; --muted: #807c74; --hint: #4a4644;
+  --teal: #2dd4a0; --teal-dim: rgba(45,212,160,0.10);
+  --amber: #f5a623; --amber-dim: rgba(245,166,35,0.10);
+  --coral: #f87171; --coral-dim: rgba(248,113,113,0.10);
+  --purple: #a78bfa; --purple-dim: rgba(167,139,250,0.10);
   --red: #ff5c5c; --fire: #ff6b35;
+  --gold: #fbbf24; --gold-dim: rgba(251,191,36,0.10);
   --mono: 'DM Mono', monospace; --serif: 'Fraunces', serif;
-  --radius: 12px; --radius-sm: 8px;
+  --radius: 10px; --radius-sm: 6px;
+  /* DCC scanline effect */
+  --scanline: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { background: var(--bg); }
@@ -206,6 +209,91 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 /* Confetti */
 .confetti-piece { position: fixed; width: 8px; height: 8px; top: -10px; border-radius: 2px; animation: confetti-fall linear forwards; pointer-events: none; z-index: 9999; }
 @keyframes confetti-fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+/* ── DCC SYSTEM MESSAGES ──────────────────────────────── */
+.system-msg { background: var(--surface2); border-left: 2px solid var(--teal); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 10px 14px; margin-bottom: 12px; font-size: 11px; line-height: 1.7; }
+.system-msg .sys-header { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); margin-bottom: 3px; }
+.system-msg .sys-body { color: var(--muted); }
+.donut-msg { background: var(--purple-dim); border-left: 2px solid var(--purple); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 10px 14px; margin-bottom: 12px; font-size: 12px; line-height: 1.7; color: var(--text); font-style: italic; }
+.donut-msg .donut-attr { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--purple); margin-top: 4px; font-style: normal; }
+.warning-msg { background: rgba(255,92,92,0.06); border-left: 2px solid var(--red); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 10px 14px; margin-bottom: 12px; font-size: 11px; color: var(--red); }
+
+/* ── STATUS EFFECTS BAR ───────────────────────────────── */
+.status-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.status-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 99px; font-size: 10px; font-family: var(--mono); border: 0.5px solid; white-space: nowrap; cursor: default; }
+.status-chip.buff { background: rgba(45,212,160,0.08); border-color: rgba(45,212,160,0.3); color: var(--teal); }
+.status-chip.debuff { background: rgba(255,92,92,0.08); border-color: rgba(255,92,92,0.3); color: var(--red); }
+.status-chip.neutral { background: var(--surface2); border-color: var(--border); color: var(--muted); }
+
+/* ── ROOM CARDS (task items) ──────────────────────────── */
+.task { display: flex; align-items: center; gap: 12px; padding: 11px 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 5px; cursor: pointer; transition: all 0.12s; user-select: none; position: relative; }
+.task:active { transform: scale(0.98); }
+.task.done { opacity: 0.45; }
+.task.done .task-name { text-decoration: line-through; color: var(--muted); }
+.task.done { border-color: rgba(45,212,160,0.2); }
+.room-cleared-badge { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 9px; color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* ── CRAWLER PROFILE ──────────────────────────────────── */
+.crawler-hero { background: linear-gradient(135deg, rgba(45,212,160,0.08), rgba(167,139,250,0.06)); border: 0.5px solid rgba(45,212,160,0.2); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+.crawler-name { font-family: var(--serif); font-size: 26px; font-weight: 300; color: var(--text); }
+.crawler-title { font-size: 11px; color: var(--amber); letter-spacing: 0.06em; margin-top: 2px; }
+.crawler-level { display: flex; align-items: center; gap: 16px; margin-top: 14px; }
+.level-badge { background: var(--teal); color: #0a0a0c; font-family: var(--mono); font-size: 11px; font-weight: 500; padding: 4px 12px; border-radius: 99px; }
+.xp-bar-wrap { flex: 1; }
+.xp-bar-label { font-size: 9px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+.xp-bar-bg { background: var(--surface2); border-radius: 99px; height: 6px; overflow: hidden; }
+.xp-bar-fill { background: linear-gradient(90deg, var(--teal), var(--purple)); height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+.stat-grid-dcc { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.stat-block { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px; }
+.stat-block-label { font-size: 9px; color: var(--hint); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+.stat-block-val { font-family: var(--serif); font-size: 24px; font-weight: 300; color: var(--text); }
+.stat-block-unit { font-size: 10px; color: var(--muted); }
+.companion-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
+.companion-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.companion-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--amber-dim); border: 1.5px solid rgba(245,166,35,0.3); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; overflow: hidden; }
+.companion-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.companion-name { font-family: var(--serif); font-size: 16px; font-weight: 300; }
+.companion-title-text { font-size: 10px; color: var(--amber); margin-top: 1px; }
+.companion-mood { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 2px; }
+.companion-passive { font-size: 10px; color: var(--purple); margin-top: 2px; }
+.stat-bars { display: flex; flex-direction: column; gap: 6px; }
+.stat-bar-row { display: flex; align-items: center; gap: 8px; }
+.stat-bar-name { font-size: 10px; color: var(--muted); width: 90px; flex-shrink: 0; }
+.stat-bar-bg { flex: 1; background: var(--surface2); border-radius: 99px; height: 4px; overflow: hidden; }
+.stat-bar-fill { height: 100%; border-radius: 99px; background: var(--teal); }
+.stat-bar-fill.chaos { background: var(--fire); }
+.stat-bar-fill.amber { background: var(--amber); }
+.stat-bar-fill.purple { background: var(--purple); }
+.title-list { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.title-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid var(--border); font-size: 12px; }
+.title-row:last-child { border-bottom: none; }
+.title-locked { color: var(--hint); }
+.title-unlocked { color: var(--text); }
+.title-equipped { color: var(--amber); }
+.title-equip-btn { margin-left: auto; font-size: 10px; padding: 3px 8px; border-radius: 99px; border: 0.5px solid var(--border2); background: none; color: var(--muted); font-family: var(--mono); cursor: pointer; }
+.title-equip-btn.equipped { border-color: var(--amber); color: var(--amber); }
+.weekly-boss-card { background: rgba(255,92,92,0.06); border: 0.5px solid rgba(255,92,92,0.25); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.boss-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.boss-name { font-family: var(--serif); font-size: 16px; font-weight: 300; color: var(--text); }
+.boss-label { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 4px; }
+.boss-hp-wrap { margin-bottom: 8px; }
+.boss-hp-bg { background: var(--surface2); border-radius: 99px; height: 8px; overflow: hidden; }
+.boss-hp-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--red), var(--fire)); transition: width 0.6s ease; }
+.boss-hp-label { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 4px; }
+.achievement-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.achievement-card h3 { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.achievement-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 0.5px solid var(--border); font-size: 12px; }
+.achievement-item:last-child { border-bottom: none; }
+.achievement-icon { font-size: 16px; width: 24px; text-align: center; }
+.achievement-name { flex: 1; color: var(--text); }
+.achievement-locked { color: var(--hint); }
+
+/* ── SECTION LABELS DCC ───────────────────────────────── */
+.floor-section-label { font-size: 9px; letter-spacing: 0.14em; color: var(--hint); text-transform: uppercase; margin: 18px 0 7px; display: flex; align-items: center; justify-content: space-between; }
+.floor-section-label::before { content: '▸'; margin-right: 6px; color: var(--teal); font-size: 8px; }
+
+/* ── SCAN LINE OVERLAY ────────────────────────────────── */
+body::after { content: ''; position: fixed; inset: 0; background: var(--scanline); pointer-events: none; z-index: 9998; opacity: 0.4; }
 /* Rewards */
 .points-hero { background: linear-gradient(135deg, rgba(45,212,160,0.15), rgba(167,139,250,0.1)); border: 0.5px solid rgba(45,212,160,0.25); border-radius: var(--radius); padding: 24px 20px; margin-bottom: 16px; text-align: center; }
 .points-total { font-family: var(--serif); font-size: 56px; font-weight: 300; color: var(--teal); line-height: 1; }
@@ -245,37 +333,39 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 
 <!-- TODAY -->
 <div class="screen active" id="screen-today">
-  <div class="page-header"><h1 id="today-heading">Today</h1><p id="today-sub"></p></div>
+  <div class="page-header"><h1 id="today-heading">Current Floor</h1><p id="today-sub"></p></div>
+  <div id="system-greeting"></div>
   <div class="date-strip" id="date-strip"></div>
+  <div id="status-effects-bar"></div>
   <div class="progress-ring-wrap">
     <svg width="64" height="64" viewBox="0 0 64 64">
       <circle class="ring-bg" cx="32" cy="32" r="28"/>
       <circle class="ring-fill" id="ring-fill" cx="32" cy="32" r="28" stroke-dasharray="175.9" stroke-dashoffset="175.9"/>
       <text class="ring-text" x="32" y="30" id="ring-pct">0%</text>
-      <text class="ring-sub" x="32" y="42">done</text>
+      <text class="ring-sub" x="32" y="42">cleared</text>
     </svg>
     <div class="progress-meta">
       <div class="big" id="prog-fraction">0 / 0</div>
-      <div class="small">tasks completed today</div>
-      <div class="streak-row" id="streak-row">&#9679; 0 day streak</div>
-      <div class="daily-pts-wrap"><span class="pts-badge" id="today-pts-badge">⭐ 0 pts</span></div>
+      <div class="small">rooms cleared this floor</div>
+      <div class="streak-row" id="streak-row">&#9679; 0 floors survived</div>
+      <div class="daily-pts-wrap"><span class="pts-badge" id="today-pts-badge">🪙 0 coins</span></div>
     </div>
   </div>
-  <div id="congrats-banner" class="congrats-banner" style="display:none">&#10003; Day complete — Edna and Kronk are proud of you!</div>
+  <div id="congrats-banner" class="congrats-banner" style="display:none">⚔ FLOOR CLEARED — Edna and Kronk are proud of you!</div>
   <div id="task-list"></div>
   <div id="bonus-today"></div>
-  <div style="margin-top:16px;"><button class="btn-ghost" onclick="resetToday()">Reset today</button></div>
+  <div style="margin-top:16px;"><button class="btn-ghost" onclick="resetToday()">↺ Restart floor</button></div>
 </div>
 
 <!-- DOGS -->
 <div class="screen" id="screen-dogs">
-  <div class="page-header"><h1>Edna &amp; Kronk</h1><p>DAILY DOG CARE</p></div>
+  <div class="page-header"><h1>Party Members</h1><p>COMPANION CARE + STATUS</p></div>
   <div id="dog-content"></div>
 </div>
 
 <!-- SPIN -->
 <div class="screen" id="screen-spin">
-  <div class="page-header"><h1>Spin</h1><p>FEELING MOTIVATED? LET'S GO.</p></div>
+  <div class="page-header"><h1>Random Encounter</h1><p>THE DUNGEON HAS CHOSEN YOUR FATE</p></div>
   <div class="spinner-wrap">
     <div style="width:100%;margin-bottom:12px;">
       <div class="section-toggle" id="spin-cat-tabs">
@@ -342,7 +432,7 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 
 <!-- INBOX -->
 <div class="screen" id="screen-inbox">
-  <div class="page-header"><h1>Inbox</h1><p>CAPTURE NOW, SORT LATER</p></div>
+  <div class="page-header"><h1>Comm Bracelet</h1><p>CAPTURE TRANSMISSIONS — SORT LATER</p></div>
   <div class="inbox-capture">
     <input type="text" id="inbox-input" placeholder="What's on your mind..." />
     <button onclick="addInboxItem()">Add</button>
@@ -377,13 +467,19 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 
 <!-- REWARDS -->
 <div class="screen" id="screen-rewards">
-  <div class="page-header"><h1>Rewards</h1><p>EARN POINTS · TREAT YOURSELF 🐾</p></div>
+  <div class="page-header"><h1>The Vending Machine</h1><p>CRAWLER COINS 🪙 · SPEND WISELY</p></div>
   <div id="rewards-content"></div>
+</div>
+
+<!-- PROFILE -->
+<div class="screen" id="screen-profile">
+  <div class="page-header"><h1>Crawler Profile</h1><p>CHARACTER SHEET + COMPANION STATUS</p></div>
+  <div id="profile-content"></div>
 </div>
 
 <!-- COACH -->
 <div class="screen" id="screen-coach">
-  <div class="page-header"><h1>Coach</h1><p>STATS + CHECK-IN + PROMPTS</p></div>
+  <div class="page-header"><h1>Princess Donut</h1><p>ASSESSMENT + SYSTEM MESSAGES + STATS</p></div>
   <div id="coach-content"></div>
 </div>
 
@@ -408,13 +504,13 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 <div class="pts-earned-toast" id="pts-toast"></div>
 
 <nav class="bottom-nav">
-  <button class="nav-btn active" onclick="showScreen('today',this)"><span class="nav-icon">&#9711;</span>today</button>
-  <button class="nav-btn" onclick="showScreen('dogs',this)"><span class="nav-icon">&#9829;</span>dogs</button>
-  <button class="nav-btn" onclick="showScreen('spin',this)"><span class="nav-icon">&#9670;</span>spin</button>
-  <button class="nav-btn" id="inbox-nav-btn" onclick="showScreen('inbox',this)"><span class="nav-icon">&#9632;</span>inbox</button>
-  <button class="nav-btn" onclick="showScreen('shop',this)"><span class="nav-icon">&#9635;</span>shop</button>
-  <button class="nav-btn" onclick="showScreen('rewards',this)"><span class="nav-icon">&#9733;</span>rewards</button>
-  <button class="nav-btn" onclick="showScreen('coach',this)"><span class="nav-icon">&#9651;</span>coach</button>
+  <button class="nav-btn active" onclick="showScreen('today',this)"><span class="nav-icon">⚔</span>floor</button>
+  <button class="nav-btn" onclick="showScreen('dogs',this)"><span class="nav-icon">🐾</span>party</button>
+  <button class="nav-btn" onclick="showScreen('spin',this)"><span class="nav-icon">🎲</span>encounter</button>
+  <button class="nav-btn" id="inbox-nav-btn" onclick="showScreen('inbox',this)"><span class="nav-icon">📡</span>comms</button>
+  <button class="nav-btn" onclick="showScreen('rewards',this)"><span class="nav-icon">🪙</span>loot</button>
+  <button class="nav-btn" onclick="showScreen('profile',this)"><span class="nav-icon">🗡</span>profile</button>
+  <button class="nav-btn" onclick="showScreen('coach',this)"><span class="nav-icon">👑</span>donut</button>
 </nav>
 
 <script>
@@ -592,7 +688,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -630,6 +726,7 @@ async function loadFromSupabase(){
         if(!hasCombined||(dogTasks.prevention||[]).length>2)dogTasks.prevention=DEFAULT_DOG_TASKS.prevention;
       }
       if(d.rewardsState)rewardsState={...DEFAULT_REWARDS_STATE,...d.rewardsState};
+      if(d.xpState)xpState={...xpState,...d.xpState};
       if(d.dogState)dogState=d.dogState;
       if(d.groomState)groomState=d.groomState;
       if(d.prevState)prevState=d.prevState;
@@ -944,9 +1041,11 @@ function renderToday(){
   document.getElementById('ring-fill').style.strokeDashoffset=CIRC-(CIRC*pct/100);
   document.getElementById('ring-pct').textContent=pct+'%';
   document.getElementById('prog-fraction').textContent=done+' / '+total;
-  document.getElementById('streak-row').textContent='● '+calcStreak()+' day streak';
+  document.getElementById('streak-row').textContent='● '+calcStreak()+' floors survived';
   const ptsBadge=document.getElementById('today-pts-badge');
-  if(ptsBadge)ptsBadge.textContent='⭐ '+getPoints()+' pts';
+  if(ptsBadge)ptsBadge.textContent='🪙 '+getPoints()+' coins';
+  renderSystemGreeting();
+  renderStatusBar();
   const isComplete=pct===100&&total>0;
   document.getElementById('congrats-banner').style.display=isComplete?'block':'none';
   if(isComplete&&!wasComplete)fireConfetti();
@@ -1608,6 +1707,272 @@ function renderShop(){
     </div>`).join('');
 }
 
+/* ─── DCC CONTENT LIBRARY ────────────────────────────────────────────────── */
+const DCC={
+  donut:{
+    morning:["The floor won't clear itself, Crawler. Rise.","You are late. The dungeon noticed. I noticed.","Another day. Try not to embarrass us both.","The audience is watching. Do not disappoint them. Again."],
+    taskDone:["One room cleared. Many remain. Do not celebrate yet.","Acceptable. Barely.","The dungeon acknowledges your effort. I remain cautiously unimpressed.","You completed a task. This is the bare minimum expected of a Crawler."],
+    floorCleared:["Floor cleared. The audience erupts. I allow it.","You have exceeded my minimal expectations. Savor this.","The floor boss has fallen. Kronk is vibrating. I am composed.","Acceptable performance. I have seen better. I have seen much worse."],
+    streak7:["Seven floors survived. The dungeon is beginning to take you seriously. I always have.","You have not quit. This is more than most manage."],
+    streak30:["Thirty days. Remarkable. I may have mentioned you to my associates.","I have told the others about you. They were skeptical. I was not. I am rarely wrong."],
+    missedDay:["You triggered a trap. Disappointing but not surprising.","A stumble. Get up. The cameras are still rolling.","Even Crawler Carl had bad days. He got up. So will you."],
+    encouragement:["One task. Just one. The floor clears one room at a time.","Edna believes in you. Kronk believes in everything. I am choosing to believe in you today.","You are struggling. This is known. Get up anyway.","The dungeon does not care about your feelings. I, however, note them."],
+    redeem:["You have earned this. Do not waste it.","Ice cream. For all three of you. The audience finds this endearing.","A Kindle. Finally some culture in this dungeon."],
+    general:["The audience is watching. Most of them are rooting for you.","You are performing adequately, Crawler.","Do not ruin it."],
+  },
+  system:{
+    floorStart:(pct,rooms,streak)=>`FLOOR STATUS: ${rooms} rooms to clear. Current streak: ${streak} floors survived. Proceed.`,
+    taskDone:(name)=>`ROOM CLEARED: ${name}. Crawler Coins deposited.`,
+    floorCleared:`FLOOR CLEARED. All rooms secured. Loot distributed. The audience approves.`,
+    streakAlert:(n)=>`NOTICE: ${n}-floor streak detected. Buff active. Do not squander it.`,
+    missedDay:`TRAP TRIGGERED: Floor incomplete. Debuff applied. The dungeon has noted this.`,
+    lowProgress:(pct)=>`WARNING: Floor ${pct}% cleared. Current pace: insufficient. The boss chamber approaches.`,
+    bonusObjective:["BONUS OBJECTIVE DETECTED: Tell Edna she is a good girl.","BONUS OBJECTIVE DETECTED: Kronk requires zoomies. Deploy immediately.","BONUS OBJECTIVE DETECTED: Drink water before checking your phone.","BONUS OBJECTIVE DETECTED: Go outside. Five minutes. Non-negotiable.","BONUS OBJECTIVE DETECTED: Text someone you haven't spoken to in 30 days."],
+    achievement:(name)=>`ACHIEVEMENT UNLOCKED: ${name}`,
+    buffApplied:(name)=>`BUFF APPLIED: ${name}. The dungeon acknowledges your momentum.`,
+    debuffApplied:(name)=>`DEBUFF APPLIED: ${name}. The dungeon has noted your performance.`,
+    broadcast:`SYSTEM NOTICE: Your crawler data is being broadcast to 847,000 alien viewers. They are rooting for you. Most of them.`,
+  },
+  weeklyBossNames:["The Mounting Correspondence","The Accumulated Tabs of Doom","The Unmade Bed Formation","The Forgotten Errand Cluster","The Unread Backlog Sovereign","The Persistent Laundry Pile","The Ignored Notification Swarm","The Creeping Administrative Fog","The Ambient Procrastination Mass","The Refrigerator Situation","The Monday Accumulation","The Unfinished Business Formation","The Reply That Never Came","The Lingering Task Pile"],
+  getWeeklyBoss(){const d=new Date();const week=Math.floor((d.getTime()/86400000+4)/7);return this.weeklyBossNames[week%this.weeklyBossNames.length];},
+  getRandom(arr){return arr[~~(Math.random()*arr.length)];},
+};
+
+/* ─── XP SYSTEM ──────────────────────────────────────────────────────────── */
+const XP_LEVELS=[
+  {level:1,xp:0,title:'Freshly Fallen Crawler'},
+  {level:2,xp:100,title:'Survived the First Floor'},
+  {level:3,xp:250,title:'Probably Not a Fluke'},
+  {level:4,xp:500,title:'The Dogs Believe in You'},
+  {level:5,xp:1000,title:'Warmed Up'},
+  {level:8,xp:2500,title:'On Fire (Controlled Burn)'},
+  {level:10,xp:5000,title:'Floor Veteran'},
+  {level:12,xp:8000,title:'Boss Slayer'},
+  {level:15,xp:12000,title:'Legendary Pace'},
+  {level:20,xp:20000,title:"Carl's Emotional Support Human"},
+  {level:25,xp:35000,title:'The Audience Knows Your Name'},
+  {level:30,xp:50000,title:'Donut Acknowledges You Publicly'},
+];
+
+const XP_PTS={task:5,dogTask:8,spinTask:10,dayComplete:25,streak7:50,streak30:200,weeklyBoss:100};
+
+let xpState=load('dr-xp',{totalXP:0,level:1,equippedTitle:null,unlockedTitles:['Freshly Fallen Crawler'],companionXP:{edna:0,kronk:0}});
+
+function getLevelInfo(xp){
+  let current=XP_LEVELS[0];
+  for(const l of XP_LEVELS){if(xp>=l.xp)current=l;else break;}
+  const idx=XP_LEVELS.indexOf(current);
+  const next=XP_LEVELS[idx+1]||null;
+  return{...current,next,progress:next?Math.round((xp-current.xp)/(next.xp-current.xp)*100):100};
+}
+
+function awardXP(xp,label){
+  xpState.totalXP=(xpState.totalXP||0)+xp;
+  const info=getLevelInfo(xpState.totalXP);
+  // Check for level up
+  if(info.level>xpState.level){
+    xpState.level=info.level;
+    if(!xpState.unlockedTitles)xpState.unlockedTitles=[];
+    if(!xpState.unlockedTitles.includes(info.title))xpState.unlockedTitles.push(info.title);
+    showPtsToast(`⚡ LEVEL UP — ${info.title}`);
+  }
+  save('dr-xp',xpState);
+}
+
+function getEquippedTitle(){return xpState.equippedTitle||getLevelInfo(xpState.totalXP||0).title;}
+
+/* ─── BUFFS & DEBUFFS ENGINE ─────────────────────────────────────────────── */
+function getActiveBuffs(){
+  const streak=calcStreak();
+  const buffs=[];
+  if(streak>=30)buffs.push({id:'legendary',label:'Legendary Pace 🏆',type:'buff'});
+  else if(streak>=7)buffs.push({id:'onfire',label:'On Fire 🔥',type:'buff'});
+  else if(streak>=3)buffs.push({id:'warmedup',label:'Warmed Up',type:'buff'});
+  const pct=dayPct(new Date().getDay());
+  if(pct===100)buffs.push({id:'cleared',label:'Floor Cleared ⚔',type:'buff'});
+  // Check avoidance debuffs
+  const totalSkips=Object.values(wheelSkips).reduce((a,b)=>a+b,0);
+  if(totalSkips>=9)buffs.push({id:'distracted',label:'Distracted 💀',type:'debuff'});
+  // Check inbox debuff
+  if(inbox.length>=5)buffs.push({id:'cursed-inbox',label:'Cursed Inbox 📬',type:'debuff'});
+  return buffs;
+}
+
+function renderStatusBar(){
+  const el=document.getElementById('status-effects-bar');if(!el)return;
+  const effects=getActiveBuffs();
+  if(!effects.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="status-bar">${effects.map(e=>`<span class="status-chip ${e.type}">${e.label}</span>`).join('')}</div>`;
+}
+
+/* ─── SYSTEM GREETING ON TODAY ───────────────────────────────────────────── */
+function renderSystemGreeting(){
+  const el=document.getElementById('system-greeting');if(!el)return;
+  const streak=calcStreak();
+  const pct=dayPct(new Date().getDay());
+  const sc=getScheduleFor(new Date().getDay());
+  const total=sc.reduce((a,s)=>a.concat(s.tasks),[]).length;
+  let sysMsg='',donutMsg='';
+
+  if(pct===100){
+    sysMsg=DCC.system.floorCleared;
+    donutMsg=DCC.getRandom(DCC.donut.floorCleared);
+  } else if(pct===0){
+    sysMsg=DCC.system.floorStart(pct,total,streak);
+    donutMsg=DCC.getRandom(DCC.donut.morning);
+  } else if(pct<50){
+    sysMsg=DCC.system.lowProgress(pct);
+    donutMsg=DCC.getRandom(DCC.donut.encouragement);
+  } else {
+    sysMsg=`FLOOR PROGRESS: ${pct}% cleared. ${total - Math.round(total*pct/100)} rooms remain. The boss chamber approaches.`;
+    donutMsg=DCC.getRandom(DCC.donut.taskDone);
+  }
+  if(streak>0&&streak%7===0)sysMsg=DCC.system.streakAlert(streak);
+
+  el.innerHTML=`
+    <div class="system-msg"><div class="sys-header">System Notice</div><div class="sys-body">${sysMsg}</div></div>
+    <div class="donut-msg">"${donutMsg}"<div class="donut-attr">— Princess Donut</div></div>`;
+}
+
+/* ─── CRAWLER PROFILE RENDERER ───────────────────────────────────────────── */
+function renderProfile(){
+  const wrap=document.getElementById('profile-content');if(!wrap)return;
+  const streak=calcStreak();
+  const bestStreak=calcBestStreak();
+  const totalXP=xpState.totalXP||0;
+  const info=getLevelInfo(totalXP);
+  const coins=getPoints();
+  const title=getEquippedTitle();
+  const weeklyBoss=DCC.getWeeklyBoss();
+  const wp=(() => {let wt=0,wd=0;for(let i=0;i<7;i++){const s=getScheduleFor(i),ids=s.reduce((a,sec)=>a.concat(sec.tasks.map(t=>t.id)),[]),idSet=new Set(ids);wt+=ids.length;wd+=Object.entries(state[dayKey(i)]||{}).filter(([k,v])=>v&&idSet.has(k)).length;}return wt?Math.round(wd/wt*100):0;})();
+  const bossHP=Math.max(0,100-wp);
+
+  // Companion XP & evolution
+  const cxp=xpState.companionXP||{edna:0,kronk:0};
+  const evoTiers=[{name:'Recruit',xp:0},{name:'Seasoned',xp:500},{name:'Veteran',xp:1500},{name:'Elite',xp:3000},{name:'Legendary',xp:6000},{name:'Mythic',xp:10000}];
+  const getEvo=(xp)=>{let t=evoTiers[0];for(const e of evoTiers)if(xp>=e.xp)t=e;return t;};
+  const ednaEvo=getEvo(cxp.edna||0);
+  const kronkEvo=getEvo(cxp.kronk||0);
+
+  // Moods based on dog care completion today
+  const dogData=getDogDayData();
+  const dt=dogTasks.shared||{morning:[],evening:[]};
+  const allDT=[...(dt.morning||[]),...(dt.evening||[])];
+  const dogPct=allDT.length?Math.round(allDT.filter(t=>dogData[t.id]).length/allDT.length*100):0;
+  const ednaM=dogPct===100?'Edna approves of your efforts.':dogPct>=50?'Edna is watching you with her whole face.':'Edna has noticed your inactivity.';
+  const kronkM=dogPct===100?'Kronk is vibrating with excitement.':dogPct>=50?'Kronk has positioned himself on your feet.':'Kronk stares at you with his whole face.';
+
+  // Stat bars: Loyalty tracks streak, Chaos/Morale track dog care, Zoomies tracks weekend activity
+  const loyalty=Math.min(100,streak*10);
+  const morale=dogPct;
+  const ednaFloof=Math.min(100,(cxp.edna||0)/100);
+  const kronkZoomies=Math.min(100,(cxp.kronk||0)/60);
+
+  // Titles
+  const allTitles=[
+    {id:'t1',name:'Freshly Fallen Crawler',req:'Start',unlocked:true},
+    {id:'t2',name:'Survived the First Floor',req:'Level 2',unlocked:(xpState.unlockedTitles||[]).includes('Survived the First Floor')},
+    {id:'t3',name:'Early Riser (Suspicious)',req:'Complete morning routine 7 days',unlocked:streak>=7},
+    {id:'t4',name:'Inbox Exorcist',req:'Clear inbox completely',unlocked:inbox.length===0&&(rewardsState.log||[]).some(e=>e.type==='inbox-clear')},
+    {id:'t5',name:"Carl's Emotional Support Human",req:'Level 20',unlocked:(xpState.unlockedTitles||[]).includes("Carl's Emotional Support Human")},
+    {id:'t6',name:'The Dogs Ate. Again.',req:'14-day dog care streak',unlocked:streak>=14},
+    {id:'t7',name:'Legendary Pace',req:'30-day streak',unlocked:streak>=30},
+    {id:'t8',name:'Floor Veteran',req:'Level 10',unlocked:(xpState.unlockedTitles||[]).includes('Floor Veteran')},
+  ];
+
+  const effects=getActiveBuffs();
+  const effectsHtml=effects.length?effects.map(e=>`<span class="status-chip ${e.type}" style="margin-right:6px;">${e.label}</span>`).join(''):'<span style="font-size:11px;color:var(--hint);">No active effects</span>';
+
+  wrap.innerHTML=`
+    <div class="crawler-hero">
+      <div class="crawler-title">CRAWLER STATUS</div>
+      <div class="crawler-name">The Crawlers</div>
+      <div style="font-size:11px;color:var(--amber);margin-top:2px;">${title}</div>
+      <div class="crawler-level">
+        <div class="level-badge">LVL ${info.level}</div>
+        <div class="xp-bar-wrap">
+          <div class="xp-bar-label">${totalXP} XP${info.next?' · '+info.next.xp+' to next level':' · MAX'}</div>
+          <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:${info.progress}%"></div></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;">${effectsHtml}</div>
+    </div>
+
+    <div class="stat-grid-dcc">
+      <div class="stat-block"><div class="stat-block-label">Crawler Coins</div><div class="stat-block-val">🪙 ${coins}</div></div>
+      <div class="stat-block"><div class="stat-block-label">Floors Survived</div><div class="stat-block-val">⚔ ${streak}</div></div>
+      <div class="stat-block"><div class="stat-block-label">Best Streak</div><div class="stat-block-val">🏆 ${bestStreak}</div></div>
+      <div class="stat-block"><div class="stat-block-label">Total XP</div><div class="stat-block-val">⚡ ${totalXP}</div></div>
+    </div>
+
+    <div class="weekly-boss-card">
+      <div class="boss-label">Weekly Boss</div>
+      <div class="boss-name">${weeklyBoss}</div>
+      <div class="boss-hp-wrap" style="margin-top:10px;">
+        <div class="boss-hp-bg"><div class="boss-hp-fill" style="width:${bossHP}%"></div></div>
+        <div class="boss-hp-label"><span>${bossHP}% HP remaining</span><span>${wp}% week cleared</span></div>
+      </div>
+      <div class="system-msg" style="margin-top:10px;margin-bottom:0;"><div class="sys-body">${bossHP<=0?'BOSS DEFEATED. Floor complete. Well done, Crawler.':bossHP<30?'WARNING: Boss weakening. Push through.':bossHP<60?`NOTICE: The ${weeklyBoss} watches your progress.`:`NOTICE: The boss is watching your weekend plans.`}</div></div>
+    </div>
+
+    <div style="font-size:10px;letter-spacing:0.1em;color:var(--hint);text-transform:uppercase;margin:16px 0 8px;">⚔ Companions</div>
+
+    <div class="companion-card">
+      <div class="companion-card-header">
+        <div class="companion-avatar">🐾</div>
+        <div>
+          <div class="companion-name">Edna</div>
+          <div class="companion-title-text">The Dramatically Put-Upon · ${ednaEvo.name}</div>
+          <div class="companion-mood">"${ednaM}"</div>
+          <div class="companion-passive">PASSIVE: Emotional Support Aura</div>
+        </div>
+      </div>
+      <div class="stat-bars">
+        <div class="stat-bar-row"><span class="stat-bar-name">Loyalty</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${loyalty}%"></div></div></div>
+        <div class="stat-bar-row"><span class="stat-bar-name">Floof Level</span><div class="stat-bar-bg"><div class="stat-bar-fill amber" style="width:${ednaFloof}%"></div></div></div>
+        <div class="stat-bar-row"><span class="stat-bar-name">Chaos Energy</span><div class="stat-bar-bg"><div class="stat-bar-fill chaos" style="width:${Math.min(100,morale+20)}%"></div></div></div>
+        <div class="stat-bar-row"><span class="stat-bar-name">Morale</span><div class="stat-bar-bg"><div class="stat-bar-fill purple" style="width:${morale}%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="companion-card">
+      <div class="companion-card-header">
+        <div class="companion-avatar">🐾</div>
+        <div>
+          <div class="companion-name">Kronk</div>
+          <div class="companion-title-text">Devourer of Forbidden Things · ${kronkEvo.name}</div>
+          <div class="companion-mood">"${kronkM}"</div>
+          <div class="companion-passive">PASSIVE: Chaos Engine</div>
+        </div>
+      </div>
+      <div class="stat-bars">
+        <div class="stat-bar-row"><span class="stat-bar-name">Loyalty</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${loyalty}%"></div></div></div>
+        <div class="stat-bar-row"><span class="stat-bar-name">Chaos Energy</span><div class="stat-bar-bg"><div class="stat-bar-fill chaos" style="width:${Math.min(100,(cxp.kronk||0)/50)}%"></div></div></div>
+        <div class="stat-bar-row"><span class="stat-bar-name">Zoomies</span><div class="stat-bar-bg"><div class="stat-bar-fill amber" style="width:${kronkZoomies}%"></div></div></div>
+        <div class="stat-bar-row"><span class="stat-bar-name">Morale</span><div class="stat-bar-bg"><div class="stat-bar-fill purple" style="width:${morale}%"></div></div></div>
+      </div>
+    </div>
+
+    <div style="font-size:10px;letter-spacing:0.1em;color:var(--hint);text-transform:uppercase;margin:16px 0 8px;">🏷 Titles</div>
+    <div class="title-list">
+      ${allTitles.map(t=>`<div class="title-row">
+        <span style="font-size:14px;">${t.unlocked?'✓':'✗'}</span>
+        <span class="${t.unlocked?(title===t.name?'title-equipped':'title-unlocked'):'title-locked'}">${t.name}</span>
+        ${t.unlocked&&title!==t.name?`<button class="title-equip-btn" onclick="equipTitle('${t.name}')">Equip</button>`:''}
+        ${title===t.name?`<span class="title-equip-btn equipped">Equipped</span>`:''}
+        ${!t.unlocked?`<span style="font-size:10px;color:var(--hint);margin-left:auto;">${t.req}</span>`:''}
+      </div>`).join('')}
+    </div>
+
+    <div class="system-msg"><div class="sys-body">${DCC.system.broadcast}</div></div>`;
+}
+
+function equipTitle(title){
+  xpState.equippedTitle=title;
+  save('dr-xp',xpState);
+  renderProfile();
+}
+
 /* ─── REWARDS DATA ───────────────────────────────────────────────────────── */
 const DEFAULT_REWARDS=[
   // Small — 25–50 pts
@@ -1686,16 +2051,16 @@ function showPtsToast(msg){
 // Called whenever a routine task is toggled ON
 function maybeAwardTaskPoints(taskId,dayIdx){
   const k=dayKey(dayIdx);
-  // Award only when checking ON (not unchecking)
   if(!(state[k]&&state[k][taskId]))return;
   awardPoints(PTS.task,'Routine task',taskId);
-  // Check if day is now complete → award day bonus (once per day)
+  awardXP(XP_PTS.task,'Routine task');
   const dateStr=k;
   if(!rewardsState.lastDayBonuses[dateStr]){
     const pct=dayPct(dayIdx);
     if(pct===100){
       rewardsState.lastDayBonuses[dateStr]=true;
-      awardPoints(PTS.dayComplete,'100% day complete!','day-complete');
+      awardPoints(PTS.dayComplete,'Floor cleared!','day-complete');
+      awardXP(XP_PTS.dayComplete,'Floor cleared!');
     }
   }
   checkStreakBonuses();
@@ -1704,17 +2069,29 @@ function maybeAwardTaskPoints(taskId,dayIdx){
 function maybeAwardDogPoints(taskId){
   const k=todayStr();
   if(!(dogState[k]&&dogState[k][taskId]))return;
-  awardPoints(PTS.dogTask,'Dog care task','dog-task');
+  awardPoints(PTS.dogTask,'Companion care','dog-task');
+  awardXP(XP_PTS.dogTask,'Companion care');
+  // Award companion XP
+  if(!xpState.companionXP)xpState.companionXP={edna:0,kronk:0};
+  xpState.companionXP.edna=(xpState.companionXP.edna||0)+10;
+  xpState.companionXP.kronk=(xpState.companionXP.kronk||0)+10;
+  save('dr-xp',xpState);
 }
 
 function maybeAwardSpinPoints(){
-  awardPoints(PTS.spinTask,'Spin wheel task done','spin-task');
+  awardPoints(PTS.spinTask,'Random encounter cleared','spin-task');
+  awardXP(XP_PTS.spinTask,'Random encounter cleared');
 }
 
 function maybeAwardBonusDogPoints(taskId){
   const k=todayStr();
   if(!(dogState[k]&&dogState[k][taskId]))return;
-  awardPoints(PTS.bonusTask,'Dog mental health moment','bonus-dog');
+  awardPoints(PTS.bonusTask,'Companion mental moment','bonus-dog');
+  awardXP(5,'Companion mental moment');
+  if(!xpState.companionXP)xpState.companionXP={edna:0,kronk:0};
+  xpState.companionXP.edna=(xpState.companionXP.edna||0)+15;
+  xpState.companionXP.kronk=(xpState.companionXP.kronk||0)+15;
+  save('dr-xp',xpState);
 }
 
 function checkStreakBonuses(){
@@ -1862,6 +2239,7 @@ function showScreen(name,btn){
   if(name==='inbox'){renderInbox();setTimeout(()=>{const i=document.getElementById('inbox-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addInboxItem();};},50);}
   if(name==='shop'){renderShop();setTimeout(()=>{const i=document.getElementById('shop-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addShopItem();};},50);}
   if(name==='rewards')renderRewards();
+  if(name==='profile')renderProfile();
   if(name==='coach')renderCoach();
 }
 
@@ -1872,7 +2250,7 @@ async function init(){
 
   const last=loadLocal('dr-last-screen','today');
   if(last&&last!=='today'){
-    const map={today:0,dogs:1,spin:2,inbox:3,shop:4,rewards:5,coach:6};
+    const map={today:0,dogs:1,spin:2,inbox:3,rewards:4,profile:5,coach:6};
     const idx=map[last];
     if(idx!==undefined)showScreen(last,document.querySelectorAll('.nav-btn')[idx]);
   }
@@ -1895,6 +2273,7 @@ async function init(){
     shopItems=load('dr-shop',[]);
 
     rewardsState=load('dr-rewards',DEFAULT_REWARDS_STATE);
+    xpState=load('dr-xp',{totalXP:0,level:1,equippedTitle:null,unlockedTitles:['Freshly Fallen Crawler'],companionXP:{edna:0,kronk:0}});
     migrateDogTasks();
     const cur=loadLocal('dr-last-screen','today');
     if(cur==='today')renderToday();
@@ -1903,6 +2282,7 @@ async function init(){
     else if(cur==='inbox')renderInbox();
     else if(cur==='shop')renderShop();
     else if(cur==='rewards')renderRewards();
+    else if(cur==='profile')renderProfile();
     else if(cur==='coach')renderCoach();
   }
 
