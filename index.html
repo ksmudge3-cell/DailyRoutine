@@ -619,15 +619,13 @@ async function loadFromSupabase(){
         if(!dogTasks.shared)dogTasks.shared=DEFAULT_DOG_TASKS.shared;
         if(!dogTasks.prevention)dogTasks.prevention=DEFAULT_DOG_TASKS.prevention;
         if(!dogTasks.mental)dogTasks.mental=DEFAULT_DOG_TASKS.mental;
-        // MIGRATION: remove mental/snuggle tasks from core shared morning/evening
-        const mentalIds=new Set((dogTasks.mental||[]).map(t=>t.id));
+        // MIGRATION: hardcode all known mental IDs so stale Supabase data can't sneak through
+        const mentalIds=new Set(['m-snuggle','m-breath','m-play','m-gratitude','m-photo',...(dogTasks.mental||[]).map(t=>t.id)]);
         if(dogTasks.shared.morning)dogTasks.shared.morning=dogTasks.shared.morning.filter(t=>!mentalIds.has(t.id));
         if(dogTasks.shared.evening)dogTasks.shared.evening=dogTasks.shared.evening.filter(t=>!mentalIds.has(t.id));
         // MIGRATION: collapse prevention to 2 combined entries
-        const hasCombined=dogTasks.prevention.find(p=>p.id==='prev-e-monthly'||p.id==='prev-e-flea');
-        if(dogTasks.prevention.length>2||!hasCombined){
-          dogTasks.prevention=DEFAULT_DOG_TASKS.prevention;
-        }
+        const hasCombined=(dogTasks.prevention||[]).find(p=>p.id==='prev-e-monthly'||p.id==='prev-k-monthly');
+        if(!hasCombined||(dogTasks.prevention||[]).length>2)dogTasks.prevention=DEFAULT_DOG_TASKS.prevention;
       }
       if(d.rewardsState)rewardsState={...DEFAULT_REWARDS_STATE,...d.rewardsState};
       if(d.dogState)dogState=d.dogState;
@@ -645,6 +643,8 @@ async function loadFromSupabase(){
       if(d.shopItems)shopItems=d.shopItems;
       ['state','schedule','dogTasks','dogState','groomState','prevState','notifs','wheel','wheelDone','wheelSkips','wheelPinned','inbox','shopItems'].forEach(k=>saveLocal('dr-'+k.replace(/([A-Z])/g,'-$1').toLowerCase(),eval(k)));
       saveLocal('dr-rewards',rewardsState);
+      // Force sync back so cleaned data overwrites stale Supabase data permanently
+      setTimeout(syncToSupabase, 2000);
       return true;
     }
   }catch(e){console.warn('Load failed',e);}
