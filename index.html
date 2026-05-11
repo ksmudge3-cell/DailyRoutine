@@ -488,10 +488,12 @@ const DEFAULT_DOG_TASKS={
   shared:{
     morning:[
       {id:'dogs-feed-am',name:'Feed Edna & Kronk',time:'Morning'},
+      {id:'dogs-water-am',name:'Fresh water for Edna & Kronk',time:'Morning'},
       {id:'dogs-walk-am',name:'Walk Edna & Kronk',time:'Before work'},
     ],
     evening:[
       {id:'dogs-feed-pm',name:'Feed Edna & Kronk',time:'Evening'},
+      {id:'dogs-water-pm',name:'Fresh water for Edna & Kronk',time:'Evening'},
       {id:'dogs-walk-pm',name:'Walk Edna & Kronk',time:'Evening'},
     ]
   },
@@ -616,14 +618,14 @@ async function loadFromSupabase(){
       }
       if(d.dogTasks){
         dogTasks=d.dogTasks;
-        if(!dogTasks.shared)dogTasks.shared=DEFAULT_DOG_TASKS.shared;
         if(!dogTasks.prevention)dogTasks.prevention=DEFAULT_DOG_TASKS.prevention;
         if(!dogTasks.mental)dogTasks.mental=DEFAULT_DOG_TASKS.mental;
-        // MIGRATION: hardcode all known mental IDs so stale Supabase data can't sneak through
-        const mentalIds=new Set(['m-snuggle','m-breath','m-play','m-gratitude','m-photo',...(dogTasks.mental||[]).map(t=>t.id)]);
-        if(dogTasks.shared.morning)dogTasks.shared.morning=dogTasks.shared.morning.filter(t=>!mentalIds.has(t.id));
-        if(dogTasks.shared.evening)dogTasks.shared.evening=dogTasks.shared.evening.filter(t=>!mentalIds.has(t.id));
-        // MIGRATION: collapse prevention to 2 combined entries
+        // Nuclear: always rebuild shared from defaults to kill stale snuggles permanently
+        dogTasks.shared={
+          morning:DEFAULT_DOG_TASKS.shared.morning.map(def=>({...def})),
+          evening:DEFAULT_DOG_TASKS.shared.evening.map(def=>({...def}))
+        };
+        // Collapse prevention to 2 combined entries
         const hasCombined=(dogTasks.prevention||[]).find(p=>p.id==='prev-e-monthly'||p.id==='prev-k-monthly');
         if(!hasCombined||(dogTasks.prevention||[]).length>2)dogTasks.prevention=DEFAULT_DOG_TASKS.prevention;
       }
@@ -1027,13 +1029,14 @@ function markPrevention(id){prevState[id]=Date.now();save('dr-prev-state',prevSt
 
 // Run on startup AND after Supabase load to clean stale data
 function migrateDogTasks(){
-  if(!dogTasks.shared)dogTasks.shared=DEFAULT_DOG_TASKS.shared;
   if(!dogTasks.prevention)dogTasks.prevention=DEFAULT_DOG_TASKS.prevention;
   if(!dogTasks.mental)dogTasks.mental=DEFAULT_DOG_TASKS.mental;
-  // Hardcode all known mental task IDs to catch old data
-  const mentalIds=new Set(['m-snuggle','m-breath','m-play','m-gratitude','m-photo',...(dogTasks.mental||[]).map(t=>t.id)]);
-  if(dogTasks.shared.morning)dogTasks.shared.morning=dogTasks.shared.morning.filter(t=>!mentalIds.has(t.id));
-  if(dogTasks.shared.evening)dogTasks.shared.evening=dogTasks.shared.evening.filter(t=>!mentalIds.has(t.id));
+  // Nuclear: always rebuild shared from defaults — permanently kills stale snuggles/mental tasks
+  // Rebuilds morning/evening to match defaults exactly, preserving nothing extra
+  dogTasks.shared={
+    morning:DEFAULT_DOG_TASKS.shared.morning.map(def=>({...def})),
+    evening:DEFAULT_DOG_TASKS.shared.evening.map(def=>({...def}))
+  };
   // Collapse prevention to 2 combined entries
   const hasCombined=(dogTasks.prevention||[]).find(p=>p.id==='prev-e-monthly'||p.id==='prev-k-monthly');
   if(!hasCombined||(dogTasks.prevention||[]).length>2)dogTasks.prevention=DEFAULT_DOG_TASKS.prevention;
