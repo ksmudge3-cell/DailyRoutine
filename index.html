@@ -864,12 +864,25 @@ function getBonusData(){
   };
 }
 
+function deductPoints(pts,label,type){
+  // Deduct from totalEarned — can't go below 0
+  const current=getPoints();
+  const deduct=Math.min(pts,current);
+  rewardsState.totalEarned=Math.max(0,(rewardsState.totalEarned||0)-deduct);
+  rewardsState.log.unshift({type,pts:-deduct,label,ts:Date.now()});
+  if(rewardsState.log.length>50)rewardsState.log=rewardsState.log.slice(0,50);
+  save('dr-rewards',rewardsState);
+  if(deduct>0)showPtsToast('-'+deduct+' pts — '+label);
+  const badge=document.getElementById('today-pts-badge');
+  if(badge)badge.textContent='⭐ '+getPoints()+' pts';
+}
+
 function undoBonusSpin(taskId){
   const k=todayStr();
   if(state[k])delete state[k]['spin_'+taskId];
   save('dr-state',state);
-  // Remove from wheelDone so it becomes available again
   delete wheelDone[taskId];save('dr-wheel-done',wheelDone);
+  deductPoints(PTS.spinTask,'Undo spin task','undo-spin');
   renderToday();
   refreshWheel();
 }
@@ -878,6 +891,7 @@ function undoBonusDog(taskId){
   const k=todayStr();
   if(dogState[k])delete dogState[k][taskId];
   save('dr-dog-state',dogState);
+  deductPoints(PTS.bonusTask,'Undo dog mental task','undo-dog');
   renderToday();
 }
 
