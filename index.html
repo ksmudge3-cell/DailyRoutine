@@ -412,6 +412,7 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
   <button class="nav-btn" onclick="showScreen('dogs',this)"><span class="nav-icon">&#9829;</span>dogs</button>
   <button class="nav-btn" onclick="showScreen('spin',this)"><span class="nav-icon">&#9670;</span>spin</button>
   <button class="nav-btn" id="inbox-nav-btn" onclick="showScreen('inbox',this)"><span class="nav-icon">&#9632;</span>inbox</button>
+  <button class="nav-btn" onclick="showScreen('shop',this)"><span class="nav-icon">&#9635;</span>shop</button>
   <button class="nav-btn" onclick="showScreen('rewards',this)"><span class="nav-icon">&#9733;</span>rewards</button>
   <button class="nav-btn" onclick="showScreen('coach',this)"><span class="nav-icon">&#9651;</span>coach</button>
 </nav>
@@ -668,6 +669,7 @@ let wheelSkips=load('dr-wheel-skips',{});
 let wheelPinned=load('dr-wheel-pinned',{});
 let inbox=load('dr-inbox',[]);
 let shopItems=load('dr-shop',[]);
+const sessionDone=new Set(); // tracks cooldown=0 tasks done this session for visual feedback
 
 // Ensure derived state
 if(!wheel.priority)wheel.priority={standalone:[],projects:[]};
@@ -810,10 +812,14 @@ function openEditOverlay(type,sectionIdx,taskIdx){
 
 function openAddOverlay(type,sectionIdx){
   const sc=type==='weekday'?schedule.weekday:schedule.weekend;
+  const section=sc[sectionIdx];
   const newTask={id:'t_'+Date.now(),name:'New task',time:''};
-  sc[sectionIdx].tasks.push(newTask);
+  // Insert before the last task (usually "Lights out" or "Sleep") rather than appending
+  // Exception: if section has 0 or 1 tasks, just push
+  const insertIdx=section.tasks.length>1?section.tasks.length-1:section.tasks.length;
+  section.tasks.splice(insertIdx,0,newTask);
   save('dr-schedule',schedule);
-  openEditOverlay(type,sectionIdx,sc[sectionIdx].tasks.length-1);
+  openEditOverlay(type,sectionIdx,insertIdx);
   document.getElementById('edit-name-input').value='';
   document.getElementById('edit-title').textContent='Add task';
 }
@@ -1005,6 +1011,21 @@ function toggleDogTask(taskId){
 function markGrooming(id){groomState[id]=Date.now();save('dr-groom-state',groomState);renderDogs();}
 function markPrevention(id){prevState[id]=Date.now();save('dr-prev-state',prevState);renderDogs();}
 
+// Run on startup AND after Supabase load to clean stale data
+function migrateDogTasks(){
+  if(!dogTasks.shared)dogTasks.shared=DEFAULT_DOG_TASKS.shared;
+  if(!dogTasks.prevention)dogTasks.prevention=DEFAULT_DOG_TASKS.prevention;
+  if(!dogTasks.mental)dogTasks.mental=DEFAULT_DOG_TASKS.mental;
+  // Hardcode all known mental task IDs to catch old data
+  const mentalIds=new Set(['m-snuggle','m-breath','m-play','m-gratitude','m-photo',...(dogTasks.mental||[]).map(t=>t.id)]);
+  if(dogTasks.shared.morning)dogTasks.shared.morning=dogTasks.shared.morning.filter(t=>!mentalIds.has(t.id));
+  if(dogTasks.shared.evening)dogTasks.shared.evening=dogTasks.shared.evening.filter(t=>!mentalIds.has(t.id));
+  // Collapse prevention to 2 combined entries
+  const hasCombined=(dogTasks.prevention||[]).find(p=>p.id==='prev-e-monthly'||p.id==='prev-k-monthly');
+  if(!hasCombined||(dogTasks.prevention||[]).length>2)dogTasks.prevention=DEFAULT_DOG_TASKS.prevention;
+  saveLocal('dr-dog-tasks',dogTasks);
+}
+
 function renderDogs(){
   const data=getDogDayData();
   const dt=dogTasks.shared||{morning:[],evening:[]};
@@ -1086,7 +1107,10 @@ function drawWheel(){
 }
 
 function isAvailable(task){
-  if(task.cooldown===0)return true; // always available
+  if(task.cooldown===0){
+    // Always available UNLESS done this session (brief visual cooldown)
+    return !sessionDone.has(task.id);
+  }
   if(!task.repeat)return !wheelDone[task.id];
   const last=wheelDone[task.id];if(!last)return true;
   return(Date.now()-last)/86400000>=task.cooldown;
@@ -1217,9 +1241,9 @@ function hideResult(){document.getElementById('spin-result').classList.remove('s
 
 function markSpinDone(){
   if(!currentSpinTask)return;
-  if(currentSpinTask.cooldown!==0)wheelDone[currentSpinTask.id]=Date.now();
+  if(currentSpinTask.cooldown!==0){wheelDone[currentSpinTask.id]=Date.now();}
+  else{sessionDone.add(currentSpinTask.id);setTimeout(()=>{sessionDone.delete(currentSpinTask.id);renderTaskManager();},3000);}
   save('dr-wheel-done',wheelDone);
-  // FIX: clear from skips when done
   if(wheelSkips[currentSpinTask.id]){delete wheelSkips[currentSpinTask.id];save('dr-wheel-skips',wheelSkips);}
   const k=todayStr();if(!state[k])state[k]={};
   state[k]['spin_'+currentSpinTask.id]=true;
@@ -1231,8 +1255,12 @@ function markSpinDone(){
 
 function markDoneOutsideSpin(taskId){
   const task=findWheelTask(taskId);
-  // cooldown=0 means always available — never store wheelDone for it
   if(task&&task.cooldown!==0){wheelDone[taskId]=Date.now();save('dr-wheel-done',wheelDone);}
+  else if(task&&task.cooldown===0){
+    // Track in session so the ✓ turns green briefly
+    sessionDone.add(taskId);
+    setTimeout(()=>{sessionDone.delete(taskId);renderTaskManager();},3000);
+  }
   delete wheelSkips[taskId];save('dr-wheel-skips',wheelSkips);
   const k=todayStr();if(!state[k])state[k]={};
   state[k]['spin_'+taskId]=true;save('dr-state',state);
@@ -1316,10 +1344,13 @@ function renderTaskManager(){
 
   const taskRow=(t,nameChange,durChange,onDel)=>{
     const avail=isAvailable(t);
+    const justDone=sessionDone.has(t.id);
     if(!avail&&!t.repeat&&t.cooldown!==0)return''; // one-time done — hide
     const cd=cdLeft(t);
     const cdLabel=t.cooldown===0
-      ?`<span style="font-size:10px;color:var(--teal);white-space:nowrap;">always</span>`
+      ?justDone
+        ?`<span style="font-size:10px;color:var(--teal);white-space:nowrap;">✓ done</span>`
+        :`<span style="font-size:10px;color:var(--teal);white-space:nowrap;">always</span>`
       :(!avail&&t.repeat?`<span class="tm-cooldown-label">in ${cd}d</span>`:'');
     const isPinned=!!wheelPinned[t.id];
     const rowCls=(!avail&&t.cooldown!==0)?'tm-row tm-cooldown':'tm-row';
@@ -1333,7 +1364,7 @@ function renderTaskManager(){
       </select>`}
       ${cdLabel}
       <button class="tm-pin-btn${isPinned?' pinned':''}" onclick="togglePin('${t.id}')" title="${isPinned?'Unpin':'Pin to Priority wheel'}">📌</button>
-      ${avail?`<button style="font-size:10px;padding:3px 8px;border-radius:99px;border:0.5px solid var(--teal);background:none;color:var(--teal);font-family:var(--mono);cursor:pointer;white-space:nowrap;" onclick="markDoneOutsideSpin('${t.id}')">✓</button>`:''}
+      ${avail&&!justDone?`<button style="font-size:10px;padding:3px 8px;border-radius:99px;border:0.5px solid var(--teal);background:none;color:var(--teal);font-family:var(--mono);cursor:pointer;white-space:nowrap;" onclick="markDoneOutsideSpin('${t.id}')">✓</button>`:''}
       <button class="tm-del" onclick="${onDel}">×</button>
     </div>`;
   };
@@ -1582,7 +1613,8 @@ const DEFAULT_REWARDS=[
   {id:'r-patio',name:'Dog-friendly restaurant patio trip',emoji:'🌿',cost:250,tier:'large',category:'dogs'},
   {id:'r-greenway',name:'Greenway adventure on a new trail',emoji:'🥾',cost:250,tier:'large',category:'dogs'},
   {id:'r-playdate',name:'Doggy playdate',emoji:'🐕',cost:300,tier:'large',category:'dogs'},
-  // Epic — 500+ pts
+  // Epic — 500 pts
+  {id:'r-kindle',name:'Kindle',emoji:'📚',cost:500,tier:'epic',category:'you'},
   {id:'r-daytrip',name:'Day trip somewhere nearby',emoji:'🗺️',cost:500,tier:'epic',category:'you'},
   {id:'r-big',name:'Something big — you decide',emoji:'⭐',cost:750,tier:'epic',category:'you'},
 ];
@@ -1811,17 +1843,19 @@ function showScreen(name,btn){
   if(name==='dogs')renderDogs();
   if(name==='spin'){updateProjectDropdown();refreshWheel();renderAvoidance();renderTaskManager();}
   if(name==='inbox'){renderInbox();setTimeout(()=>{const i=document.getElementById('inbox-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addInboxItem();};},50);}
+  if(name==='shop'){renderShop();setTimeout(()=>{const i=document.getElementById('shop-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addShopItem();};},50);}
   if(name==='rewards')renderRewards();
   if(name==='coach')renderCoach();
 }
 
 /* ─── INIT ──────────────────────────────────────────────────────────────── */
 async function init(){
+  migrateDogTasks();
   renderToday();renderInbox();updateProjectDropdown();refreshWheel();renderTaskManager();
 
   const last=loadLocal('dr-last-screen','today');
   if(last&&last!=='today'){
-    const map={today:0,dogs:1,spin:2,inbox:3,rewards:4,coach:5};
+    const map={today:0,dogs:1,spin:2,inbox:3,shop:4,rewards:5,coach:6};
     const idx=map[last];
     if(idx!==undefined)showScreen(last,document.querySelectorAll('.nav-btn')[idx]);
   }
@@ -1844,11 +1878,13 @@ async function init(){
     shopItems=load('dr-shop',[]);
 
     rewardsState=load('dr-rewards',DEFAULT_REWARDS_STATE);
+    migrateDogTasks();
     const cur=loadLocal('dr-last-screen','today');
     if(cur==='today')renderToday();
     else if(cur==='dogs')renderDogs();
     else if(cur==='spin'){refreshWheel();renderTaskManager();renderAvoidance();}
     else if(cur==='inbox')renderInbox();
+    else if(cur==='shop')renderShop();
     else if(cur==='rewards')renderRewards();
     else if(cur==='coach')renderCoach();
   }
