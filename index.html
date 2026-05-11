@@ -777,7 +777,8 @@ function handleOverlayClick(e){if(e.target===document.getElementById('edit-overl
 // Bonus section data
 function getBonusData(){
   const k=todayStr();
-  const spinKeys=Object.keys(state[k]||{}).filter(k=>k.startsWith('spin_')&&state[k][k]);
+  const dayData=state[k]||{};
+  const spinKeys=Object.keys(dayData).filter(sk=>sk.startsWith('spin_')&&dayData[sk]);
   const dogData=getDogDayData();
   const dogMentalDone=(dogTasks.mental||[]).filter(t=>dogData[t.id]);
   const spinDone=spinKeys.map(sk=>{const id=sk.slice(5);return findWheelTask(id);}).filter(Boolean);
@@ -1394,7 +1395,7 @@ function renderCoach(){
     ['○ Which habit should I focus on first?','habit'],
   ].map(([label,type])=>`<a class="qp-btn" href="${buildUrl(getPrompt(type))}" target="_blank">${label}</a>`).join('');
 
-  document.getElementById('coach-content').innerHTML=`
+  try{document.getElementById('coach-content').innerHTML=`
     <div class="stats-grid" style="margin-bottom:16px;">
       <div class="stat-card"><div class="s-label">Today</div><div class="s-val">${pct}<span class="s-unit">%</span></div></div>
       <div class="stat-card"><div class="s-label">This week</div><div class="s-val">${wp}<span class="s-unit">%</span></div></div>
@@ -1419,7 +1420,7 @@ function renderCoach(){
       <h2>Quick prompts</h2>
       <p>Open Claude with your context pre-loaded.</p>
       <div class="quick-prompts">${qpLinks}</div>
-    </div>`;
+    </div>`;}catch(e){document.getElementById('coach-content').innerHTML=`<div style="padding:20px;color:var(--red);font-size:12px;">Coach error: ${e.message}<br><pre style="font-size:10px;margin-top:8px;white-space:pre-wrap;">${e.stack||''}</pre></div>`;console.error('renderCoach error',e);}
 }
 
 function copyCb(btn,text){
