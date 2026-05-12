@@ -565,7 +565,7 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
 
 <!-- REWARDS -->
 <div class="screen" id="screen-rewards">
-  <div class="page-header"><h1>The Vending Machine</h1><p>CRAWLER COINS 🪙 · SPEND WISELY</p></div>
+  <div class="page-header"><h1>The Vending Machine</h1><p>CRAWLER COINS · SPEND WISELY</p></div>
   <div id="rewards-content"></div>
 </div>
 
@@ -640,13 +640,20 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
 <nav class="bottom-nav">
   <button class="nav-btn active" onclick="showScreen('today',this)"><span class="nav-icon">⚔</span>floor</button>
   <button class="nav-btn" onclick="showScreen('dogs',this)"><span class="nav-icon">🐾</span>party</button>
-  <button class="nav-btn" onclick="showScreen('spin',this)"><span class="nav-icon">🎲</span>encounter</button>
+  <button class="nav-btn" onclick="showScreen('spin',this)"><span class="nav-icon"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAC1klEQVR42gXBbWjUdQAH8O/v6f/7/+/cXTs93dI3NUQTQ9fGSBlsgmQqREuwCEYv1JH6IvEJhN4LEqwHUjOCwMhGD1DYi0gwVpHOLW0T65Y71tzm3fTOu93T/3+/pz4fgrhApJiGByJAHATlibJWAOA5QIEaKOVJqeqKAgQCTEpTVRxUQgguN2/tSrWtSaxeRXx++dIFEEelsLUacWBwHIAJIzChid/T26fD8O3DQ9Lnrw4MlOoN6mApvXzxAgijRMECIACjfXte6ezfdeXqtWyurJzLzi3M/rcw+yDXtG6prPYPHjryzgkQ+L4HiERP/+4vvv1h5mFuMpvd/vLug6feLWp3L5vftWff6ZNnbKidNpnp+4NDR8ECDhcIHuvc0q0j63v+sWPHt/XuWCpU/Vj84IGhHdu7H+dzGqSjo8M6Bi+g0EpVwolbd4Mg7Wz8o+GLH783nI7HEdU/+/STD85fiq1eG2ttrzYwM/0vmk0uwJrVxuTYpKRBpVIe+fyrRqVUWSr4ntj/xpsDr+9jPr785mp6VcppC+MYR8sz6zra02sfzi0WF/K0afLzi91dzydTfry17ceffxk8cHR+fnHj+o2j16+XCkVuQIklzJi7Y+OtiZY7FoY56Qfrt24evXUj/XTbyNcjNlIzf2ecJZEy1EHUmmHCoy8892zM6Nt//K4VlmtmfGoazC8/KUxO3JifzTSqRSGkEC2cMWVs3ULLmOSBaE+sSyaTlNItnZ17X9u7pi11aOitfD7PHXkqEVOqwp15lMksX1vhUef1dL24MpUqFnKb+IaVkvz0/XdNSsb/uv3huWEb1f65M+ZB83iMVuu13yZ+BWTEENbqO/v7CLPL5cKfU1Nnh98vLj95MJcltgFoP2AEFNJn2hJjKSXSRq6376VSsRT3A0bJzZujgLJQDhoUAAhfQXTowAADOEpk0jUIIOAsgfHQBEICo+AMBwj+By/sWVKXT1DjAAAAAElFTkSuQmCC" width="18" height="18" style="image-rendering:pixelated;vertical-align:middle;" alt="die"></span>encounter</button>
   <button class="nav-btn" id="inbox-nav-btn" onclick="showScreen('inbox',this)"><span class="nav-icon">📡</span>comms</button>
   <button class="nav-btn" onclick="showScreen('rewards',this)"><span class="nav-icon">🪙</span>loot</button>
   <button class="nav-btn" onclick="showScreen('profile',this)"><span class="nav-icon">🗡</span>profile</button>
   <button class="nav-btn" onclick="showScreen('coach',this)"><span class="nav-icon">👑</span>donut</button>
 </nav>
 
+
+/* ─── PIXEL ART ICONS ───────────────────────────────────────────────────── */
+const ICON_COIN = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAACtElEQVR42gXBW2hbZQDA8f93O5ectE2KHXYktS0rbk6HOHT1QmHqgyLK1BfFF9mN6QrbQJjg3Kog+qbDoexZBPVBtocNZANR59b5ph11G7GONWnTrk0bkyY5Oed8x99PZYwfWxQGqSBxfUSCAVdjLakCBSkICY4xWQFGCmG0jqOWAAWuJLEACQAxSEOcSGslCIEMUIhowwcfHDh08PVuHC5Wy0kU54O+b8/93gEVuOsbIRKNdoibDmTgnbeeVXF48pMTaDCWhXmcbNqarEX6/M83PE0EAnxNOweT+54+9fXnxOEvZ842Vu5Bx+txV5r1Nw6/R9s7fOTED5f+bCRgoF/z0du705VL56Ymvj++I735RVr/rvrj/tqFQ+n8mbP7Bi9+/GJavvzq+GheoB2Y3PvKyc9OXT499fyOEbc3Kt26cOPinT3HplhtfHP0yEPF4ujWPI254WLRTs/pDCz9WyJqPrlza9ws/fHrld3H3t2y6/G/fzrfb4LCyObxJ55ablvyA1evXnMFWoEnPFbnErmW9Pot2Vu9Xm53w9LsXzbtPrrrsUqiHnjpwNGX90qdbac1lUd1O/XW0u1n3tzjB325YGB6+la1ur5t+yObCyPDEy/kxsY/PfBhreXdrNbXO6HIwM4HC2ObnO2FXLe2+P5Xp0lhaAihWat/efyDSmV1OXJnK41yO1NZqAkFvQ7DueC15ybq87eLQ/eX7i32DxabLWxoB4Lsb9eml226LoJ/FiMSRzmu2+kmnXay1uyUqsuFsYdnZua06Bu8b8vC0n9XZmZXIhvpTOluNbUa1xMgPcfE3VABMFrYpDqxI4yUZiOKZY9/t1Jux1GK1m5PGEZorQHXdYHAz3iOq8CBHqMc0GDAgZzrOZDVQgDK6CSNsWA1CCSQkFop8ZTpdiNHaNIYEPA/PLQmTUDIxYkAAAAASUVORK5CYII=';
+const ICON_DIE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAC1klEQVR42gXBbWjUdQAH8O/v6f/7/+/cXTs93dI3NUQTQ9fGSBlsgmQqREuwCEYv1JH6IvEJhN4LEqwHUjOCwMhGD1DYi0gwVpHOLW0T65Y71tzm3fTOu93T/3+/pz4fgrhApJiGByJAHATlibJWAOA5QIEaKOVJqeqKAgQCTEpTVRxUQgguN2/tSrWtSaxeRXx++dIFEEelsLUacWBwHIAJIzChid/T26fD8O3DQ9Lnrw4MlOoN6mApvXzxAgijRMECIACjfXte6ezfdeXqtWyurJzLzi3M/rcw+yDXtG6prPYPHjryzgkQ+L4HiERP/+4vvv1h5mFuMpvd/vLug6feLWp3L5vftWff6ZNnbKidNpnp+4NDR8ECDhcIHuvc0q0j63v+sWPHt/XuWCpU/Vj84IGhHdu7H+dzGqSjo8M6Bi+g0EpVwolbd4Mg7Wz8o+GLH783nI7HEdU/+/STD85fiq1eG2ttrzYwM/0vmk0uwJrVxuTYpKRBpVIe+fyrRqVUWSr4ntj/xpsDr+9jPr785mp6VcppC+MYR8sz6zra02sfzi0WF/K0afLzi91dzydTfry17ceffxk8cHR+fnHj+o2j16+XCkVuQIklzJi7Y+OtiZY7FoY56Qfrt24evXUj/XTbyNcjNlIzf2ecJZEy1EHUmmHCoy8892zM6Nt//K4VlmtmfGoazC8/KUxO3JifzTSqRSGkEC2cMWVs3ULLmOSBaE+sSyaTlNItnZ17X9u7pi11aOitfD7PHXkqEVOqwp15lMksX1vhUef1dL24MpUqFnKb+IaVkvz0/XdNSsb/uv3huWEb1f65M+ZB83iMVuu13yZ+BWTEENbqO/v7CLPL5cKfU1Nnh98vLj95MJcltgFoP2AEFNJn2hJjKSXSRq6376VSsRT3A0bJzZujgLJQDhoUAAhfQXTowAADOEpk0jUIIOAsgfHQBEICo+AMBwj+By/sWVKXT1DjAAAAAElFTkSuQmCC';
+function pixelIcon(src, size=16) {
+  return `<img src="${src}" width="${size}" height="${size}" style="image-rendering:pixelated;vertical-align:middle;margin-right:3px;" alt="">`;
+}
 <script>
 /* ─── CONSTANTS ─────────────────────────────────────────────────────────── */
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -1108,7 +1115,7 @@ function deductPoints(pts,label,type){
   save('dr-rewards',rewardsState);
   if(deduct>0)showPtsToast('-'+deduct+' 🪙 — '+label);
   const badge=document.getElementById('today-pts-badge');
-  if(badge)badge.textContent='🪙 '+getPoints()+' coins';
+  if(badge)badge.textContent=pixelIcon(ICON_COIN)+''+getPoints()+' coins';
 }
 
 function undoBonusSpin(taskId){
@@ -1178,7 +1185,7 @@ function renderToday(){
   document.getElementById('prog-fraction').textContent=done+' / '+total;
   document.getElementById('streak-row').textContent='● '+calcStreak()+' floors survived';
   const ptsBadge=document.getElementById('today-pts-badge');
-  if(ptsBadge)ptsBadge.textContent='🪙 '+getPoints()+' coins';
+  if(ptsBadge)ptsBadge.textContent=pixelIcon(ICON_COIN)+''+getPoints()+' coins';
   renderSystemGreeting();
   renderStatusBar();
   const isComplete=pct===100&&total>0;
@@ -2278,7 +2285,7 @@ function renderProfile(){
     </div>
 
     <div class="stat-grid-dcc">
-      <div class="stat-block"><div class="stat-block-label">Crawler Coins</div><div class="stat-block-val">🪙 ${coins}</div></div>
+      <div class="stat-block"><div class="stat-block-label">Crawler Coins</div><div class="stat-block-val">${pixelIcon(ICON_COIN,18)} ${coins}</div></div>
       <div class="stat-block"><div class="stat-block-label">Floors Survived</div><div class="stat-block-val">⚔ ${streak}</div></div>
       <div class="stat-block"><div class="stat-block-label">Best Streak</div><div class="stat-block-val">🏆 ${bestStreak}</div></div>
       <div class="stat-block"><div class="stat-block-label">Total XP</div><div class="stat-block-val">⚡ ${totalXP}</div></div>
@@ -2603,12 +2610,12 @@ function renderRewards(){
 
   wrap.innerHTML=`
     <div class="points-hero">
-      <div class="points-total">${pts}</div>
-      <div class="points-label">points available</div>
+      <div class="points-total">${pixelIcon(ICON_COIN,32)}${pts}</div>
+      <div class="points-label">crawler coins available</div>
       <div class="points-breakdown">
-        <span class="pts-pill"><span>${earned}</span> earned</span>
-        <span class="pts-pill"><span>${spent}</span> spent</span>
-        <span class="pts-pill"><span>+${todayPts}</span> today</span>
+        <span class="pts-pill">${coinImg}<span>${earned}</span> earned</span>
+        <span class="pts-pill">${coinImg}<span>${spent}</span> spent</span>
+        <span class="pts-pill">${coinImg}<span>+${todayPts}</span> today</span>
         <span class="pts-pill"><span>${streak}</span> day streak</span>
       </div>
     </div>
