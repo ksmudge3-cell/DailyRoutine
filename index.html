@@ -1859,8 +1859,8 @@ function renderProfile(){
   const dt=dogTasks.shared||{morning:[],evening:[]};
   const allDT=[...(dt.morning||[]),...(dt.evening||[])];
   const dogPct=allDT.length?Math.round(allDT.filter(t=>dogData[t.id]).length/allDT.length*100):0;
-  const ednaM=dogPct===100?'Edna approves of your efforts.':dogPct>=50?'Edna is watching you with her whole face.':'Edna has noticed your inactivity.';
-  const kronkM=dogPct===100?'Kronk is vibrating with excitement.':dogPct>=50?'Kronk has positioned himself on your feet.':'Kronk stares at you with his whole face.';
+  const ednaM=dogPct===100?'Edna has secured the perimeter. All threats neutralized. Probably.':dogPct>=50?'Edna is monitoring the balcony situation. It is ongoing.':'Edna has filed a noise complaint with the dungeon.';
+  const kronkM=dogPct===100?'Kronk is vibrating with excitement and has not eaten anything suspicious today.':dogPct>=50?'Kronk has installed himself on your feet. He is helping.':'Kronk is staring at you with his whole face. His tail is still wagging.';
 
   // Stat bars: Loyalty tracks streak, Chaos/Morale track dog care, Zoomies tracks weekend activity
   const loyalty=Math.min(100,streak*10);
@@ -1922,16 +1922,24 @@ function renderProfile(){
         <div class="companion-avatar">🐾</div>
         <div>
           <div class="companion-name">Edna</div>
-          <div class="companion-title-text">The Dramatically Put-Upon · ${ednaEvo.name}</div>
+          <div class="companion-title-text">The Hurricane Dwarf · Age 2 · ${ednaEvo.name}</div>
           <div class="companion-mood">"${ednaM}"</div>
-          <div class="companion-passive">PASSIVE: Emotional Support Aura</div>
+          <div class="companion-passive">PASSIVE: Chaos Engine — converts failed tasks to partial XP</div>
         </div>
+      </div>
+      <div style="font-size:11px;color:var(--hint);line-height:1.7;margin:8px 0 12px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius-sm);">
+        Found during a hurricane. Short. Brown. Absolutely unhinged about balcony security. Barks at leaves, shadows, the concept of wind, and anything within a 40-foot radius that dares to exist. Has appointed herself dungeon perimeter guard. Has never successfully identified an actual threat. Loyalty: unquestionable. Judgment: chaotic.
       </div>
       <div class="stat-bars">
         <div class="stat-bar-row"><span class="stat-bar-name">Loyalty</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${loyalty}%"></div></div></div>
         <div class="stat-bar-row"><span class="stat-bar-name">Floof Level</span><div class="stat-bar-bg"><div class="stat-bar-fill amber" style="width:${ednaFloof}%"></div></div></div>
         <div class="stat-bar-row"><span class="stat-bar-name">Chaos Energy</span><div class="stat-bar-bg"><div class="stat-bar-fill chaos" style="width:${Math.min(100,morale+20)}%"></div></div></div>
         <div class="stat-bar-row"><span class="stat-bar-name">Morale</span><div class="stat-bar-bg"><div class="stat-bar-fill purple" style="width:${morale}%"></div></div></div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--hint);">
+        <span style="color:var(--fire);">ORIGIN:</span> Hurricane rescue · 
+        <span style="color:var(--amber);">SPECIALTY:</span> Perimeter security (self-appointed) · 
+        <span style="color:var(--teal);">KNOWN FOR:</span> The donut cone incident
       </div>
     </div>
 
@@ -1940,16 +1948,24 @@ function renderProfile(){
         <div class="companion-avatar">🐾</div>
         <div>
           <div class="companion-name">Kronk</div>
-          <div class="companion-title-text">Devourer of Forbidden Things · ${kronkEvo.name}</div>
+          <div class="companion-title-text">The Forbidden Snack Enthusiast · Age 1 · ${kronkEvo.name}</div>
           <div class="companion-mood">"${kronkM}"</div>
-          <div class="companion-passive">PASSIVE: Chaos Engine</div>
+          <div class="companion-passive">PASSIVE: Emotional Support Aura — protects sanity after missed days</div>
         </div>
+      </div>
+      <div style="font-size:11px;color:var(--hint);line-height:1.7;margin:8px 0 12px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius-sm);">
+        Picked up by animal control. Arrived a few months ago. Classic lab energy — boundless enthusiasm, maximum affection, zero impulse control around anything edible or vaguely edible. Will absolutely eat something he shouldn't. Has already eaten something he shouldn't. Will do it again. Heart: enormous. Brain: fully committed to chaos. New to the dungeon but already essential.
       </div>
       <div class="stat-bars">
         <div class="stat-bar-row"><span class="stat-bar-name">Loyalty</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${loyalty}%"></div></div></div>
         <div class="stat-bar-row"><span class="stat-bar-name">Chaos Energy</span><div class="stat-bar-bg"><div class="stat-bar-fill chaos" style="width:${Math.min(100,(cxp.kronk||0)/50)}%"></div></div></div>
         <div class="stat-bar-row"><span class="stat-bar-name">Zoomies</span><div class="stat-bar-bg"><div class="stat-bar-fill amber" style="width:${kronkZoomies}%"></div></div></div>
         <div class="stat-bar-row"><span class="stat-bar-name">Morale</span><div class="stat-bar-bg"><div class="stat-bar-fill purple" style="width:${morale}%"></div></div></div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--hint);">
+        <span style="color:var(--fire);">ORIGIN:</span> Animal control rescue · 
+        <span style="color:var(--amber);">SPECIALTY:</span> Emotional support, forbidden snacks · 
+        <span style="color:var(--teal);">KNOWN FOR:</span> The tongue, the zoomies, the incident
       </div>
     </div>
 
