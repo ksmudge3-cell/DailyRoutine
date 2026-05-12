@@ -294,6 +294,60 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 
 /* ── SCAN LINE OVERLAY ────────────────────────────────── */
 body::after { content: ''; position: fixed; inset: 0; background: var(--scanline); pointer-events: none; z-index: 9998; opacity: 0.4; }
+.boss-battle-wrap { width: 100%; display: none; }
+.boss-battle-wrap.show { display: block; }
+.boss-encounter-header { text-align: center; margin-bottom: 12px; }
+.boss-encounter-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-bottom: 4px; }
+.boss-encounter-name { font-family: var(--serif); font-size: 20px; font-weight: 300; color: var(--text); }
+.boss-hp-bar-wrap { margin: 10px 0; }
+.boss-hp-bar-bg { background: var(--surface2); border-radius: 99px; height: 10px; overflow: hidden; border: 0.5px solid rgba(255,92,92,0.2); }
+.boss-hp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--red), var(--fire)); border-radius: 99px; transition: width 0.8s ease; }
+.boss-hp-numbers { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 4px; }
+.combo-meter { display: flex; gap: 4px; justify-content: center; margin: 8px 0; }
+.combo-pip { width: 18px; height: 6px; border-radius: 99px; background: var(--surface2); border: 0.5px solid var(--border); transition: all 0.3s; }
+.combo-pip.active { background: var(--teal); border-color: var(--teal); }
+.combo-pip.fire { background: var(--fire); border-color: var(--fire); }
+.combo-label { font-size: 10px; color: var(--muted); text-align: center; letter-spacing: 0.06em; margin-bottom: 8px; transition: color 0.3s; }
+.boss-taunt { background: rgba(255,92,92,0.06); border-left: 2px solid var(--red); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 8px 12px; margin: 8px 0; font-size: 12px; font-style: italic; color: var(--text); min-height: 36px; transition: all 0.4s; }
+.boss-taunt .boss-name-attr { font-size: 9px; color: var(--red); letter-spacing: 0.08em; text-transform: uppercase; font-style: normal; margin-bottom: 2px; }
+.companion-reactions { display: flex; gap: 8px; margin: 8px 0; }
+.companion-reaction { flex: 1; background: var(--surface2); border-radius: var(--radius-sm); padding: 8px; font-size: 10px; color: var(--muted); font-style: italic; line-height: 1.5; }
+.companion-reaction .cr-name { font-size: 9px; color: var(--amber); letter-spacing: 0.06em; text-transform: uppercase; font-style: normal; margin-bottom: 3px; }
+.boss-timer { font-family: var(--serif); font-size: 42px; font-weight: 300; color: var(--teal); text-align: center; margin: 8px 0; transition: color 0.3s; }
+.boss-timer.danger { color: var(--red); }
+.boss-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+.boss-defeat-banner { background: var(--teal-dim); border: 0.5px solid rgba(45,212,160,0.3); border-radius: var(--radius-sm); padding: 14px; text-align: center; display: none; }
+.boss-defeat-banner.show { display: block; }
+.boss-defeat-title { font-family: var(--serif); font-size: 22px; font-weight: 300; color: var(--teal); margin-bottom: 6px; }
+.boss-defeat-loot { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.8; }
+.boss-abandon-banner { background: var(--coral-dim); border: 0.5px solid rgba(248,113,113,0.2); border-radius: var(--radius-sm); padding: 12px; text-align: center; display: none; }
+.boss-abandon-banner.show { display: block; }
+
+/* ── PHASE 2: RANDOM ENCOUNTER OVERLAY ────────────────── */
+.encounter-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 400; display: none; align-items: flex-end; backdrop-filter: blur(6px); }
+.encounter-overlay.show { display: flex; }
+.encounter-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 24px 20px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); border-top: 0.5px solid var(--border2); max-height: 85vh; overflow-y: auto; }
+.encounter-type { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; }
+.encounter-title { font-family: var(--serif); font-size: 24px; font-weight: 300; color: var(--text); margin-bottom: 4px; }
+.encounter-flavor { font-size: 12px; color: var(--muted); line-height: 1.7; margin-bottom: 16px; font-family: var(--mono); }
+.encounter-system { background: var(--surface2); border-left: 2px solid var(--amber); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 8px 12px; font-size: 11px; color: var(--muted); margin-bottom: 16px; }
+.encounter-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.enc-btn { flex: 1; min-width: 120px; padding: 12px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: none; color: var(--text); font-family: var(--mono); font-size: 12px; cursor: pointer; }
+.enc-btn.primary { background: var(--teal); color: #0a0a0c; border-color: var(--teal); font-weight: 500; }
+.enc-btn.danger { border-color: var(--red); color: var(--red); }
+.enc-btn.amber { border-color: var(--amber); color: var(--amber); }
+.encounter-timer { font-family: var(--serif); font-size: 36px; font-weight: 300; color: var(--amber); text-align: center; margin: 12px 0; display: none; }
+.audience-vote-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.vote-option { padding: 10px 14px; background: var(--surface2); border: 0.5px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; color: var(--text); cursor: pointer; }
+.vote-option:hover { border-color: var(--amber); }
+.vote-option.selected { border-color: var(--teal); color: var(--teal); background: var(--teal-dim); }
+
+/* ── PHASE 2: COMPANION PHOTO UPLOAD ──────────────────── */
+.photo-upload-area { border: 1.5px dashed var(--border2); border-radius: var(--radius-sm); padding: 16px; text-align: center; cursor: pointer; margin-bottom: 8px; transition: border-color 0.15s; }
+.photo-upload-area:hover { border-color: var(--teal); }
+.photo-upload-area input { display: none; }
+.photo-url-input { width: 100%; background: var(--surface2); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 8px 12px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; margin-top: 6px; }
+.photo-url-input:focus { border-color: var(--teal); }
 /* Rewards */
 .points-hero { background: linear-gradient(135deg, rgba(45,212,160,0.15), rgba(167,139,250,0.1)); border: 0.5px solid rgba(45,212,160,0.25); border-radius: var(--radius); padding: 24px 20px; margin-bottom: 16px; text-align: center; }
 .points-total { font-family: var(--serif); font-size: 56px; font-weight: 300; color: var(--teal); line-height: 1; }
@@ -391,15 +445,59 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
     <div id="wheel-empty" style="display:none;font-size:13px;color:var(--muted);text-align:center;padding:12px 0;">No available tasks — add some or adjust the filter.</div>
     <button class="spin-btn" id="spin-btn" onclick="spinWheel()">Spin</button>
     <div class="spin-result" id="spin-result">
-      <div class="spin-result-label">Your challenge</div>
-      <div class="spin-result-task" id="result-task"></div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;" id="result-meta"></div>
-      <div class="timer-display" id="timer-display">10:00</div>
-      <div class="timer-row">
-        <button class="timer-btn primary" id="timer-start-btn" onclick="toggleTimer()">Start timer</button>
+      <div class="boss-encounter-header">
+        <div class="boss-encounter-label" id="encounter-label">Encounter Initiated</div>
+        <div class="boss-encounter-name" id="result-task"></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="result-meta"></div>
+      </div>
+
+      <!-- Boss HP bar -->
+      <div class="boss-hp-bar-wrap">
+        <div class="boss-hp-bar-bg"><div class="boss-hp-bar-fill" id="boss-hp-fill" style="width:100%"></div></div>
+        <div class="boss-hp-numbers"><span id="boss-phase-label">Opening</span><span id="boss-hp-pct">100%</span></div>
+      </div>
+
+      <!-- Combo meter -->
+      <div class="combo-label" id="combo-label">COMBO × 0 — Not started</div>
+      <div class="combo-meter" id="combo-meter">
+        <div class="combo-pip" id="pip-0"></div>
+        <div class="combo-pip" id="pip-1"></div>
+        <div class="combo-pip" id="pip-2"></div>
+        <div class="combo-pip" id="pip-3"></div>
+      </div>
+
+      <!-- Boss taunt -->
+      <div class="boss-taunt" id="boss-taunt">
+        <div class="boss-name-attr">Boss</div>
+        <div id="boss-taunt-text">The floor boss is watching you.</div>
+      </div>
+
+      <!-- Companion reactions -->
+      <div class="companion-reactions">
+        <div class="companion-reaction"><div class="cr-name">Edna</div><div id="edna-reaction">Edna is monitoring the situation.</div></div>
+        <div class="companion-reaction"><div class="cr-name">Kronk</div><div id="kronk-reaction">Kronk is vibrating with pre-battle energy.</div></div>
+      </div>
+
+      <!-- Timer -->
+      <div class="boss-timer" id="timer-display">10:00</div>
+
+      <!-- Defeat / abandon banners -->
+      <div class="boss-defeat-banner" id="boss-defeat-banner">
+        <div class="boss-defeat-title">⚔ BOSS DEFEATED</div>
+        <div class="boss-defeat-loot" id="defeat-loot-text"></div>
+        <button class="timer-btn primary" onclick="markSpinDone()" style="width:100%;padding:12px;">Claim loot ✓</button>
+      </div>
+      <div class="boss-abandon-banner" id="boss-abandon-banner">
+        <div style="font-size:13px;color:var(--coral);margin-bottom:6px;">Encounter abandoned.</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;" id="abandon-text">The boss retreats. For now.</div>
+      </div>
+
+      <!-- Actions -->
+      <div class="boss-actions" id="boss-actions">
+        <button class="timer-btn primary" id="timer-start-btn" onclick="toggleTimer()">Begin encounter</button>
         <button class="timer-btn" onclick="markSpinDone()">Done ✓</button>
         <button class="timer-btn" id="respin-btn" onclick="reSpinWheel()">Re-spin (<span id="respin-count">3</span>)</button>
-        <button class="timer-btn danger" onclick="skipTask()">Skip</button>
+        <button class="timer-btn danger" onclick="skipTask()">Retreat</button>
       </div>
     </div>
     <div id="avoidance-wrap" style="width:100%;margin-top:8px;display:none;">
@@ -502,6 +600,42 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
 
 <!-- Points toast -->
 <div class="pts-earned-toast" id="pts-toast"></div>
+
+<!-- Random Encounter Overlay -->
+<div class="encounter-overlay" id="encounter-overlay" onclick="handleEncounterOverlayClick(event)">
+  <div class="encounter-sheet" id="encounter-sheet">
+    <div class="encounter-type" id="enc-type">Random Encounter</div>
+    <div class="encounter-title" id="enc-title"></div>
+    <div class="encounter-flavor" id="enc-flavor"></div>
+    <div class="encounter-system" id="enc-system"></div>
+    <div id="enc-vote-options" class="audience-vote-options" style="display:none;"></div>
+    <div class="encounter-timer" id="enc-timer">3:00</div>
+    <div class="encounter-actions" id="enc-actions"></div>
+  </div>
+</div>
+
+<!-- Companion Photo Modal -->
+<div class="encounter-overlay" id="photo-modal" onclick="handlePhotoModalClick(event)">
+  <div class="encounter-sheet">
+    <div class="encounter-type">Companion Photo</div>
+    <div class="encounter-title" id="photo-modal-title">Update photo</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7;">Paste an image URL or upload from your device.</div>
+    <input type="text" class="photo-url-input" id="photo-url-input" placeholder="https://... image URL" />
+    <div style="margin:10px 0;text-align:center;font-size:11px;color:var(--hint);">— or —</div>
+    <label class="photo-upload-area" for="photo-file-input">
+      <div style="font-size:13px;color:var(--muted);">📁 Choose file from device</div>
+      <div style="font-size:11px;color:var(--hint);margin-top:4px;">PNG, JPG — will be embedded as base64</div>
+      <input type="file" id="photo-file-input" accept="image/*" onchange="handlePhotoFile(event)" />
+    </label>
+    <div id="photo-preview" style="display:none;text-align:center;margin:10px 0;">
+      <img id="photo-preview-img" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--teal);" />
+    </div>
+    <div class="encounter-actions" style="margin-top:12px;">
+      <button class="enc-btn primary" onclick="saveCompanionPhoto()">Save</button>
+      <button class="enc-btn" onclick="closePhotoModal()">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <nav class="bottom-nav">
   <button class="nav-btn active" onclick="showScreen('today',this)"><span class="nav-icon">⚔</span>floor</button>
@@ -688,7 +822,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -727,6 +861,7 @@ async function loadFromSupabase(){
       }
       if(d.rewardsState)rewardsState={...DEFAULT_REWARDS_STATE,...d.rewardsState};
       if(d.xpState)xpState={...xpState,...d.xpState};
+      if(d.companionPhotos)companionPhotos={...companionPhotos,...d.companionPhotos};
       if(d.dogState)dogState=d.dogState;
       if(d.groomState)groomState=d.groomState;
       if(d.prevState)prevState=d.prevState;
@@ -1312,10 +1447,12 @@ function doSpin(extra,dur,cb){
 
 function spinWheel(){
   if(spinning||!currentSpinTasks.length)return;
+  // 25% chance of random encounter instead of normal spin
+  if(maybeShowRandomEncounter())return;
   reSpinsLeft=3;updateRespinBtn();
   document.getElementById('spin-btn').disabled=true;
   document.getElementById('spin-result').classList.remove('show');
-  stopTimer();
+  stopBossTimer();
   doSpin((5+Math.random()*5)*2*Math.PI+Math.random()*2*Math.PI,3000,task=>{
     document.getElementById('spin-btn').disabled=false;showResult(task);
   });
@@ -1340,20 +1477,144 @@ function updateRespinBtn(){
   cnt.textContent=reSpinsLeft;btn.disabled=reSpinsLeft<=0;btn.style.opacity=reSpinsLeft<=0?'0.4':'1';
 }
 
+/* ─── BOSS BATTLE ENGINE ─────────────────────────────────────────────────── */
+const BOSS_TAUNTS={
+  opening:["You think you can beat me? Adorable.","The timer has started. Enjoy your confidence while it lasts.","I've seen Crawlers quit in the first minute. Will you?"],
+  resistance:["Your phone is right there. One notification. It'll only take a second.","The procrastination fog is thickening. I can feel your resolve weakening.","You could take a break. No one would know."],
+  dip:["Half your time is gone. What do you have to show for it?","Even the goblins are more focused than you right now.","Distraction detected. Just a small one. Just for a moment..."],
+  final:["You're still here? Unexpected.","I underestimated you. I won't do it again.","The end is near. So is my defeat. I hate this."],
+};
+const EDNA_REACTIONS={
+  opening:["Edna has secured the perimeter for this encounter.","Edna is watching. Zero threats detected. So far.","Edna approves of your starting posture."],
+  resistance:["Edna is watching you with her whole face.","Edna has filed a preliminary concern report.","Edna barks once at the void. She means it as support."],
+  dip:["Edna has detected a threat. It is your own procrastination.","Edna applies Chaos Engine. Partial XP secured regardless.","Edna is very still. This is either support or judgment."],
+  final:["Edna demands you finish. Non-negotiable.","Edna is very still. She believes in you and it is alarming.","Edna has deployed full security protocol. You will not fail."],
+};
+const KRONK_REACTIONS={
+  opening:["Kronk is vibrating with pre-battle energy.","Kronk's tail is going. This is his support mechanism.","Kronk has installed himself nearby. Just in case."],
+  resistance:["Kronk activates Emotional Support Aura. You feel slightly better.","Kronk has positioned himself closer. Just in case.","Kronk stares at you with his whole face. His tail is still wagging."],
+  dip:["Kronk sits very close to you. He does not fully understand but he is here.","Kronk has not eaten anything suspicious today. This is his gift to you.","Kronk activates Chaos Engine. Partial XP secured."],
+  final:["Kronk is fully unhinged with excitement. This is peak performance.","Kronk believes in you completely. He always has.","Kronk has ascended. This is what zoomies were training for."],
+};
+
+let bossTimerInterval=null,bossTimerRunning=false,bossTimerSeconds=0;
+let bossComboSeconds=0,bossComboLevel=0;
+let bossTotalSeconds=0,currentPhase='opening';
+
+function getBossPhase(pct){
+  if(pct>75)return'opening';if(pct>50)return'resistance';if(pct>25)return'dip';return'final';
+}
+
+function updateBossUI(){
+  const pct=Math.max(0,Math.round((bossTimerSeconds/bossTotalSeconds)*100));
+  const phase=getBossPhase(pct);
+  const fill=document.getElementById('boss-hp-fill');
+  const pctEl=document.getElementById('boss-hp-pct');
+  const phaseEl=document.getElementById('boss-phase-label');
+  const timerEl=document.getElementById('timer-display');
+  if(fill)fill.style.width=pct+'%';
+  if(pctEl)pctEl.textContent=pct+'%';
+  if(phaseEl)phaseEl.textContent={opening:'Opening',resistance:'Resistance',dip:'The Dip',final:'Final Push'}[phase];
+  if(timerEl){timerEl.textContent=formatTime(bossTimerSeconds);timerEl.className='boss-timer'+(pct<25?' danger':'');}
+  if(phase!==currentPhase){
+    currentPhase=phase;
+    const taunt=document.getElementById('boss-taunt-text');
+    const edna=document.getElementById('edna-reaction');
+    const kronk=document.getElementById('kronk-reaction');
+    if(taunt)taunt.textContent=DCC.getRandom(BOSS_TAUNTS[phase]);
+    if(edna)edna.textContent=DCC.getRandom(EDNA_REACTIONS[phase]);
+    if(kronk)kronk.textContent=DCC.getRandom(KRONK_REACTIONS[phase]);
+  }
+}
+
+function updateComboUI(){
+  const labels=['COMBO × 0 — Not started','COMBO × 1 — Focused','COMBO × 2 — Locked In','COMBO × 3 — Hyperfocused 🔥','COMBO × 4 — UNSTOPPABLE'];
+  const colors=['var(--muted)','var(--teal)','var(--teal)','var(--fire)','var(--fire)'];
+  const thresholds=[0,300,600,1200,bossTotalSeconds];
+  let level=0;
+  for(let i=1;i<thresholds.length;i++){if(bossComboSeconds>=thresholds[i])level=i;}
+  bossComboLevel=Math.min(level,4);
+  const lbl=document.getElementById('combo-label');
+  if(lbl){lbl.textContent=labels[bossComboLevel];lbl.style.color=colors[bossComboLevel];}
+  for(let i=0;i<4;i++){
+    const pip=document.getElementById('pip-'+i);
+    if(!pip)continue;
+    pip.className='combo-pip'+(i<bossComboLevel?' '+(bossComboLevel>=3?'fire':'active'):'');
+  }
+}
+
+function breakCombo(){
+  bossComboSeconds=0;bossComboLevel=0;
+  const lbl=document.getElementById('combo-label');
+  if(lbl){lbl.textContent='COMBO BROKEN. The boss laughs. Kronk is concerned.';lbl.style.color='var(--red)';}
+  for(let i=0;i<4;i++){const p=document.getElementById('pip-'+i);if(p)p.className='combo-pip';}
+  setTimeout(updateComboUI,2500);
+}
+
 function showResult(task){
-  currentSpinTask=task;
+  currentSpinTask=task;currentPhase='opening';bossComboSeconds=0;bossComboLevel=0;
+  const dur=spinDuration>0?spinDuration:task.dur;
+  bossTotalSeconds=dur*60;bossTimerSeconds=bossTotalSeconds;
+  const label=document.getElementById('encounter-label');
+  if(label)label.textContent='Boss Encounter Initiated';
   document.getElementById('result-task').textContent=task.name;
   const cdStr=task.cooldown===0?'always available':`every ${task.cooldown}d`;
-  document.getElementById('result-meta').textContent=(task.repeat?`Repeating · ${cdStr}`:'One-time')+` · ${task.dur} min`;
-  const dur=spinDuration>0?spinDuration:task.dur;
-  timerSeconds=dur*60;
-  document.getElementById('timer-display').textContent=formatTime(timerSeconds);
-  document.getElementById('timer-display').style.color='var(--teal)';
-  document.getElementById('timer-start-btn').textContent='Start timer';
+  document.getElementById('result-meta').textContent=(task.repeat?`Repeating · ${cdStr}`:'One-time')+` · ${dur} min`;
+  document.getElementById('boss-hp-fill').style.width='100%';
+  document.getElementById('boss-hp-pct').textContent='100%';
+  document.getElementById('boss-phase-label').textContent='Opening';
+  document.getElementById('timer-display').textContent=formatTime(bossTimerSeconds);
+  document.getElementById('timer-display').className='boss-timer';
+  document.getElementById('timer-start-btn').textContent='Begin encounter';
+  document.getElementById('boss-taunt-text').textContent=DCC.getRandom(BOSS_TAUNTS.opening);
+  document.getElementById('edna-reaction').textContent=DCC.getRandom(EDNA_REACTIONS.opening);
+  document.getElementById('kronk-reaction').textContent=DCC.getRandom(KRONK_REACTIONS.opening);
+  document.getElementById('boss-defeat-banner').classList.remove('show');
+  document.getElementById('boss-abandon-banner').classList.remove('show');
+  document.getElementById('boss-actions').style.display='flex';
+  updateComboUI();
   document.getElementById('spin-result').classList.add('show');
 }
 
-function hideResult(){document.getElementById('spin-result').classList.remove('show');stopTimer();currentSpinTask=null;}
+function hideResult(){
+  document.getElementById('spin-result').classList.remove('show');
+  stopBossTimer();currentSpinTask=null;
+}
+
+function stopBossTimer(){clearInterval(bossTimerInterval);bossTimerRunning=false;bossTimerInterval=null;}
+
+function showBossDefeat(){
+  stopBossTimer();fireConfetti();
+  const bonusCoins=bossComboLevel>=3?15:bossComboLevel>=2?8:0;
+  const coins=PTS.spinTask+bonusCoins;
+  const xp=bossComboLevel>=4?75:bossComboLevel>=3?50:XP_PTS.spinTask;
+  const donutLine=DCC.getRandom(DCC.donut.floorCleared);
+  document.getElementById('defeat-loot-text').innerHTML=
+    `+${coins} 🪙 Crawler Coins<br>+${xp} ⚡ XP${bossComboLevel>=3?' <span style="color:var(--fire);">+ Combo Bonus!</span>':''}<br><br><em style="color:var(--purple);">"${donutLine}"</em><br><small style="color:var(--hint);">— Princess Donut</small>`;
+  document.getElementById('boss-defeat-banner').classList.add('show');
+  document.getElementById('boss-actions').style.display='none';
+  showPtsToast(`⚔ Boss defeated! +${coins} 🪙 +${xp} ⚡`);
+  awardXP(xp,'Boss defeated');
+}
+
+function toggleTimer(){
+  if(bossTimerRunning){
+    clearInterval(bossTimerInterval);bossTimerRunning=false;
+    document.getElementById('timer-start-btn').textContent='Resume';
+    breakCombo();
+  } else {
+    bossTimerRunning=true;
+    document.getElementById('timer-start-btn').textContent='Pause';
+    bossTimerInterval=setInterval(()=>{
+      bossTimerSeconds--;bossComboSeconds++;
+      updateBossUI();updateComboUI();
+      if(bossTimerSeconds<=0){stopBossTimer();showBossDefeat();}
+    },1000);
+  }
+}
+
+function stopTimer(){stopBossTimer();}
+function formatTime(s){return`${~~(s/60)}:${String(s%60).padStart(2,'0')}`;}
 
 function markSpinDone(){
   if(!currentSpinTask)return;
@@ -1373,7 +1634,6 @@ function markDoneOutsideSpin(taskId){
   const task=findWheelTask(taskId);
   if(task&&task.cooldown!==0){wheelDone[taskId]=Date.now();save('dr-wheel-done',wheelDone);}
   else if(task&&task.cooldown===0){
-    // Track in session so the ✓ turns green briefly
     sessionDone.add(taskId);
     setTimeout(()=>{sessionDone.delete(taskId);renderTaskManager();},3000);
   }
@@ -1385,19 +1645,138 @@ function markDoneOutsideSpin(taskId){
   if(selectedDay===new Date().getDay())renderBonusToday(selectedDay);
 }
 
-function formatTime(s){return`${~~(s/60)}:${String(s%60).padStart(2,'0')}`;}
-function toggleTimer(){
-  if(timerRunning){clearInterval(timerInterval);timerRunning=false;document.getElementById('timer-start-btn').textContent='Resume';}
-  else{
-    timerRunning=true;document.getElementById('timer-start-btn').textContent='Pause';
-    timerInterval=setInterval(()=>{
-      timerSeconds--;
-      document.getElementById('timer-display').textContent=formatTime(timerSeconds);
-      if(timerSeconds<=0){clearInterval(timerInterval);timerRunning=false;document.getElementById('timer-display').textContent='Done!';document.getElementById('timer-start-btn').textContent='Start timer';}
-    },1000);
-  }
+/* ─── RANDOM ENCOUNTER SYSTEM ────────────────────────────────────────────── */
+let activeEncounter=null,encTimerInterval=null,encTimerSeconds=0;
+const ENCOUNTER_CHANCE=0.25;
+
+const ENCOUNTERS=[
+  {id:'loot-goblin',weight:30,title:'Loot Goblin',type:'🐀 Loot Goblin',
+    flavor:'It is fast. It will not wait.\nComplete one quick task in 3 minutes.\nReward: double coins.\nFailure: it escapes. The coins go with it.',
+    system:'RANDOM ENCOUNTER: Loot Goblin detected. Timer starts now. Do not hesitate.',
+    timerSeconds:180,
+    actions:[{label:'Chase it! (start timer)',id:'start',primary:true},{label:'Let it go',id:'flee',danger:true}],
+    onSuccess:()=>{awardPoints(20,'Loot Goblin caught!','encounter');awardXP(15,'Loot Goblin');showPtsToast('+20 🪙 Loot Goblin caught!');},
+    onFail:()=>{showPtsToast('Loot Goblin escaped.');},
+  },
+  {id:'mimic-chest',weight:20,title:'Mimic Chest',type:'📦 Mimic Chest',
+    flavor:'This task is not what it appears.\nEstimated time: LIES.\nProceed anyway.\nBonus coins await those who survive.',
+    system:'MIMIC DETECTED. Difficulty adjusted. Companion morale: cautious. Reward: elevated.',
+    actions:[{label:'Open the chest',id:'accept',primary:true},{label:'Back away slowly',id:'flee'}],
+    onSuccess:()=>{awardPoints(25,'Mimic Chest defeated','encounter');awardXP(20,'Mimic Chest');showPtsToast('+25 🪙 Mimic survived!');},
+    onFail:null,
+  },
+  {id:'audience-vote',weight:20,title:'Audience Vote',type:'📺 Audience Vote',
+    flavor:"The viewers have decided your fate.\nToday's modifier has been selected.\nThe dungeon does not take requests.",
+    system:'AUDIENCE VOTE ACTIVE. Modifier applied. Compliance is expected.',
+    voteOptions:['DOUBLE COINS: All tasks worth 2× today.','SPEED RUN: Complete 5 tasks before noon for bonus loot.','COMPANION DAY: Dog care tasks worth triple today.','REST DAY AUTHORIZED: The audience votes for your recovery.','CHAOS MODE: Spin wheel decides everything today.'],
+    actions:[{label:'Accept the modifier',id:'accept',primary:true},{label:'Dispute the vote',id:'flee'}],
+    onSuccess:()=>{showPtsToast('Modifier active. The audience applauds.');},
+    onFail:null,
+  },
+  {id:'merchant',weight:15,title:'The Merchant',type:'🛒 Merchant Appears',
+    flavor:'She has items. She wants coins.\nThe vending machine is open.\nThis offer expires at midnight.',
+    system:'LIMITED TIME OFFER. The Merchant has appeared. She does not negotiate.',
+    actions:[{label:'Visit the vending machine',id:'shop',primary:true,amber:true},{label:'Keep walking',id:'flee'}],
+    onSuccess:null,onFail:null,
+  },
+  {id:'elite-encounter',weight:15,title:'Elite Encounter',type:'⚔ Elite Encounter',
+    flavor:'A previously ignored task has returned.\nIt is angrier now.\nIt remembers being skipped.\nDifficulty: ELEVATED. Reward: SUBSTANTIAL.',
+    system:'ELITE ENCOUNTER: This task has been waiting. It has had time to think. Complete it now.',
+    actions:[{label:'Face it',id:'accept',primary:true},{label:'Run',id:'flee',danger:true}],
+    onSuccess:()=>{awardPoints(30,'Elite Encounter cleared','encounter');awardXP(40,'Elite Encounter');showPtsToast('+30 🪙 Elite cleared!');},
+    onFail:()=>{showPtsToast('CURSED TASK APPLIED. It will return.');},
+  },
+];
+
+function maybeShowRandomEncounter(){
+  if(Math.random()>ENCOUNTER_CHANCE)return false;
+  const total=ENCOUNTERS.reduce((a,e)=>a+e.weight,0);
+  let r=Math.random()*total,enc=null;
+  for(const e of ENCOUNTERS){r-=e.weight;if(r<=0){enc=e;break;}}
+  if(!enc)enc=ENCOUNTERS[0];
+  showEncounter(enc);return true;
 }
-function stopTimer(){clearInterval(timerInterval);timerRunning=false;timerSeconds=0;}
+
+function showEncounter(enc){
+  activeEncounter={...enc};
+  document.getElementById('enc-type').textContent=enc.type;
+  document.getElementById('enc-title').textContent=enc.title;
+  document.getElementById('enc-flavor').textContent=enc.flavor;
+  document.getElementById('enc-system').textContent=enc.system;
+  const voteWrap=document.getElementById('enc-vote-options');
+  if(enc.voteOptions){
+    voteWrap.style.display='flex';
+    voteWrap.innerHTML=enc.voteOptions.map((v,i)=>`<div class="vote-option" onclick="selectVote(this,'${v.replace(/'/g,"\\'")}')">${v}</div>`).join('');
+  } else voteWrap.style.display='none';
+  const timerEl=document.getElementById('enc-timer');
+  if(enc.timerSeconds){encTimerSeconds=enc.timerSeconds;timerEl.style.display='block';timerEl.textContent=formatTime(encTimerSeconds);}
+  else timerEl.style.display='none';
+  const actionsEl=document.getElementById('enc-actions');
+  actionsEl.innerHTML=enc.actions.map(a=>`<button class="enc-btn${a.primary?' primary':a.danger?' danger':a.amber?' amber':''}" onclick="handleEncounterAction('${a.id}')">${a.label}</button>`).join('');
+  document.getElementById('encounter-overlay').classList.add('show');
+}
+
+function selectVote(el,text){
+  if(activeEncounter)activeEncounter.chosenVote=text;
+  document.querySelectorAll('.vote-option').forEach(v=>v.className='vote-option');
+  el.className='vote-option selected';
+}
+
+function handleEncounterAction(actionId){
+  if(!activeEncounter)return;
+  clearInterval(encTimerInterval);
+  if(actionId==='start'&&activeEncounter.timerSeconds){
+    encTimerInterval=setInterval(()=>{
+      encTimerSeconds--;
+      const el=document.getElementById('enc-timer');
+      if(el)el.textContent=formatTime(encTimerSeconds);
+      if(encTimerSeconds<=0){clearInterval(encTimerInterval);closeEncounterOverlay();if(activeEncounter&&activeEncounter.onSuccess)activeEncounter.onSuccess();}
+    },1000);
+    document.getElementById('enc-actions').innerHTML=`<button class="enc-btn primary" onclick="handleEncounterAction('done')">Done! I caught it ✓</button><button class="enc-btn danger" onclick="handleEncounterAction('fail')">It escaped</button>`;
+    return;
+  }
+  const cb=actionId==='done'||actionId==='accept'?activeEncounter.onSuccess:actionId==='fail'||actionId==='flee'?activeEncounter.onFail:null;
+  if(actionId==='shop'){closeEncounterOverlay();const nb=document.querySelectorAll('.nav-btn')[4];showScreen('rewards',nb);return;}
+  closeEncounterOverlay();if(cb)cb();
+}
+
+function closeEncounterOverlay(){
+  document.getElementById('encounter-overlay').classList.remove('show');
+  clearInterval(encTimerInterval);activeEncounter=null;
+}
+function handleEncounterOverlayClick(e){if(e.target===document.getElementById('encounter-overlay'))closeEncounterOverlay();}
+
+/* ─── COMPANION PHOTO SYSTEM ─────────────────────────────────────────────── */
+let companionPhotos=load('dr-companion-photos',{edna:null,kronk:null});
+let photoEditTarget=null,photoDataPending=null;
+
+function openPhotoModal(companion){
+  photoEditTarget=companion;photoDataPending=null;
+  document.getElementById('photo-modal-title').textContent='Update '+companion.charAt(0).toUpperCase()+companion.slice(1)+"'s photo";
+  document.getElementById('photo-url-input').value=companionPhotos[companion]&&!companionPhotos[companion].startsWith('data:')?companionPhotos[companion]:'';
+  document.getElementById('photo-preview').style.display='none';
+  document.getElementById('photo-modal').classList.add('show');
+}
+function closePhotoModal(){document.getElementById('photo-modal').classList.remove('show');photoEditTarget=null;photoDataPending=null;}
+function handlePhotoModalClick(e){if(e.target===document.getElementById('photo-modal'))closePhotoModal();}
+function handlePhotoFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    photoDataPending=ev.target.result;
+    const preview=document.getElementById('photo-preview');
+    document.getElementById('photo-preview-img').src=photoDataPending;
+    preview.style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+function saveCompanionPhoto(){
+  if(!photoEditTarget)return;
+  const url=document.getElementById('photo-url-input').value.trim();
+  companionPhotos[photoEditTarget]=photoDataPending||url||null;
+  save('dr-companion-photos',companionPhotos);
+  closePhotoModal();renderProfile();
+}
 
 function renderAvoidance(){
   const wrap=document.getElementById('avoidance-wrap'),list=document.getElementById('avoidance-list');if(!wrap||!list)return;
@@ -1919,9 +2298,10 @@ function renderProfile(){
 
     <div class="companion-card">
       <div class="companion-card-header">
-        <div class="companion-avatar">🐾</div>
-        <div>
-          <div class="companion-name">Edna</div>
+        <div class="companion-avatar" onclick="openPhotoModal('edna')" style="cursor:pointer;position:relative;" title="Tap to update photo">
+          ${companionPhotos.edna?`<img src="${companionPhotos.edna}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:'🐾'}
+          <span style="position:absolute;bottom:-2px;right:-2px;background:var(--teal);border-radius:50%;width:16px;height:16px;font-size:9px;display:flex;align-items:center;justify-content:center;color:#0a0a0c;">+</span>
+        </div>
           <div class="companion-title-text">The Hurricane Dwarf · Age 2 · ${ednaEvo.name}</div>
           <div class="companion-mood">"${ednaM}"</div>
           <div class="companion-passive">PASSIVE: Chaos Engine — converts failed tasks to partial XP</div>
@@ -1945,7 +2325,10 @@ function renderProfile(){
 
     <div class="companion-card">
       <div class="companion-card-header">
-        <div class="companion-avatar">🐾</div>
+        <div class="companion-avatar" onclick="openPhotoModal('kronk')" style="cursor:pointer;position:relative;" title="Tap to update photo">
+          ${companionPhotos.kronk?`<img src="${companionPhotos.kronk}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:'🐾'}
+          <span style="position:absolute;bottom:-2px;right:-2px;background:var(--teal);border-radius:50%;width:16px;height:16px;font-size:9px;display:flex;align-items:center;justify-content:center;color:#0a0a0c;">+</span>
+        </div>
         <div>
           <div class="companion-name">Kronk</div>
           <div class="companion-title-text">The Forbidden Snack Enthusiast · Age 1 · ${kronkEvo.name}</div>
