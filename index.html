@@ -2107,7 +2107,7 @@ const DCC={
     streak30:["Thirty days. Remarkable. I may have mentioned you to my associates.","I have told the others about you. They were skeptical. I was not. I am rarely wrong."],
     missedDay:["You triggered a trap. Disappointing but not surprising.","A stumble. Get up. The cameras are still rolling.","Even Crawler Carl had bad days. He got up. So will you."],
     encouragement:["One task. Just one. The floor clears one room at a time.","Edna believes in you. Kronk believes in everything. I am choosing to believe in you today.","You are struggling. This is known. Get up anyway.","The dungeon does not care about your feelings. I, however, note them."],
-    redeem:["You have earned this. Do not waste it.","Ice cream. For all three of you. The audience finds this endearing.","A Kindle. Finally some culture in this dungeon."],
+    redeem:["You have earned this. Do not waste it.","Tome of Infinite Knowledge. Finally some culture in this dungeon.","Victory Feast for the party. The audience finds this endearing.","Elixir of Alertness. A wise choice. Proceed.","Kronk's Forbidden Box has been authorized. He will eat part of it. This is known."],
     general:["The audience is watching. Most of them are rooting for you.","You are performing adequately, Crawler.","Do not ruin it."],
   },
   system:{
@@ -2385,30 +2385,31 @@ function equipTitle(title){
 
 /* ─── REWARDS DATA ───────────────────────────────────────────────────────── */
 const DEFAULT_REWARDS=[
-  // Small — 25–50 pts
-  {id:'r-snack',name:'Favorite snack',emoji:'🍫',cost:25,tier:'small',category:'you'},
-  {id:'r-gaming',name:'Extra hour of guilt-free gaming/TV',emoji:'🎮',cost:25,tier:'small',category:'you'},
-  {id:'r-dessert',name:'Order dessert without thinking about it',emoji:'🍰',cost:25,tier:'small',category:'you'},
-  {id:'r-coffee',name:'Fancy coffee',emoji:'☕',cost:30,tier:'small',category:'you'},
-  {id:'r-puppuccino',name:'Puppuccino run for Edna & Kronk',emoji:'🐾',cost:40,tier:'small',category:'dogs'},
-  // Medium — 100–150 pts
-  {id:'r-movie',name:'Movie night with special snacks',emoji:'🎬',cost:100,tier:'medium',category:'you'},
-  {id:'r-book',name:'A book or game you\'ve been eyeing',emoji:'📚',cost:100,tier:'medium',category:'you'},
-  {id:'r-thai',name:'Thai food night',emoji:'🍜',cost:120,tier:'medium',category:'you'},
-  {id:'r-restaurant',name:'Try a new restaurant',emoji:'🍽️',cost:120,tier:'medium',category:'you'},
-  {id:'r-dogtoy',name:'New toy for Edna or Kronk',emoji:'🧸',cost:100,tier:'medium',category:'dogs'},
-  {id:'r-collar',name:'New collar or bandana',emoji:'🎀',cost:100,tier:'medium',category:'dogs'},
-  {id:'r-barkbox',name:'Extra BarkBox toy for Kronk',emoji:'📦',cost:150,tier:'medium',category:'dogs'},
-  // Large — 250–300 pts
-  {id:'r-gear',name:'New workout gear',emoji:'💪',cost:250,tier:'large',category:'you'},
-  {id:'r-icecream',name:'Ice cream for the three of you',emoji:'🍦',cost:250,tier:'large',category:'dogs'},
-  {id:'r-patio',name:'Dog-friendly restaurant patio trip',emoji:'🌿',cost:250,tier:'large',category:'dogs'},
-  {id:'r-greenway',name:'Greenway adventure on a new trail',emoji:'🥾',cost:250,tier:'large',category:'dogs'},
-  {id:'r-playdate',name:'Doggy playdate',emoji:'🐕',cost:300,tier:'large',category:'dogs'},
-  // Epic — 500 pts
-  {id:'r-kindle',name:'Kindle',emoji:'📚',cost:500,tier:'epic',category:'you'},
-  {id:'r-daytrip',name:'Day trip somewhere nearby',emoji:'🗺️',cost:500,tier:'epic',category:'you'},
-  {id:'r-big',name:'Something big — you decide',emoji:'⭐',cost:750,tier:'epic',category:'you'},
+  // Common Loot — 25–50 🪙
+  {id:'r-coffee',name:'Elixir of Alertness',desc:'A rare brew, hot and bitter, said to grant focus and ward off the morning fog.',real:'Fancy coffee',emoji:'☕',cost:30,tier:'small',category:'you'},
+  {id:'r-snack',name:'Dungeon Rations (The Good Kind)',desc:'Not the grey slop they serve on floor 4. Your favorite snack, procured from the outside world.',real:'Favorite snack',emoji:'🍫',cost:25,tier:'small',category:'you'},
+  {id:'r-gaming',name:'Bonus Rest Cycle',desc:'The dungeon authorizes one hour of guilt-free entertainment. The System has noted this.',real:'Extra hour of gaming/TV',emoji:'🎮',cost:25,tier:'small',category:'you'},
+  {id:'r-dessert',name:'Forbidden Sugar Ritual',desc:'Dessert. Ordered without hesitation. Princess Donut approves.',real:'Order dessert guilt-free',emoji:'🍰',cost:25,tier:'small',category:'you'},
+  {id:'r-puppuccino',name:'Companion Treat Protocol',desc:'Puppuccinos for Edna and Kronk. They have earned this. So have you.',real:'Puppuccino run for Edna & Kronk',emoji:'🐾',cost:40,tier:'small',category:'dogs'},
+  // Uncommon Drop — 100–150 🪙
+  {id:'r-movie',name:'Immersive Lore Session',desc:'Movie night. Special snacks included. The audience approves of this choice.',real:'Movie night with special snacks',emoji:'🎬',cost:100,tier:'medium',category:'you'},
+  {id:'r-book',name:'Rare Tome Acquisition',desc:'A book or game you\'ve been eyeing. Knowledge is loot.',real:'A book or game you\'ve been eyeing',emoji:'📚',cost:100,tier:'medium',category:'you'},
+  {id:'r-thai',name:'Exotic Provisions',desc:'Thai food. From outside the dungeon. Kronk is very interested.',real:'Thai food night',emoji:'🍜',cost:120,tier:'medium',category:'you'},
+  {id:'r-restaurant',name:'Unknown Territory Feast',desc:'A restaurant you haven\'t tried. Scouting the map. For science.',real:'Try a new restaurant',emoji:'🍽️',cost:120,tier:'medium',category:'you'},
+  {id:'r-dogtoy',name:'Companion Gear Upgrade',desc:'A new toy for Edna or Kronk. They will destroy it immediately. Worth it.',real:'New toy for Edna or Kronk',emoji:'🧸',cost:100,tier:'medium',category:'dogs'},
+  {id:'r-collar',name:'Companion Cosmetic Unlock',desc:'A new collar or bandana. Purely aesthetic. Devastatingly effective.',real:'New collar or bandana',emoji:'🎀',cost:100,tier:'medium',category:'dogs'},
+  {id:'r-barkbox',name:"Kronk's Forbidden Box",desc:'An extra BarkBox toy, specifically for Kronk. He will eat part of it. This is known.',real:'Extra BarkBox toy for Kronk',emoji:'📦',cost:150,tier:'medium',category:'dogs'},
+  // Rare Chest — 250–300 🪙
+  {id:'r-gear',name:'Combat Equipment Upgrade',desc:'New workout gear. For the physical floor of the dungeon. You know the one.',real:'New workout gear',emoji:'💪',cost:250,tier:'large',category:'you'},
+  {id:'r-icecream',name:'Victory Feast (Party of 3)',desc:'Ice cream for you, Edna, and Kronk. A full party celebration. Donut would attend but she has standards.',real:'Ice cream for the three of you',emoji:'🍦',cost:250,tier:'large',category:'dogs'},
+  {id:'r-patio',name:'Outdoor Raid: Patio Edition',desc:'A dog-friendly restaurant patio. Fresh air, good food, companions present. The dungeon extends its borders.',real:'Dog-friendly restaurant patio trip',emoji:'🌿',cost:250,tier:'large',category:'dogs'},
+  {id:'r-greenway',name:'Unexplored Dungeon Zone',desc:'A greenway trail you haven\'t walked. New map territory. Edna will secure the perimeter. Kronk will attempt to eat something.',real:'Greenway adventure on a new trail',emoji:'🥾',cost:250,tier:'large',category:'dogs'},
+  {id:'r-playdate',name:'Companion Alliance Event',desc:'A doggy playdate. Kronk will be unhinged. Edna will file multiple security reports. Memories made.',real:'Doggy playdate',emoji:'🐕',cost:300,tier:'large',category:'dogs'},
+  // Epic Loot — 500 🪙
+  {id:'r-kindle',name:'Tome of Infinite Knowledge',desc:'A Kindle. Infinite books. The dungeon respects this investment. Princess Donut considers it the only cultured reward on this list.',real:'Kindle',emoji:'📖',cost:500,tier:'epic',category:'you'},
+  {id:'r-daytrip',name:'World Map Unlocked',desc:'A day trip somewhere nearby. The dungeon expands. New floors discovered. Pack snacks.',real:'Day trip somewhere nearby',emoji:'🗺️',cost:500,tier:'epic',category:'you'},
+  // Legendary — 750+ 🪙
+  {id:'r-big',name:'Legendary Drop (You Decide)',desc:"Something big. You've earned it. The dungeon doesn't specify — that's between you and the vending machine.",real:'Something big — your choice',emoji:'⭐',cost:750,tier:'epic',category:'you'},
 ];
 
 // Points values
@@ -2531,13 +2532,13 @@ function redeemReward(rewardId){
   const reward=DEFAULT_REWARDS.find(r=>r.id===rewardId);if(!reward)return;
   const pts=getPoints();
   if(pts<reward.cost){showPtsToast('Not enough points yet!');return;}
-  if(!confirm('Redeem "'+reward.name+'" for '+reward.cost+' pts?'))return;
+  if(!confirm(`Redeem "${reward.name}" for ${reward.cost} 🪙?\n\n→ ${reward.real}`))return;
   rewardsState.totalSpent=(rewardsState.totalSpent||0)+reward.cost;
   rewardsState.redeemed.push({rewardId,redeemedAt:Date.now(),cost:reward.cost});
   rewardsState.log.unshift({type:'redeem',pts:-reward.cost,label:'Redeemed: '+reward.name,ts:Date.now()});
   save('dr-rewards',rewardsState);
   fireConfetti();
-  showPtsToast('🎉 Enjoy your '+reward.name+'!');
+  showPtsToast('🎉 '+reward.name+' unlocked!');
   renderRewards();
 }
 
@@ -2574,10 +2575,12 @@ function renderRewards(){
         <div class="reward-emoji">${r.emoji}</div>
         <div class="reward-info">
           <div class="reward-name">${r.name}</div>
-          <div class="reward-cost${canAfford?' can-afford':''}">${r.cost} pts${timesRedeemed>0?' · redeemed '+timesRedeemed+'×':''}</div>
+          <div style="font-size:10px;color:var(--muted);line-height:1.5;margin:3px 0;">${r.desc}</div>
+          <div style="font-size:10px;color:var(--hint);font-style:italic;">→ ${r.real}</div>
+          <div class="reward-cost${canAfford?' can-afford':''}" style="margin-top:4px;">${r.cost} 🪙${timesRedeemed>0?' · redeemed '+timesRedeemed+'×':''}</div>
         </div>
         <button class="redeem-btn" onclick="redeemReward('${r.id}')" ${!canAfford?'disabled':''}>
-          ${canAfford?pixelIcon(ICON_CHEST,12)+' Redeem':''+r.cost+' pts'}
+          ${canAfford?pixelIcon(ICON_CHEST,12)+' Redeem':r.cost+' 🪙'}
         </button>
       </div>`;
     }).join('');
