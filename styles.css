@@ -1038,6 +1038,7 @@ body { font-family: var(--font-body); }
 .task-section-group .task:last-child {
   margin-bottom: 0;
 }
+
 /* ═══════════════════════════════════════════════════════════
    BAR FIXES
 ═══════════════════════════════════════════════════════════ */
@@ -1045,31 +1046,33 @@ body { font-family: var(--font-body); }
 /* ── FIX 1: Hero bar height — less stretched ──────────────── */
 .bar-wrap,
 .hero-bar-wrap {
-  height: 44px; /* was 56px */
+  height: 44px !important;
 }
 
-/* ── FIX 2: XP bar = Boss bar — same full width ───────────── */
-/* Stack the LVL badge above the bar instead of beside it     */
-/* ── FIX: Crawler level — badge floated above, bar takes full width ── */
+/* ── FIX 2: XP bar = Boss bar — grid stacks badge above bar ── */
 .crawler-level {
-  display: flex !important;
-  align-items: center !important;
-  gap: 16px !important;
-  padding-top: 28px !important;  /* room for badge above */
-  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  margin-top: 14px !important;
 }
 .level-badge {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  margin-bottom: 0 !important;
+  position: static !important;
+  display: inline-flex !important;
 }
 .xp-bar-wrap {
-  flex: 1 !important;
-  width: auto !important;
+  width: 100% !important;
+  flex: unset !important;
 }
 
-/* ── FIX: Companion label — wider for CHAOS ENERGY ─────────────────── */
+/* ── FIX 3: Companion stat bars — row layout, aligned start ── */
+.stat-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-bottom: 10px !important;
+}
 .stat-label {
   width: 96px !important;
   flex-shrink: 0 !important;
@@ -1077,6 +1080,7 @@ body { font-family: var(--font-body); }
   overflow: hidden !important;
 }
 .stat-bar-wrap {
-  flex: 1;
-  width: auto;
+  flex: 1 !important;
+  width: auto !important;
+  height: 8px !important;
 }

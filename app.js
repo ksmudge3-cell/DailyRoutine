@@ -1869,6 +1869,24 @@ function awardXP(xp,label){
 
 function getEquippedTitle(){return xpState.equippedTitle||getLevelInfo(xpState.totalXP||0).title;}
 
+function isComplianceRisk(){
+  const today=new Date();
+  const todayDay=today.getDay();
+  // If today IS Sunday and pill box already done → cleared
+  if(todayDay===0){
+    const tk=`${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+    if(state[tk]?.['sunday-pillbox']) return false;
+  }
+  // Find most recent past Sunday
+  const days=todayDay===0?7:todayDay;
+  const ls=new Date(today);ls.setDate(today.getDate()-days);
+  const lk=`${ls.getFullYear()}-${ls.getMonth()}-${ls.getDate()}`;
+  const lsData=state[lk]||{};
+  // Only apply risk if there was app activity that Sunday
+  const hasActivity=Object.keys(lsData).some(k=>!k.endsWith('_ts'));
+  if(!hasActivity)return false;
+  return !lsData['sunday-pillbox'];
+}
 /* ─── BUFFS & DEBUFFS ENGINE ─────────────────────────────────────────────── */
 function getActiveBuffs(){
   const todayIdx=new Date().getDay();
@@ -1945,7 +1963,14 @@ function getActiveBuffs(){
 
   // FLOOR CLEARED
   if(dayPct(todayIdx)===100)setSlot('floor',{id:'floor-cleared',label:'Floor Cleared ⚔',type:'buff'});
-
+  
+  // COMPLIANCE RISK — Sunday pill box missed last week
+  if(isComplianceRisk()){
+    setSlot('compliance',{id:'compliance-risk',label:'Compliance Risk ⚠',type:'debuff'});
+    // Upgrade Foggy Crawler → Severe when compliance risk is active
+    if(slots.meds?.id==='foggy-crawler')
+      slots.meds={id:'foggy-crawler-severe',label:'Foggy Crawler (Severe)',type:'debuff'};
+  }
   return Object.values(slots).filter(Boolean);
 }
 
