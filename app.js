@@ -1871,22 +1871,82 @@ function getEquippedTitle(){return xpState.equippedTitle||getLevelInfo(xpState.t
 
 /* ─── BUFFS & DEBUFFS ENGINE ─────────────────────────────────────────────── */
 function getActiveBuffs(){
+  const todayIdx=new Date().getDay();
+  const tKey=todayStr();
+  const qState=qualityState[tKey]||{};
+  const slots={};
+
+  // One slot per category. Debuffs beat buffs. Food is latest-wins.
+  function setSlot(cat,effect){
+    const cur=slots[cat];
+    if(!cur){slots[cat]=effect;return;}
+    if(cat==='food'){slots[cat]=effect;return;}  // food: latest meal wins
+    if(effect.type==='debuff'){slots[cat]=effect;return;}  // debuff overwrites buff
+    if(cur.type==='buff'){slots[cat]=effect;}  // buff upgrades buff
+  }
+
+  // STREAK category
   const streak=calcStreak();
-  const buffs=[];
-  if(streak>=30)buffs.push({id:'legendary',label:'Legendary Pace 🏆',type:'buff'});
-  else if(streak>=7)buffs.push({id:'onfire',label:'On Fire 🔥',type:'buff'});
-  else if(streak>=3)buffs.push({id:'warmedup',label:'Warmed Up',type:'buff'});
-  const pct=dayPct(new Date().getDay());
-  if(pct===100)buffs.push({id:'cleared',label:'Floor Cleared ⚔',type:'buff'});
-  // Check avoidance debuffs
-  const totalSkips=Object.values(wheelSkips).reduce((a,b)=>a+b,0);
-  if(totalSkips>=9)buffs.push({id:'distracted',label:'Distracted 💀',type:'debuff'});
-  // Check inbox debuff
-  if(inbox.length>=5)buffs.push({id:'cursed-inbox',label:'Cursed Inbox 📬',type:'debuff'});
-  // Quality debuffs for today
-  const qd=getQualityDebuffs(new Date().getDay());
-  qd.forEach(d=>{if(!buffs.find(b=>b.id===d.id))buffs.push(d);});
-  return buffs;
+  if(streak>=30)setSlot('streak',{id:'legendary-pace',label:'Legendary Pace 🏆',type:'buff'});
+  else if(streak>=7)setSlot('streak',{id:'on-fire',label:'On Fire 🔥',type:'buff'});
+  else if(streak>=3)setSlot('streak',{id:'warmed-up',label:'Warmed Up',type:'buff'});
+
+  // Task quality → category effect map
+  const effectMap={
+    'wakeup':   q=>q==='purple'||q==='green'?{cat:'wake',id:'early-riser',label:'Early Riser',type:'buff'}:
+                   q==='yellow'||q==='red'  ?{cat:'wake',id:'sluggish',label:'Sluggish',type:'debuff'}:null,
+    'gym':      q=>q==='purple'||q==='green'?{cat:'movement',id:'combat-ready',label:'Combat Ready',type:'buff'}:
+                   q==='red'               ?{cat:'movement',id:'undertrained',label:'Undertrained',type:'debuff'}:null,
+    'work':     q=>q==='purple'            ?{cat:'focus',id:'hyperfocused',label:'Hyperfocused',type:'buff'}:null,
+    'meds-am':  q=>q==='green'             ?{cat:'meds',id:'optimal',label:'Optimal',type:'buff'}:
+                   q==='yellow'||q==='red' ?{cat:'meds',id:'foggy-crawler',label:'Foggy Crawler',type:'debuff'}:null,
+    'meds-pm':  q=>q==='green'             ?{cat:'meds',id:'optimal',label:'Optimal',type:'buff'}:
+                   q==='yellow'||q==='red' ?{cat:'meds',id:'foggy-crawler',label:'Foggy Crawler',type:'debuff'}:null,
+    'winddown': q=>q==='purple'||q==='green'?{cat:'sleep',id:'rested',label:'Rested',type:'buff'}:
+                   q==='yellow'||q==='red' ?{cat:'screen',id:'doomscrolling',label:'Doomscrolling',type:'debuff'}:null,
+    'sleep':    q=>q==='yellow'            ?{cat:'sleep',id:'sleep-deprived',label:'Sleep Deprived',type:'debuff'}:
+                   q==='red'               ?{cat:'sleep',id:'sleep-deprived-severe',label:'Sleep Deprived (Severe)',type:'debuff'}:null,
+  };
+  for(const[taskId,quality]of Object.entries(qState)){
+    const fn=effectMap[taskId];
+    if(fn){const eff=fn(quality);if(eff)setSlot(eff.cat,{id:eff.id,label:eff.label,type:eff.type});}
+  }
+
+  // FOOD: determined by today's meal quality (latest-wins via setSlot above handles it)
+  // But calculate separately for clarity
+  const meals=['breakfast','dinner','work'];
+  const proper=meals.filter(t=>{const q=qState[t];return q==='purple'||q==='green';}).length;
+  const skipped=meals.filter(t=>qState[t]==='red').length;
+  if(proper>=3)slots.food={id:'well-fed',label:'Well Fed',type:'buff'};
+  else if(proper>=1)slots.food={id:'fueled',label:'Fueled',type:'buff'};
+  else if(skipped>=1)slots.food={id:'running-on-empty',label:'Running on Empty',type:'debuff'};
+
+  // DISTRACTED: 3+ red tasks today
+  const sc=getScheduleFor(todayIdx);
+  const allIds=sc.reduce((a,s)=>a.concat(s.tasks.map(t=>t.id)),[]);
+  if(allIds.filter(id=>qState[id]==='red').length>=3)
+    setSlot('focus',{id:'distracted',label:'Distracted',type:'debuff'});
+
+  // INBOX overload
+  if(inbox.length>=5)setSlot('comms',{id:'cursed-inbox',label:'Cursed Inbox 📬',type:'debuff'});
+
+  // CARRY-FORWARD from yesterday: sleep + screen persist
+  const yDate=new Date();yDate.setDate(yDate.getDate()-1);
+  const yKey=`${yDate.getFullYear()}-${yDate.getMonth()}-${yDate.getDate()}`;
+  const yQ=qualityState[yKey]||{};
+  if(!slots.sleep){
+    if(yQ.sleep==='yellow')setSlot('sleep',{id:'sleep-deprived',label:'Sleep Deprived',type:'debuff'});
+    else if(yQ.sleep==='red')setSlot('sleep',{id:'sleep-deprived-severe',label:'Sleep Deprived (Severe)',type:'debuff'});
+  }
+  if(!slots.screen){
+    if(yQ.winddown==='yellow'||yQ.winddown==='red')
+      setSlot('screen',{id:'doomscrolling',label:'Doomscrolling',type:'debuff'});
+  }
+
+  // FLOOR CLEARED
+  if(dayPct(todayIdx)===100)setSlot('floor',{id:'floor-cleared',label:'Floor Cleared ⚔',type:'buff'});
+
+  return Object.values(slots).filter(Boolean);
 }
 
 function renderStatusBar(){
