@@ -54,8 +54,10 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .section-add-btn:hover { color: var(--teal); }
 .task { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; transition: all 0.12s; user-select: none; position: relative; }
 .task:active { transform: scale(0.98); }
-.task.done { opacity: 0.5; }
-.task.done .task-name { text-decoration: line-through; color: var(--muted); }
+.task.done { }
+.task.done .task-name { text-decoration: line-through; color: var(--hint); opacity: 0.55; }
+.task.done .task-time { opacity: 0.45; }
+.task.done .check { opacity: 0.85; }
 .check { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid rgba(251,191,36,0.3); background: transparent; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
 .task.done .check { background: transparent; border-color: var(--teal); }
 .check-mark { display: none; color: var(--teal); font-size: 13px; line-height: 1; }
@@ -299,7 +301,9 @@ canvas {
 .task { display: flex; align-items: center; gap: 12px; padding: 11px 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 5px; cursor: pointer; transition: all 0.12s; user-select: none; position: relative; }
 .task:active { transform: scale(0.98); }
 .task.done { opacity: 0.45; }
-.task.done .task-name { text-decoration: line-through; color: var(--muted); }
+.task.done .task-name { text-decoration: line-through; color: var(--hint); opacity: 0.55; }
+.task.done .task-time { opacity: 0.45; }
+.task.done .check { opacity: 0.85; }
 .task.done { border-color: rgba(45,212,160,0.2); }
 .room-cleared-badge { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 9px; color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; }
 
@@ -1399,7 +1403,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -1459,6 +1463,7 @@ async function loadFromSupabase(){
       if(d.inbox)inbox=d.inbox;
       if(d.shopItems)shopItems=d.shopItems;
       if(d.qualityState)qualityState={...qualityState,...d.qualityState};
+      if(d.customRewards)customRewards=d.customRewards;
       if(d.archived){archived=d.archived;if(!archived.tasks)archived.tasks=[];}
       ['state','schedule','dogTasks','dogState','groomState','prevState','notifs','wheel','wheelDone','wheelSkips','wheelPinned','inbox','shopItems','archived'].forEach(k=>saveLocal('dr-'+k.replace(/([A-Z])/g,'-$1').toLowerCase(),eval(k)));
       saveLocal('dr-rewards',rewardsState);
@@ -1805,10 +1810,29 @@ function cycleQuality(dayIdx, taskId){
   const k=dayKey(dayIdx);
   if(!qualityState[k])qualityState[k]={};
   const cur=qualityState[k][taskId];
-  if(!cur)qualityState[k][taskId]='high';
-  else if(cur==='high')qualityState[k][taskId]='med';
-  else if(cur==='med')qualityState[k][taskId]='low';
-  else delete qualityState[k][taskId];
+  // unset → high (done well) → med (done poorly) → low (skipped) → unset
+  if(!cur){
+    qualityState[k][taskId]='high';
+    // Green = done well — check the task
+    if(!(state[k]&&state[k][taskId])){
+      if(!state[k])state[k]={};
+      state[k][taskId]=true;
+      state[k][taskId+'_ts']=Date.now();
+      save('dr-state',state);
+      maybeAwardTaskPoints(taskId,dayIdx);
+    }
+  }
+  else if(cur==='high')qualityState[k][taskId]='med';  // yellow — leave completion alone
+  else if(cur==='med'){
+    qualityState[k][taskId]='low';
+    // Red = skipped — uncheck the task
+    if(state[k]&&state[k][taskId]){
+      state[k][taskId]=false;
+      delete state[k][taskId+'_ts'];
+      save('dr-state',state);
+    }
+  }
+  else delete qualityState[k][taskId];  // unset — leave completion alone
   save('dr-quality',qualityState);
   renderToday();
   renderStatusBar();
@@ -1833,7 +1857,9 @@ function getQualityDebuffs(dayIdx){
   for(const[taskId,cfg]of Object.entries(QUALITY_TASKS)){
     const done=!!data[taskId];
     const q=getQuality(dayIdx,taskId);
-    if(done && q==='low' && !seen.has(cfg.debuff)){
+    // yellow (med) = done poorly → debuff; red (low) = skipped → debuff (even if unchecked)
+    const hasDebuff=(done&&q==='med')||(q==='low');
+    if(hasDebuff && !seen.has(cfg.debuff)){
       seen.add(cfg.debuff);
       debuffs.push({id:cfg.debuff,label:cfg.label,type:'debuff'});
     }
@@ -1907,8 +1933,8 @@ function renderToday(){
       div.innerHTML=`<div class="check"><span class="check-mark">✓</span></div>
         <div style="flex:1;"><div class="task-name">${task.name}</div>
         <div class="task-time">${task.time}${_isDone&&data[task.id+'_ts']?' · done '+fmtTime(data[task.id+'_ts']):''}</div></div>
-        ${_qCfg?`<div class="q-orb-tap" onclick="event.stopPropagation();cycleQuality(${selectedDay},'${task.id}')" title="${_q||'Rate quality'}">
-          <img class="q-single-orb" src="${_q==='high'?ICON_ORB_GREEN:_q==='med'?ICON_ORB_YELLOW:_q==='low'?ICON_ORB_RED:ICON_ORB_GREEN}" style="opacity:${_q?1:0.3};${_q?'':'filter:grayscale(0.9)'}" alt="">
+        ${_qCfg?`<div class="q-orb-tap" onclick="event.stopPropagation();cycleQuality(${selectedDay},'${task.id}')" title="${_q==='high'?'Done well':_q==='med'?'Done but not well':_q==='low'?'Skipped':'Rate quality'}">
+          <img class="q-single-orb" src="${_q==='high'?ICON_ORB_GREEN:_q==='med'?ICON_ORB_YELLOW:_q==='low'?ICON_ORB_RED:ICON_ORB_GREEN}" style="opacity:${_q?1:0.4};${_q?'':'filter:grayscale(0.8)'}" alt="">
         </div>` : (!isSundayInjected?'<span class="task-edit-hint">hold to edit</span>':'')}`;
 
       // Tap = toggle, long press = edit
@@ -3200,14 +3226,14 @@ const DEFAULT_REWARDS=[
 
 // Points values
 const PTS={
-  task:2,           // per routine task completed
-  dogTask:3,        // per dog care task
-  spinTask:5,       // per spin wheel task done
-  bonusTask:3,      // per dog mental health task
-  streak7:20,       // 7-day streak bonus (awarded once per week)
-  streak30:100,     // 30-day streak bonus
-  dayComplete:10,   // 100% day bonus
-  weekComplete:50,  // all 7 days 80%+ bonus
+  task:1,           // per routine task completed
+  dogTask:2,        // per dog care task
+  spinTask:3,       // per spin wheel task done
+  bonusTask:2,      // per dog mental health task
+  streak7:15,       // 7-day streak bonus (awarded once per week)
+  streak30:75,      // 30-day streak bonus
+  dayComplete:8,    // 100% day bonus
+  weekComplete:35,  // all 7 days 80%+ bonus
 };
 
 const DEFAULT_REWARDS_STATE={
@@ -3222,6 +3248,7 @@ const DEFAULT_REWARDS_STATE={
 };
 
 let rewardsState=load('dr-rewards',DEFAULT_REWARDS_STATE);
+let customRewards=load('dr-custom-rewards',[]);
 if(!rewardsState.log)rewardsState.log=[];
 if(!rewardsState.redeemed)rewardsState.redeemed=[];
 if(!rewardsState.lastDayBonuses)rewardsState.lastDayBonuses={};
@@ -3328,6 +3355,28 @@ function redeemReward(rewardId){
   renderRewards();
 }
 
+
+
+/* ─── CUSTOM REWARDS ─────────────────────────────────────────────────────── */
+function addCustomReward(){
+  const nameEl=document.getElementById('custom-reward-name');
+  const costEl=document.getElementById('custom-reward-cost');
+  const name=(nameEl.value||'').trim();
+  const cost=parseInt(costEl.value)||0;
+  if(!name||cost<1){showPtsToast('Name and cost required');return;}
+  customRewards.push({id:'custom-'+Date.now(),name,cost,custom:true});
+  save('dr-custom-rewards',customRewards);
+  nameEl.value='';costEl.value='';
+  renderRewards();
+}
+function deleteCustomReward(id){
+  customRewards=customRewards.filter(r=>r.id!==id);
+  save('dr-custom-rewards',customRewards);
+  renderRewards();
+}
+function addCustomRewardToSupabase(){
+  // Placeholder — sync handled by main save
+}
 
 function spendCoins(cost, label){
   if(getPoints()<cost){showPtsToast('Not enough coins');return;}
@@ -3455,6 +3504,30 @@ function renderRewards(){
     <div class="reward-history">
       <h3>Recent activity</h3>
       ${historyHtml}
+    </div>
+
+    <div class="section-label" style="margin-top:20px;">My Rewards</div>
+    ${customRewards.length?customRewards.map(r=>{
+      const can=pts>=r.cost;
+      return '<div class="reward-item'+(can?' affordable':'')+'" style="margin-bottom:6px;display:flex;align-items:center;gap:8px;">'+
+        '<div class="reward-info" style="flex:1;"><div class="reward-name">'+r.name+'</div>'+
+        '<div class="reward-cost'+(can?' can-afford':'')+'">'+r.cost+' 🪙</div></div>'+
+        '<button class="redeem-btn" onclick="spendCoins('+r.cost+',\''+r.name.replace(/'/g,'')+'\')" '+(can?'':'disabled')+'>'+
+        (can?pixelIcon(ICON_CHEST,12)+' Redeem':r.cost+' 🪙')+'</button>'+
+        '<button onclick="deleteCustomReward(\''+r.id+'\')" style="background:none;border:none;color:var(--hint);cursor:pointer;font-size:18px;padding:0 6px;" title="Remove">×</button>'+
+        '</div>';
+    }).join(''):'<div style="font-size:12px;color:var(--hint);padding:6px 0 12px;">No custom rewards yet.</div>'}
+
+    <div class="custom-reward-form">
+      <div style="font-size:10px;color:var(--hint);margin-bottom:8px;font-family:var(--font-game);letter-spacing:0.08em;">ADD CUSTOM REWARD</div>
+      <div style="display:flex;gap:8px;margin-bottom:6px;">
+        <input id="custom-reward-name" type="text" placeholder="Reward name…"
+          style="flex:1;background:var(--surface2);border:0.5px solid rgba(251,191,36,0.2);border-radius:var(--radius-sm);padding:8px 10px;color:var(--text);font-size:13px;" />
+        <input id="custom-reward-cost" type="number" placeholder="🪙" min="1"
+          style="width:64px;background:var(--surface2);border:0.5px solid rgba(251,191,36,0.2);border-radius:var(--radius-sm);padding:8px;color:var(--text);font-family:var(--font-game);font-size:12px;text-align:center;" />
+      </div>
+      <button onclick="addCustomReward()"
+        style="width:100%;background:rgba(251,191,36,0.08);border:0.5px solid rgba(251,191,36,0.3);border-radius:var(--radius-sm);padding:9px;color:var(--gold);font-family:var(--font-game);font-size:11px;cursor:pointer;letter-spacing:0.05em;">+ ADD REWARD</button>
     </div>`;
 }
 
