@@ -1050,27 +1050,26 @@ body { font-family: var(--font-body); }
 
 /* ── FIX 2: XP bar = Boss bar — same full width ───────────── */
 /* Stack the LVL badge above the bar instead of beside it     */
+/* ── FIX: Crawler level — badge floated above, bar takes full width ── */
 .crawler-level {
-  display: block;
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  padding-top: 28px !important;  /* room for badge above */
+  position: relative !important;
 }
 .level-badge {
-  display: inline-flex;
-  margin-bottom: 8px;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  margin-bottom: 0 !important;
 }
 .xp-bar-wrap {
-  width: 100%;
-  flex: unset;
+  flex: 1 !important;
+  width: auto !important;
 }
 
-/* ── FIX 3: Companion stat bars — all bars start at same x ── */
-/* Fixed 80px label column so bar left edge is always aligned  */
-.stat-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
+/* ── FIX: Companion label — wider for CHAOS ENERGY ─────────────────── */
 .stat-label {
   width: 96px !important;
   flex-shrink: 0 !important;
