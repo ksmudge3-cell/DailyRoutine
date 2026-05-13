@@ -1038,3 +1038,46 @@ body { font-family: var(--font-body); }
 .task-section-group .task:last-child {
   margin-bottom: 0;
 }
+/* ═══════════════════════════════════════════════════════════
+   BAR FIXES
+═══════════════════════════════════════════════════════════ */
+
+/* ── FIX 1: Hero bar height — less stretched ──────────────── */
+.bar-wrap,
+.hero-bar-wrap {
+  height: 44px; /* was 56px */
+}
+
+/* ── FIX 2: XP bar = Boss bar — same full width ───────────── */
+/* Stack the LVL badge above the bar instead of beside it     */
+.crawler-level {
+  display: block;
+}
+.level-badge {
+  display: inline-flex;
+  margin-bottom: 8px;
+}
+.xp-bar-wrap {
+  width: 100%;
+  flex: unset;
+}
+
+/* ── FIX 3: Companion stat bars — all bars start at same x ── */
+/* Fixed 80px label column so bar left edge is always aligned  */
+.stat-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.stat-label {
+  width: 80px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.stat-bar-wrap {
+  flex: 1;
+  width: auto;
+}
