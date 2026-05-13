@@ -297,6 +297,7 @@ if(!dogTasks.mental)dogTasks.mental=DEFAULT_DOG_TASKS.mental;
 let shopCat='all', spinCat='clean', spinProject='all', selectedDay=new Date().getDay(), spinDuration=5;
 let timerInterval=null, timerSeconds=0, timerRunning=false;
 let qualityState=load('dr-quality',{});
+let collapseState=load('dr-collapse',{});
 let currentSpinTask=null, reSpinsLeft=3;
 
 // Edit overlay state
@@ -732,7 +733,12 @@ function countDebuffs(){
   const all=getActiveBuffs();
   return all.filter(b=>b.type==='debuff').length;
 }
-function isRecoveryMode(){return countDebuffs()>=4;}
+function isRecoveryMode(){
+  const c=collapseState.active;
+  if(c&&c.type==='total'&&c.applyDate===todayStr())return true;
+  return countDebuffs()>=4;
+}
+
 
 function renderToday(){
   const ti=new Date().getDay();
@@ -767,6 +773,7 @@ function renderToday(){
   renderStatusBar();
   renderFloorCountdown();
   renderRecoveryMode();
+  renderCollapseEvent();
   const isComplete=_recovery?(done>=3&&total>0):(pct===100&&total>0);
   document.getElementById('congrats-banner').style.display=isComplete?'block':'none';
   if(isComplete&&!wasComplete)fireConfetti();
@@ -1971,6 +1978,15 @@ function getActiveBuffs(){
     if(slots.meds?.id==='foggy-crawler')
       slots.meds={id:'foggy-crawler-severe',label:'Foggy Crawler (Severe)',type:'debuff'};
   }
+
+  // FLOOR COLLAPSE debuff carry-forward
+  const _c=collapseState.active;
+  if(_c&&_c.applyDate===todayStr()){
+    const _done=Object.entries(state[todayStr()]||{}).filter(([k,v])=>v&&!k.endsWith('_ts')).length;
+    const _cleared=(_c.type==='structural'&&_done>=1)||(_c.type==='heavy'&&_done>=3);
+    if(!_cleared)setSlot('collapse',{id:_c.type+'-collapse',label:_c.label,type:'debuff'});
+  }
+
   return Object.values(slots).filter(Boolean);
 }
 
@@ -2062,6 +2078,52 @@ function renderRecoveryMode(){
     el.innerHTML='';
   }
 }
+
+function checkFloorCollapse(){
+  const y=new Date();y.setDate(y.getDate()-1);
+  const yDate=`${y.getFullYear()}-${y.getMonth()}-${y.getDate()}`;
+  if(collapseState.checked===yDate)return;
+  collapseState.checked=yDate;
+  const sc=getScheduleFor(y.getDay());
+  const allTasks=sc.reduce((a,s)=>a.concat(s.tasks),[]);
+  const yData=state[yDate]||{};
+  const yQ=qualityState[yDate]||{};
+  const unchecked=allTasks.filter(t=>!yData[t.id]&&yQ[t.id]!=='gray').length;
+  if(unchecked===0){delete collapseState.active;}
+  else{
+    let type,label,effectLabel,duration;
+    if(unchecked>=5){type='total';label='Total Collapse';effectLabel='-25% coins, Recovery Mode active';duration='Complete 3 tasks to clear';}
+    else if(unchecked>=3){type='heavy';label='Heavy Collapse';effectLabel='-20% coins + Sleep Deprived';duration='Clears after 3 tasks completed today';}
+    else{type='structural';label='Structural Damage';effectLabel='-10% coins today';duration='Clears after first task completed today';}
+    collapseState.active={type,label,unchecked,effectLabel,duration,applyDate:todayStr()};
+  }
+  saveLocal('dr-collapse',collapseState);
+}
+
+function renderCollapseEvent(){
+  const el=document.getElementById('collapse-event-banner');if(!el)return;
+  const c=collapseState.active;
+  if(!c||c.applyDate!==todayStr()){el.innerHTML='';return;}
+  const done=Object.entries(state[todayStr()]||{}).filter(([k,v])=>v&&!k.endsWith('_ts')).length;
+  const cleared=(c.type==='structural'&&done>=1)||(c.type==='heavy'&&done>=3);
+  if(cleared){delete collapseState.active;save('dr-collapse',collapseState);el.innerHTML='';return;}
+  const donutLines={
+    structural:['Structural cracks. Nothing fatal. Yet. One task. Make it count.','The dungeon notes your shortcomings. It is watching.'],
+    heavy:['Three rooms, Crawler. You left three rooms. The dungeon is disappointed.','Heavy damage. Complete three tasks to begin repairs.'],
+    total:['You left the floor half-cleared. The dungeon has sealed it. Recovery Mode activated.','Total collapse. Three tasks. That is all the dungeon asks.']
+  };
+  const donutLine=DCC.getRandom(donutLines[c.type]);
+  el.innerHTML=`<div class="collapse-banner">
+    <div class="collapse-title">⚠ FLOOR COLLAPSED</div>
+    <div class="collapse-body">${c.unchecked} room${c.unchecked!==1?'s':''} were uncleared at midnight. The dungeon has sealed this floor.</div>
+    <div class="collapse-debuff-line">DEBUFF APPLIED: ${c.label.toUpperCase()}</div>
+    <div class="collapse-effect-line">Effect: ${c.effectLabel}</div>
+    <div class="collapse-duration-line">Duration: ${c.duration}</div>
+    <div class="donut-msg-wrap" style="margin-top:8px;"><span class="donut-signature">Princess Donut:</span><p class="donut-msg">${donutLine}</p></div>
+  </div>`;
+}
+
+
 function renderProfile(){
   const wrap=document.getElementById('profile-content');if(!wrap)return;
   const streak=calcStreak();
@@ -2632,6 +2694,7 @@ async function init(){
   if(clb)clb.innerHTML=pixelIcon(ICON_POTION,14)+' Claim loot ✓';
 
   migrateDogTasks();
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkFloorCollapse();renderCollapseEvent();}});
   migrateGymIntoSchedule();
   renderToday();renderInbox();updateProjectDropdown();refreshWheel();renderTaskManager();
 
@@ -2666,6 +2729,7 @@ async function init(){
     xpState=load('dr-xp',{totalXP:0,level:1,equippedTitle:null,unlockedTitles:['Freshly Fallen Crawler'],companionXP:{edna:0,kronk:0}});
     archived=load('dr-archived',{tasks:[]});
     if(!archived.tasks)archived.tasks=[];
+    checkFloorCollapse();
     migrateDogTasks();
     migrateGymIntoSchedule();
     const cur=loadLocal('dr-last-screen','today');
