@@ -582,6 +582,31 @@ body {
   letter-spacing: 0.05em;
 }
 
+
+/* ─── QUALITY SYSTEM ──────────────────────────────────────────────────────── */
+.quality-orbs { display:flex; gap:3px; align-items:center; flex-shrink:0; }
+.q-orb { opacity:0.35; cursor:pointer; transition:opacity 0.15s, transform 0.1s; display:inline-flex; }
+.q-orb:hover { opacity:0.7; }
+.q-orb.q-sel { opacity:1; transform:scale(1.15); }
+.task.quality-low .task-name { color:var(--red, #e05c5c); }
+.task.has-quality.done .check { border-color: rgba(245,166,35,0.4); }
+
+/* ─── DEBUFF CHIP VARIANTS ────────────────────────────────────────────────── */
+.status-chip.debuff { background:rgba(224,92,92,0.1); border-color:rgba(224,92,92,0.35); color:#e05c5c; }
+.status-chip.overload { background:rgba(224,140,0,0.12); border-color:rgba(224,140,0,0.5); color:#e08c00; font-weight:600; }
+.status-chip.recovery { background:rgba(45,212,160,0.1); border-color:rgba(45,212,160,0.5); color:var(--teal); font-weight:600; letter-spacing:0.05em; }
+
+/* ─── VENDING MACHINE FOOD ────────────────────────────────────────────────── */
+.food-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px; }
+.food-item { background:var(--surface2); border-radius:var(--radius-sm); border:0.5px solid var(--border); padding:10px; display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; transition:border-color 0.15s; }
+.food-item.affordable { border-color:rgba(245,166,35,0.35); }
+.food-item .food-icon { font-size:28px; line-height:1; }
+.food-item .food-name { font-size:11px; color:var(--text); font-weight:600; }
+.food-item .food-real { font-size:10px; color:var(--hint); font-style:italic; }
+.food-item .food-cost { font-size:10px; color:var(--amber); margin-top:2px; }
+.food-item .food-btn { margin-top:4px; padding:5px 12px; font-size:10px; background:var(--amber-dim); border:0.5px solid rgba(245,166,35,0.3); border-radius:99px; color:var(--amber); cursor:pointer; font-family:inherit; }
+.food-item .food-btn:disabled { opacity:0.4; cursor:default; }
+
 </style>
 </head>
 <body>
@@ -929,7 +954,19 @@ const CIRC=175.9;
 /* ─── DEFAULT DATA ──────────────────────────────────────────────────────── */
 const SUNDAY_PILL_TASK={id:'sunday-pillbox',name:'Fill weekly pill box',time:'Evening'};
 
-const DEFAULT_SCHEDULE={
+const 
+/* ─── QUALITY SYSTEM CONFIG ──────────────────────────────────────────────── */
+const QUALITY_TASKS = {
+  'wakeup':    { debuff:'running-on-empty', label:'Running on Empty' },
+  'gym':       { debuff:'undertrained',     label:'Undertrained'     },
+  'shower':    { debuff:'foggy-crawler',    label:'Foggy Crawler'    },
+  'meds-am':   { debuff:'foggy-crawler',    label:'Foggy Crawler'    },
+  'breakfast': { debuff:'running-on-empty', label:'Running on Empty' },
+  'wind-down': { debuff:'doomscrolling',    label:'Doomscrolling'    },
+  'lights-out':{ debuff:'sleep-deprived',   label:'Sleep Deprived'   },
+};
+
+DEFAULT_SCHEDULE={
   weekday:[
     {section:'Morning',tasks:[
       {id:'meds-am',name:'Morning medications',time:'5:30 AM'},
@@ -1095,7 +1132,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -1154,6 +1191,7 @@ async function loadFromSupabase(){
       if(d.wheelPinned)wheelPinned=d.wheelPinned;
       if(d.inbox)inbox=d.inbox;
       if(d.shopItems)shopItems=d.shopItems;
+      if(d.qualityState)qualityState={...qualityState,...d.qualityState};
       if(d.archived){archived=d.archived;if(!archived.tasks)archived.tasks=[];}
       ['state','schedule','dogTasks','dogState','groomState','prevState','notifs','wheel','wheelDone','wheelSkips','wheelPinned','inbox','shopItems','archived'].forEach(k=>saveLocal('dr-'+k.replace(/([A-Z])/g,'-$1').toLowerCase(),eval(k)));
       saveLocal('dr-rewards',rewardsState);
@@ -1195,6 +1233,7 @@ if(!dogTasks.mental)dogTasks.mental=DEFAULT_DOG_TASKS.mental;
 
 let shopCat='all', spinCat='clean', spinProject='all', selectedDay=new Date().getDay(), spinDuration=5;
 let timerInterval=null, timerSeconds=0, timerRunning=false;
+let qualityState=load('dr-quality',{});
 let currentSpinTask=null, reSpinsLeft=3;
 
 // Edit overlay state
@@ -1443,6 +1482,40 @@ function renderBonusToday(dayIdx){
   </div>`;
 }
 
+
+/* ─── QUALITY FUNCTIONS ──────────────────────────────────────────────────── */
+function setQuality(dayIdx, taskId, level){
+  const k=dayKey(dayIdx);
+  if(!qualityState[k])qualityState[k]={};
+  // Toggle off if tapping same level
+  if(qualityState[k][taskId]===level) delete qualityState[k][taskId];
+  else qualityState[k][taskId]=level;
+  save('dr-quality',qualityState);
+  renderToday();
+  renderStatusBar();
+}
+function getQuality(dayIdx, taskId){
+  return qualityState[dayKey(dayIdx)]?.[taskId]||null;
+}
+function getQualityDebuffs(dayIdx){
+  const data=state[dayKey(dayIdx)]||{};
+  const debuffs=[]; const seen=new Set();
+  for(const[taskId,cfg]of Object.entries(QUALITY_TASKS)){
+    const done=!!data[taskId];
+    const q=getQuality(dayIdx,taskId);
+    if(done && q==='low' && !seen.has(cfg.debuff)){
+      seen.add(cfg.debuff);
+      debuffs.push({id:cfg.debuff,label:cfg.label,type:'debuff'});
+    }
+  }
+  return debuffs;
+}
+function countDebuffs(){
+  const all=getActiveBuffs();
+  return all.filter(b=>b.type==='debuff').length;
+}
+function isRecoveryMode(){return countDebuffs()>=4;}
+
 function renderToday(){
   const ti=new Date().getDay();
   document.getElementById('today-heading').textContent=DAYS[ti];
@@ -1464,6 +1537,7 @@ function renderToday(){
   const total=allT.length;
   const pct=total?Math.round(done/total*100):0;
 
+  const _recovery=isRecoveryMode();
   const wasComplete=document.getElementById('congrats-banner').style.display==='block';
   document.getElementById('ring-fill').style.strokeDashoffset=CIRC-(CIRC*pct/100);
   document.getElementById('ring-pct').textContent=pct+'%';
@@ -1473,7 +1547,7 @@ function renderToday(){
   if(ptsBadge)ptsBadge.innerHTML=pixelIcon(ICON_COINS_STACK,18)+''+getPoints()+' coins';
   renderSystemGreeting();
   renderStatusBar();
-  const isComplete=pct===100&&total>0;
+  const isComplete=_recovery?(done>=3&&total>0):(pct===100&&total>0);
   document.getElementById('congrats-banner').style.display=isComplete?'block':'none';
   if(isComplete&&!wasComplete)fireConfetti();
 
@@ -1494,11 +1568,19 @@ function renderToday(){
       const isSundayInjected=(task.id===SUNDAY_PILL_TASK.id&&isSunday(selectedDay));
 
       const div=document.createElement('div');
-      div.className='task'+(data[task.id]?' done':'');
+      const _isDone=!!data[task.id];
+      const _qCfg=QUALITY_TASKS[task.id];
+      const _q=_qCfg&&_isDone?getQuality(selectedDay,task.id):null;
+      div.className='task'+(_isDone?' done':'')+(_qCfg&&_isDone?' has-quality':'')+(_q==='low'?' quality-low':'');
       div.innerHTML=`<div class="check"><span class="check-mark">✓</span></div>
         <div style="flex:1;"><div class="task-name">${task.name}</div>
-        <div class="task-time">${task.time}${data[task.id]&&data[task.id+'_ts']?' · done '+fmtTime(data[task.id+'_ts']):''}</div></div>
-        ${!isSundayInjected?'<span class="task-edit-hint">hold to edit</span>':''}`;
+        <div class="task-time">${task.time}${_isDone&&data[task.id+'_ts']?' · done '+fmtTime(data[task.id+'_ts']):''}</div></div>
+        ${_qCfg&&_isDone?`<div class="quality-orbs" onclick="event.stopPropagation()">
+          <span class="q-orb${_q==='high'?' q-sel':''}" onclick="setQuality(${selectedDay},'${task.id}','high')" title="High">${pixelIcon(ICON_ORB_GREEN,22)}</span>
+          <span class="q-orb${_q==='med'?' q-sel':''}" onclick="setQuality(${selectedDay},'${task.id}','med')" title="Med">${pixelIcon(ICON_ORB_YELLOW,22)}</span>
+          <span class="q-orb${_q==='low'?' q-sel':''}" onclick="setQuality(${selectedDay},'${task.id}','low')" title="Low">${pixelIcon(ICON_ORB_RED,22)}</span>
+        </div>`
+        :(!isSundayInjected?'<span class="task-edit-hint">hold to edit</span>':'')}`;
 
       // Tap = toggle, long press = edit
       div.addEventListener('pointerdown',()=>{
@@ -2495,14 +2577,22 @@ function getActiveBuffs(){
   if(totalSkips>=9)buffs.push({id:'distracted',label:'Distracted 💀',type:'debuff'});
   // Check inbox debuff
   if(inbox.length>=5)buffs.push({id:'cursed-inbox',label:'Cursed Inbox 📬',type:'debuff'});
+  // Quality debuffs for today
+  const qd=getQualityDebuffs(new Date().getDay());
+  qd.forEach(d=>{if(!buffs.find(b=>b.id===d.id))buffs.push(d);});
   return buffs;
 }
 
 function renderStatusBar(){
   const el=document.getElementById('status-effects-bar');if(!el)return;
   const effects=getActiveBuffs();
-  if(!effects.length){el.innerHTML='';return;}
-  el.innerHTML=`<div class="status-bar">${effects.map(e=>`<span class="status-chip ${e.type}">${e.label}</span>`).join('')}</div>`;
+  const dc=effects.filter(e=>e.type==='debuff').length;
+  let extra=[];
+  if(dc>=4) extra=[{id:'recovery',label:'⚕ RECOVERY MODE — streak protected',type:'recovery'}];
+  else if(dc>=3) extra=[{id:'overload',label:'⚠ DEBUFF OVERLOAD',type:'overload'}];
+  const all=[...effects,...extra];
+  if(!all.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="status-bar">${all.map(e=>`<span class="status-chip ${e.type}">${e.label}</span>`).join('')}</div>`;
 }
 
 /* ─── SYSTEM GREETING ON TODAY ───────────────────────────────────────────── */
@@ -2862,6 +2952,17 @@ function redeemReward(rewardId){
   renderRewards();
 }
 
+
+function spendCoins(cost, label){
+  if(getPoints()<cost){showPtsToast('Not enough coins');return;}
+  rewardsState.totalSpent=(rewardsState.totalSpent||0)+cost;
+  rewardsState.log.unshift({type:'spend',pts:-cost,label:'Bought: '+label,ts:Date.now()});
+  if(rewardsState.log.length>50)rewardsState.log=rewardsState.log.slice(0,50);
+  save('dr-rewards',rewardsState);
+  renderRewards();
+  showPtsToast('-'+cost+' coins · '+label);
+}
+
 function renderRewards(){
   const wrap=document.getElementById('rewards-content');if(!wrap)return;
   const pts=getPoints();
@@ -2936,6 +3037,28 @@ function renderRewards(){
       </div>`).join('')}
     </div>`;
 
+
+  // ── Vending Machine Food ──────────────────────────────────────────────
+  const VENDING_FOOD=[
+    {id:'fries',    name:'Crawler Fries',    icon:ICON_FRIES,        real:'~$3',   coins:15,  desc:'Hot and acceptable.'},
+    {id:'cookie',   name:'Mystery Cookie',   icon:ICON_COOKIE,       real:'~$2',   coins:10,  desc:'Probably fine.'},
+    {id:'sandwich', name:'Dungeon Sandwich', icon:ICON_SANDWICH,     real:'~$6',   coins:30,  desc:'A respectable meal.'},
+    {id:'lunch',    name:'Full Meal',        icon:ICON_DINNER_PLATE, real:'$8–10', coins:45,  desc:'Actual food. Good job.'},
+    {id:'pizza',    name:'Floor Pizza',      icon:ICON_PIZZA,        real:'~$15',  coins:75,  desc:'Treat. You earned it.'},
+  ];
+  const foodHtml=`<div class="food-grid">${VENDING_FOOD.map(f=>{
+    const can=pts>=f.coins;
+    return`<div class="food-item${can?' affordable':''}">
+      <div class="food-icon">${pixelIcon(f.icon,36)}</div>
+      <div class="food-name">${f.name}</div>
+      <div class="food-real">${f.real} IRL</div>
+      <div class="food-cost">${pixelIcon(ICON_COINS_STACK,12)} ${f.coins} coins</div>
+      <button class="food-btn" ${!can?'disabled':''} onclick="spendCoins(${f.coins},'${f.name}')">
+        ${can?'Redeem':'Need '+f.coins}
+      </button>
+    </div>`;
+  }).join('')}</div>`;
+
   wrap.innerHTML=`
     <div class="points-hero">
       <div class="points-total">${pixelIcon(ICON_COINS_STACK,32)}${pts}</div>
@@ -2949,6 +3072,8 @@ function renderRewards(){
     </div>
     <div class="section-label" style="margin-top:0;">How to earn</div>
     ${earnHtml}
+    <div class="section-label">Vending Machine</div>
+    ${foodHtml}
     <div class="section-label">Rewards</div>
     ${tierHtml}
     <div class="reward-history">
