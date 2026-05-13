@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Cinzel+Decorative:wght@700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Silkscreen:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Cinzel+Decorative:wght@700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Silkscreen:wght@400;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -21,6 +21,13 @@
   --gold: #fbbf24; --gold-dim: rgba(251,191,36,0.10);
   --mono: 'DM Mono', monospace; --serif: 'Fraunces', serif;
   --radius: 10px; --radius-sm: 6px;
+  /* DCC font system */
+  --font-dramatic: 'Cinzel Decorative', serif;
+  --font-title:    'Cinzel', serif;
+  --font-body:     'Crimson Pro', serif;
+  --font-game:     'Silkscreen', monospace;
+  --font-hotdog:   'Press Start 2P', monospace;
+  --font-system:   'Share Tech Mono', monospace;
   /* DCC scanline effect */
   --scanline: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
 }
@@ -57,6 +64,9 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .task.done { }
 .task.done .task-name { text-decoration: line-through; color: var(--muted); }
 .task.done .task-time { color: var(--hint); }
+.task.task-na { opacity: 0.5; }
+.task.task-na .task-name { text-decoration: line-through; color: var(--hint); font-style: italic; }
+.task.task-na .check-mark { display: block !important; opacity: 0.4; }
 
 .check { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid rgba(251,191,36,0.3); background: transparent; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
 .task.done .check { background: transparent; border-color: var(--teal); }
@@ -283,11 +293,64 @@ canvas {
 @keyframes confetti-fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
 
 /* ── DCC SYSTEM MESSAGES ──────────────────────────────── */
-.system-msg { background: var(--surface2); border-left: 2px solid var(--teal); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 10px 14px; margin-bottom: 12px; font-size: 11px; line-height: 1.7; }
-.system-msg .sys-header { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); margin-bottom: 3px; }
-.system-msg .sys-body { color: var(--muted); }
-.donut-msg { background: var(--purple-dim); border-left: 2px solid var(--purple); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 10px 14px; margin-bottom: 12px; font-size: 12px; line-height: 1.7; color: var(--text); font-style: italic; }
-.donut-msg .donut-attr { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--purple); margin-top: 4px; font-style: normal; }
+
+/* THE SYSTEM — Share Tech Mono, cold, corporate, threatening */
+.system-msg {
+  background: var(--surface2);
+  border-left: 2px solid var(--teal);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+.system-msg .sys-header {
+  font-family: var(--font-hotdog);
+  font-size: 7px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(45,212,160,0.55);
+  margin-bottom: 5px;
+}
+.system-msg .sys-body,
+.sys-notice {
+  font-family: var(--font-system);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--teal);
+  line-height: 1.65;
+}
+
+/* PRINCESS DONUT — Cinzel, all-caps, diva, signature first */
+.donut-msg-wrap {
+  display: flex;
+  flex-direction: column;
+  background: var(--purple-dim);
+  border-left: 2px solid var(--purple);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+.donut-signature {
+  order: -1;
+  font-family: var(--font-hotdog);
+  font-size: 7px;
+  letter-spacing: 0.14em;
+  color: rgba(167,139,250,0.5);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.donut-msg {
+  font-family: var(--font-title);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--purple);
+  line-height: 1.7;
+  font-style: normal;
+}
+/* Legacy: .donut-attr used in old HTML — keep for compat */
+.donut-msg .donut-attr { display: none; }
+
 .warning-msg { background: rgba(255,92,92,0.06); border-left: 2px solid var(--red); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 10px 14px; margin-bottom: 12px; font-size: 11px; color: var(--red); }
 
 /* ── STATUS EFFECTS BAR ───────────────────────────────── */
@@ -415,8 +478,8 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
 .encounter-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 24px 20px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); border-top: 0.5px solid var(--border2); max-height: 85vh; overflow-y: auto; }
 .encounter-type { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; }
 .encounter-title { font-family: var(--serif); font-size: 24px; font-weight: 300; color: var(--text); margin-bottom: 4px; }
-.encounter-flavor { font-size: 12px; color: var(--muted); line-height: 1.7; margin-bottom: 16px; font-family: var(--mono); }
-.encounter-system { background: var(--surface2); border-left: 2px solid var(--amber); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 8px 12px; font-size: 11px; color: var(--muted); margin-bottom: 16px; }
+.encounter-flavor { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 16px; font-family: var(--font-body); }
+.encounter-system { background: var(--surface2); border-left: 2px solid var(--amber); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 8px 12px; font-family: var(--font-system); font-size: 11px; letter-spacing: 0.04em; color: var(--amber); margin-bottom: 16px; line-height: 1.6; }
 .encounter-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .enc-btn { flex: 1; min-width: 120px; padding: 12px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: none; color: var(--text); font-family: var(--mono); font-size: 12px; cursor: pointer; }
 .enc-btn.primary { background: var(--teal); color: #0a0a0c; border-color: var(--teal); font-weight: 500; }
@@ -469,13 +532,13 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
 .daily-pts-wrap { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 
 /* Nav labels */
-.nav-btn { font-family: 'Silkscreen', monospace; font-size: 8px; }
+.nav-btn { font-family: var(--font-game); font-size: 8px; }
 /* Task names, mono body */
-.task-name, .dog-task-name, .groom-name, .mental-name { font-family: 'Silkscreen', monospace; }
+.task-name, .dog-task-name, .groom-name, .mental-name { font-family: var(--font-body); }
 /* Coin badge, points */
-.points-total, #today-pts-badge, .stat-block-val { font-family: 'PressStart2P', monospace; font-size: 9px; }
+.points-total, #today-pts-badge, .stat-block-val { font-family: var(--font-game); font-size: 9px; }
 /* Companion mood quote */
-.companion-mood { font-family: 'Silkscreen', monospace; font-size: 11px; }
+.companion-mood { font-family: var(--font-body); font-size: 11px; }
 
 
 
@@ -491,7 +554,7 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
 
 /* ── CrimsonPro: body foundation — everything the user reads ───────────────────*/
 body {
-  font-family: 'CrimsonPro', serif;
+  font-family: var(--font-body);
 }
 .task-name, .task-time, .dog-task-name, .dog-task-time,
 .groom-name, .mental-name, .companion-mood,
@@ -502,7 +565,7 @@ body {
 .history-name, .spin-reward-btn, .btn-ghost,
 .companion-passive, .companion-origin,
 .task-list-item, .bonus-today {
-  font-family: 'CrimsonPro', serif;
+  font-family: var(--font-body);
 }
 
 /* ── Cinzel: section titles, screen headers, named things ──────────────────*/
@@ -513,7 +576,7 @@ body {
 .weekly-boss-title, .boss-section-name,
 .section-label span, .dog-section h3,
 .companion-card .companion-name {
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-title);
   font-weight: 600;
   letter-spacing: 0.04em;
 }
@@ -523,7 +586,7 @@ body {
 .boss-defeat-title, #boss-defeat-title-text,
 .weekly-boss-name, .boss-name,
 .floor-clear-text, .level-up-title {
-  font-family: 'CinzelDecorative', serif;
+  font-family: var(--font-dramatic);
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -544,14 +607,14 @@ body {
 .timer-display, #timer-display,
 .boss-hp-text, .score-table td,
 .pts-earned-toast {
-  font-family: 'Silkscreen', monospace;
+  font-family: var(--font-game);
 }
 
 /* ── Press Start 2P: hot sauce ──────────────────────────────────────────────*/
 .encounter-type,
 .section-add-btn,
 .crawler-level-label {
-  font-family: 'PressStart2P', monospace;
+  font-family: var(--font-hotdog);
   font-size: 7px;
   letter-spacing: 0.05em;
 }
@@ -615,14 +678,8 @@ body {
    Applied at end of <style> for priority
 ═══════════════════════════════════════════════ */
 
-/* ── FONT VARIABLES ─────────────────────────── */
-:root {
-  --font-dramatic: 'Cinzel Decorative', serif;
-  --font-title:    'Cinzel', serif;
-  --font-body:     'Crimson Pro', serif;
-  --font-game:     'Silkscreen', monospace;
-  --font-hotdog:   'Press Start 2P', monospace;
-}
+/* ── FONT VARIABLES — defined in :root at top of stylesheet ─────────────── */
+/* --font-dramatic, --font-title, --font-body, --font-game, --font-hotdog, --font-system */
 
 /* ── FONT HIERARCHY ─────────────────────────── */
 body { font-family: var(--font-body); }
@@ -644,13 +701,20 @@ body { font-family: var(--font-body); }
 }
 
 .task-name, .dog-task-name, .mental-name, .groom-name,
-.encounter-flavor, .donut-msg, .system-msg .sys-body,
+.encounter-flavor,
 .companion-mood, .coach-card p, .reward-name,
 .inbox-item-text, .spin-result-task,
 .bonus-task-name, .shop-name {
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.6;
+}
+
+/* System voice — The corporate dungeon */
+.sys-body, .sys-notice, .encounter-system,
+.system-msg .sys-body {
+  font-family: var(--font-system) !important;
+  letter-spacing: 0.04em;
 }
 
 .nav-btn, .level-badge, .xp-bar-label,
@@ -841,11 +905,69 @@ body { font-family: var(--font-body); }
   flex-shrink: 0;
   margin: -10px -6px -10px 0;
 }
-.q-single-orb {
-  width: 24px;
-  height: 24px;
-  transition: opacity 0.15s, filter 0.15s;
+.q-orb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: opacity 0.15s, transform 0.1s;
 }
+.q-orb:active { transform: scale(0.85); }
+.q-orb-purple { background: var(--purple); box-shadow: 0 0 6px rgba(167,139,250,0.55); }
+.q-orb-green  { background: var(--teal); }
+.q-orb-yellow { background: var(--amber); }
+.q-orb-red    { background: var(--red); box-shadow: 0 0 4px rgba(255,92,92,0.4); }
+.q-orb-gray   { background: #4a4644; border: 1px solid rgba(255,255,255,0.12); }
+.q-orb-unset  { background: transparent; border: 1.5px solid rgba(255,255,255,0.15); }
+
+/* Recovery Mode banner */
+.recovery-banner {
+  background: rgba(167,139,250,0.08);
+  border: 1px solid rgba(167,139,250,0.3);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.recovery-banner .recovery-title {
+  font-family: var(--font-hotdog);
+  font-size: 7px;
+  color: var(--purple);
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.recovery-banner .recovery-body {
+  font-family: var(--font-system);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: rgba(167,139,250,0.85);
+  line-height: 1.6;
+}
+.recovery-banner .recovery-quote {
+  font-family: var(--font-title);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--purple);
+  line-height: 1.65;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 0.5px solid rgba(167,139,250,0.2);
+}
+
+/* Floor countdown */
+.floor-countdown {
+  font-family: 'Silkscreen', monospace;
+  font-size: 10px;
+  color: var(--hint);
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+}
+.floor-countdown.warn { color: var(--amber); }
+.floor-countdown.alert { color: var(--red); }
+@keyframes pulse-red { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.floor-countdown.critical { color: var(--red); animation: pulse-red 1s infinite; }
+.floor-countdown.final    { color: var(--red); animation: pulse-red 0.5s infinite; }
 
 
 /* ─── TASK SECTION GROUPS ───────────────────────────────────────────────── */
@@ -900,8 +1022,10 @@ body { font-family: var(--font-body); }
       <div class="small">rooms cleared this floor</div>
       <div class="streak-row" id="streak-row">&#9679; 0 floors survived</div>
       <div class="daily-pts-wrap"><span class="pts-badge" id="today-pts-badge">🪙 0 coins</span></div>
+      <div class="floor-countdown" id="floor-countdown"></div>
     </div>
   </div>
+  <div id="recovery-mode-banner"></div>
   <div id="congrats-banner" class="congrats-banner" style="display:none"></div>
   <div id="task-list"></div>
   <div id="bonus-today"></div>
@@ -1227,14 +1351,22 @@ const CIRC=175.9;
 const SUNDAY_PILL_TASK={id:'sunday-pillbox',name:'Fill weekly pill box',time:'Evening'};
 
 /* ─── QUALITY SYSTEM CONFIG ──────────────────────────────────────────────── */
+// Tasks eligible for Legendary Execution (purple orb)
+const PURPLE_ELIGIBLE = new Set([
+  'wakeup','gym','breakfast','work','dinner','intentions','personal','winddown','sleep'
+]);
+
 const QUALITY_TASKS = {
-  'wakeup':    { debuff:'running-on-empty', label:'Running on Empty' },
-  'gym':       { debuff:'undertrained',     label:'Undertrained'     },
-  'shower':    { debuff:'foggy-crawler',    label:'Foggy Crawler'    },
-  'meds-am':   { debuff:'foggy-crawler',    label:'Foggy Crawler'    },
-  'breakfast': { debuff:'running-on-empty', label:'Running on Empty' },
-  'wind-down': { debuff:'doomscrolling',    label:'Doomscrolling'    },
-  'lights-out':{ debuff:'sleep-deprived',   label:'Sleep Deprived'   },
+  'wakeup':    { debuff:'sluggish',        label:'Sluggish',         debuffOnYellow:true  },
+  'gym':       { debuff:'undertrained',    label:'Undertrained',     debuffOnYellow:false },
+  'shower':    { debuff:'foggy-crawler',   label:'Foggy Crawler',    debuffOnYellow:false },
+  'meds-am':   { debuff:'foggy-crawler',   label:'Foggy Crawler',    debuffOnYellow:true  },
+  'meds-pm':   { debuff:'foggy-crawler',   label:'Foggy Crawler',    debuffOnYellow:true  },
+  'breakfast': { debuff:'running-on-empty',label:'Running on Empty', debuffOnYellow:false },
+  'work':      { debuff:'running-on-empty',label:'Running on Empty', debuffOnYellow:false },
+  'dinner':    { debuff:'running-on-empty',label:'Running on Empty', debuffOnYellow:false },
+  'winddown':  { debuff:'doomscrolling',   label:'Doomscrolling',    debuffOnYellow:true  },
+  'sleep':     { debuff:'sleep-deprived',  label:'Sleep Deprived',   debuffOnYellow:true  },
 };
 
 const DEFAULT_SCHEDULE={
@@ -1547,7 +1679,15 @@ function dayPct(idx){
   const ids=sc.reduce((a,s)=>a.concat(s.tasks.map(t=>t.id)),[]);
   if(!ids.length)return 0;
   const data=state[dayKey(idx)]||{};
-  return Math.round(ids.filter(id=>data[id]).length/ids.length*100);
+  const qDay=qualityState[dayKey(idx)]||{};
+  // Exclude N/A (gray checked) tasks from denominator
+  const naIds=new Set(ids.filter(id=>qDay[id]==='gray'));
+  const denom=ids.length-naIds.size;
+  if(!denom)return 100;
+  // Count: purple+green+yellow checked, not red, not gray
+  const done=ids.filter(id=>!naIds.has(id)&&data[id]&&qDay[id]!=='red').length
+           + ids.filter(id=>!naIds.has(id)&&data[id]&&!qDay[id]).length; // plain checked no orb
+  return Math.round(done/denom*100);
 }
 
 function calcStreak(){
@@ -1810,31 +1950,52 @@ function cycleQuality(dayIdx, taskId){
   const k=dayKey(dayIdx);
   if(!qualityState[k])qualityState[k]={};
   const cur=qualityState[k][taskId];
-  // unset → high (done well) → med (done poorly) → low (skipped) → unset
+  const canPurple=PURPLE_ELIGIBLE.has(taskId);
+
+  // Cycle: unset → (purple if eligible →) green → yellow → gray → red → unset
+  let next;
   if(!cur){
-    qualityState[k][taskId]='high';
-    // Green = done well — check the task
-    if(!(state[k]&&state[k][taskId])){
-      if(!state[k])state[k]={};
+    next = canPurple ? 'purple' : 'green';
+  } else if(cur==='purple') {
+    next = 'green';
+  } else if(cur==='green') {
+    next = 'yellow';
+  } else if(cur==='yellow') {
+    next = 'gray';
+  } else if(cur==='gray') {
+    next = 'red';
+  } else {
+    next = null; // red → unset
+  }
+
+  if(!next){
+    delete qualityState[k][taskId];
+  } else {
+    qualityState[k][taskId] = next;
+  }
+
+  // Sync check state based on new quality
+  if(!state[k]) state[k]={};
+  if(next==='purple'||next==='green'||next==='yellow'||next==='gray'){
+    // Checked states
+    if(!state[k][taskId]){
       state[k][taskId]=true;
       state[k][taskId+'_ts']=Date.now();
       save('dr-state',state);
-      maybeAwardTaskPoints(taskId,dayIdx);
+      maybeAwardTaskPoints(taskId,dayIdx,next);
     }
-  }
-  else if(cur==='high')qualityState[k][taskId]='med';  // yellow — leave completion alone
-  else if(cur==='med'){
-    qualityState[k][taskId]='low';
-    // Red = skipped — uncheck the task
-    if(state[k]&&state[k][taskId]){
+  } else if(next==='red'){
+    // Intentional skip — unchecked
+    if(state[k][taskId]){
       state[k][taskId]=false;
       delete state[k][taskId+'_ts'];
       save('dr-state',state);
     }
+  } else if(!next){
+    // Unset — leave check as is
   }
-  else delete qualityState[k][taskId];  // unset — leave completion alone
+
   save('dr-quality',qualityState);
-  // Preserve scroll position — full re-render would jump to top
   window._skipGreeting=true;
   const _scroll=document.documentElement.scrollTop||document.body.scrollTop;
   renderToday();
@@ -1844,16 +2005,30 @@ function cycleQuality(dayIdx, taskId){
     document.body.scrollTop=_scroll;
   });
   renderStatusBar();
+  renderRecoveryMode();
+}
+
+function orbLabel(q){
+  return {purple:'Legendary Execution',green:'Done',yellow:'Done poorly',gray:'N/A',red:'Skipped'}[q]||'Rate quality';
+}
+function renderOrb(quality, taskId){
+  const canPurple=PURPLE_ELIGIBLE.has(taskId);
+  const cls = quality==='purple' ? 'q-orb-purple' :
+              quality==='green'  ? 'q-orb-green'  :
+              quality==='yellow' ? 'q-orb-yellow' :
+              quality==='red'    ? 'q-orb-red'    :
+              quality==='gray'   ? 'q-orb-gray'   :
+              'q-orb-unset';
+  const title=orbLabel(quality)+(canPurple&&!quality?' (tap: purple/green/yellow/gray/red)':'');
+  return `<div class="q-orb ${cls}" title="${title}"></div>`;
 }
 
 function setQuality(dayIdx, taskId, level){
   const k=dayKey(dayIdx);
   if(!qualityState[k])qualityState[k]={};
-  // Toggle off if tapping same level
   if(qualityState[k][taskId]===level) delete qualityState[k][taskId];
   else qualityState[k][taskId]=level;
   save('dr-quality',qualityState);
-  // Preserve scroll position — full re-render would jump to top
   window._skipGreeting=true;
   const _scroll=document.documentElement.scrollTop||document.body.scrollTop;
   renderToday();
@@ -1871,10 +2046,10 @@ function getQualityDebuffs(dayIdx){
   const data=state[dayKey(dayIdx)]||{};
   const debuffs=[]; const seen=new Set();
   for(const[taskId,cfg]of Object.entries(QUALITY_TASKS)){
-    const done=!!data[taskId];
     const q=getQuality(dayIdx,taskId);
-    // yellow (med) = done poorly → debuff; red (low) = skipped → debuff (even if unchecked)
-    const hasDebuff=(done&&q==='med')||(q==='low');
+    // red = intentional skip → always debuffs
+    // yellow = done poorly → debuffs only if debuffOnYellow is set for this task
+    const hasDebuff=(q==='red')||(q==='yellow'&&cfg.debuffOnYellow);
     if(hasDebuff && !seen.has(cfg.debuff)){
       seen.add(cfg.debuff);
       debuffs.push({id:cfg.debuff,label:cfg.label,type:'debuff'});
@@ -1919,6 +2094,8 @@ function renderToday(){
   if(ptsBadge)ptsBadge.innerHTML=pixelIcon(ICON_COINS_STACK,18)+''+getPoints()+' coins';
   renderSystemGreeting();
   renderStatusBar();
+  renderFloorCountdown();
+  renderRecoveryMode();
   const isComplete=_recovery?(done>=3&&total>0):(pct===100&&total>0);
   document.getElementById('congrats-banner').style.display=isComplete?'block':'none';
   if(isComplete&&!wasComplete)fireConfetti();
@@ -1945,12 +2122,14 @@ function renderToday(){
       const _isDone=!!data[task.id];
       const _qCfg=true;  // orb on all tasks; debuffs still only fire for QUALITY_TASKS
       const _q=getQuality(selectedDay,task.id);
-      div.className='task'+(_isDone?' done':'')+(_q==='low'?' quality-low':'');
+      // Gray-checked = N/A: show checked but dimmed
+      const _isNA=_q==='gray';
+      div.className='task'+(_isDone&&!_isNA?' done':'')+(_q==='yellow'?' quality-low':'')+(_isNA?' task-na':'');
       div.innerHTML=`<div class="check"><span class="check-mark">✓</span></div>
         <div style="flex:1;"><div class="task-name">${task.name}</div>
         <div class="task-time">${task.time}${_isDone&&data[task.id+'_ts']?' · done '+fmtTime(data[task.id+'_ts']):''}</div></div>
-        ${_qCfg?`<div class="q-orb-tap" onclick="event.stopPropagation();cycleQuality(${selectedDay},'${task.id}')" title="${_q==='high'?'Done well':_q==='med'?'Done but not well':_q==='low'?'Skipped':'Rate quality'}">
-          <img class="q-single-orb" src="${_q==='high'?ICON_ORB_GREEN:_q==='med'?ICON_ORB_YELLOW:_q==='low'?ICON_ORB_RED:ICON_ORB_GREEN}" style="opacity:${_q?1:0.4};${_q?'':'filter:grayscale(0.8)'}" alt="">
+        ${_qCfg?`<div class="q-orb-tap" onclick="event.stopPropagation();cycleQuality(${selectedDay},'${task.id}')" title="${orbLabel(_q)}">
+          ${renderOrb(_q,task.id)}
         </div>` : (!isSundayInjected?'<span class="task-edit-hint">hold to edit</span>':'')}`;
 
       // Tap = toggle, long press = edit
@@ -2445,7 +2624,8 @@ function markDoneOutsideSpin(taskId){
 
 /* ─── RANDOM ENCOUNTER SYSTEM ────────────────────────────────────────────── */
 let activeEncounter=null,encTimerInterval=null,encTimerSeconds=0;
-const ENCOUNTER_CHANCE=0.25;
+const ENCOUNTER_CHANCE=0.18;
+let _spinsSinceEncounter=0;
 
 const ENCOUNTERS=[
   {id:'loot-goblin',weight:30,title:'Loot Goblin',type:'🐀 Loot Goblin',
@@ -2484,10 +2664,53 @@ const ENCOUNTERS=[
     onSuccess:()=>{awardPoints(30,'Elite Encounter cleared','encounter');awardXP(40,'Elite Encounter');showPtsToast('+30 🪙 Elite cleared!');},
     onFail:()=>{showPtsToast('CURSED TASK APPLIED. It will return.');},
   },
+  {id:'edna-patrol',weight:25,title:'Edna Has Filed a Report',type:'🐾 SECURITY INCIDENT',
+    flavor:'Edna has detected a threat on the balcony. It is, in her assessment, extremely serious. Complete one task in the next 4 minutes and she will stand down.',
+    system:'COMPANION ALERT: Edna is at DEFCON 1. Perimeter unsecured. Threat identified as: wind.',
+    timerSeconds:240,
+    actions:[{label:'Respond to the incident',id:'start',primary:true},{label:'Let her handle it',id:'flee'}],
+    onSuccess:()=>{awardPoints(15,'Edna stood down!','encounter');showPtsToast('+15 🪙 Threat neutralized.');},
+    onFail:()=>{showPtsToast('Edna filed an incident report. Three pages.');},
+  },
+  {id:'kronk-contraband',weight:22,title:'Kronk Has Eaten Something',type:'🦴 INCIDENT REPORT',
+    flavor:'Kronk has consumed an unknown object. He seems fine. He is wagging. The object is gone. Complete a task while pretending everything is fine.',
+    system:'COMPANION STATUS: Kronk is happy. Do not investigate further.',
+    timerSeconds:0,
+    actions:[{label:'Everything is fine (spin)',id:'accept',primary:true},{label:'Investigate',id:'flee'}],
+    onSuccess:()=>{awardPoints(10,'Everything is fine!','encounter');showPtsToast('+10 🪙 He\'s fine.');},
+    onFail:()=>{showPtsToast('You investigated. You regret it.');},
+  },
+  {id:'shrine',weight:18,title:'Ancient Shrine',type:'✨ DIVINE FAVOR',
+    flavor:'A forgotten shrine glows in the dungeon dark. The inscription reads: do one thing, do it now.',
+    system:'SHRINE DETECTED: Complete next task for amplified reward.',
+    timerSeconds:0,
+    actions:[{label:'Make an offering',id:'accept',primary:true},{label:'Walk past',id:'flee'}],
+    onSuccess:()=>{awardPoints(12,'Shrine blessed!','encounter');awardXP(20,'Shrine');showPtsToast('+12 🪙 +20 XP');},
+    onFail:()=>{showPtsToast('The shrine dims.');},
+  },
+  {id:'tavern',weight:15,title:'Waypoint',type:'🍺 CRAWLER\'S REST',
+    flavor:'A quiet corner. The dungeon continues but it can wait. Take the coins.',
+    system:'REST POINT UNLOCKED: Morale maintained. Proceed when ready.',
+    timerSeconds:0,
+    actions:[{label:'Claim rest bonus',id:'accept',primary:true},{label:'Press on',id:'flee'}],
+    onSuccess:()=>{awardPoints(8,'Rest claimed!','encounter');showPtsToast('+8 🪙 Rest taken.');},
+    onFail:()=>{showPtsToast('The dungeon respects the hustle.');},
+  },
+  {id:'floor-trap',weight:12,title:'Pressure Plate',type:'⚠ TRAP DETECTED',
+    flavor:'You feel it underfoot. 90 seconds to complete any task or the trap springs.',
+    system:'TRAP: Active. Disarm window open. Move.',
+    timerSeconds:90,
+    actions:[{label:'Disarm it (start timer)',id:'start',primary:true},{label:'Jump back',id:'flee'}],
+    onSuccess:()=>{awardPoints(18,'Trap disarmed!','encounter');showPtsToast('+18 🪙 Trap disarmed.');},
+    onFail:()=>{showPtsToast('The trap sprung. No coins.');},
+  },
 ];
 
 function maybeShowRandomEncounter(){
+  _spinsSinceEncounter++;
+  if(_spinsSinceEncounter<3)return false;  // cooldown: min 3 spins between encounters
   if(Math.random()>ENCOUNTER_CHANCE)return false;
+  _spinsSinceEncounter=0;  // reset cooldown
   const total=ENCOUNTERS.reduce((a,e)=>a+e.weight,0);
   let r=Math.random()*total,enc=null;
   for(const e of ENCOUNTERS){r-=e.weight;if(r<=0){enc=e;break;}}
@@ -3033,11 +3256,53 @@ function renderSystemGreeting(){
   if(streak>0&&streak%7===0)sysMsg=DCC.system.streakAlert(streak);
 
   el.innerHTML=`
-    <div class="system-msg"><div class="sys-header">System Notice</div><div class="sys-body">${sysMsg}</div></div>
-    <div class="donut-msg">"${donutMsg}"<div class="donut-attr">— Princess Donut</div></div>`;
+    <div class="system-msg"><div class="sys-header">⬛ System Notice</div><div class="sys-body">${sysMsg}</div></div>
+    <div class="donut-msg-wrap"><span class="donut-signature">— Princess Donut</span><p class="donut-msg">${donutMsg}</p></div>`;
 }
 
 /* ─── CRAWLER PROFILE RENDERER ───────────────────────────────────────────── */
+function renderFloorCountdown(){
+  const el=document.getElementById('floor-countdown');if(!el)return;
+  const sc=getScheduleFor(selectedDay);
+  const data=getDayData(selectedDay);
+  const allT=sc.reduce((a,s)=>a.concat(s.tasks),[]);
+  const unchecked=allT.filter(t=>!data[t.id]).length;
+  if(unchecked===0){el.textContent='';el.className='floor-countdown';return;}
+  // Only show countdown for today
+  if(selectedDay!==new Date().getDay()){el.textContent='';return;}
+  const now=new Date();
+  const midnight=new Date(now);midnight.setHours(24,0,0,0);
+  const msLeft=midnight-now;
+  const hLeft=Math.floor(msLeft/3600000);
+  const mLeft=Math.floor((msLeft%3600000)/60000);
+  const label=hLeft>0?`${hLeft}h ${mLeft}m`:`${mLeft}m`;
+  let cls='floor-countdown';
+  if(msLeft<600000)cls+=' final';
+  else if(msLeft<1800000)cls+=' critical';
+  else if(msLeft<3600000)cls+=' alert';
+  else if(msLeft<7200000)cls+=' warn';
+  el.className=cls;
+  el.textContent=`⏱ ${label} until floor collapse`;
+}
+
+function renderRecoveryMode(){
+  const el=document.getElementById('recovery-mode-banner');if(!el)return;
+  const dc=countDebuffs();
+  if(dc>=4){
+    el.innerHTML=`<div class="recovery-banner">
+      <div class="recovery-title">⚕ Recovery Mode Active</div>
+      <div class="recovery-body">FLOOR REQUIREMENTS REDUCED. COMPLETE JUST 3 TASKS TO CLEAR THE FLOOR. STREAK PROTECTED. DEBUFFS PAUSED.</div>
+      <div class="recovery-quote">You are struggling. This is known.<br>Three tasks. That is all. The dungeon will handle the rest.</div>
+    </div>`;
+  } else if(dc>=3){
+    el.innerHTML=`<div class="recovery-banner" style="background:rgba(255,92,92,0.06);border-color:rgba(255,92,92,0.25);">
+      <div class="recovery-title" style="color:var(--red);">⚠ Debuff Overload — ${dc} Active</div>
+      <div class="recovery-body" style="color:rgba(255,92,92,0.75);">THE FOG THICKENS. ONE MORE DEBUFF TRIGGERS RECOVERY MODE. CLEAR TASKS TO REDUCE DEBUFFS.</div>
+    </div>`;
+  } else {
+    el.innerHTML='';
+  }
+}
 function renderProfile(){
   const wrap=document.getElementById('profile-content');if(!wrap)return;
   const streak=calcStreak();
@@ -3214,7 +3479,13 @@ function equipTitle(title){
 
 /* ─── REWARDS DATA ───────────────────────────────────────────────────────── */
 const DEFAULT_REWARDS=[
-  // Common Loot — 25–50 🪙
+  // ─── VENDING MACHINE EMERGENCY FOOD ───────────────────────────
+  {id:'vm-sandwich',name:'Morning Emergency Ration',desc:'A breakfast sandwich. The dungeon provides. At a cost. A preventable cost. You did not prepare. The cafeteria is open.',real:'Breakfast sandwich ($6)',emoji:'🥪',cost:30,tier:'vending',category:'food'},
+  {id:'vm-fries',name:'Dungeon Fries (Acceptable)',desc:'Fries. Hot. From the machine. Not ideal. Not nothing. The dungeon has seen worse choices.',real:'Fries from cafeteria ($3)',emoji:'🍟',cost:15,tier:'vending',category:'food'},
+  {id:'vm-cookie',name:'Sugar-Based Morale Boost',desc:'A cookie. Small. Provides temporary morale. The System is not judging. Much.',real:'Cafeteria cookie ($2)',emoji:'🍪',cost:10,tier:'vending',category:'food'},
+  {id:'vm-lunch',name:'Cafeteria Floor Provisions',desc:'A real lunch, obtained via currency from the cafeteria on your current floor. You were supposed to bring this from home. You did not.',real:'Cafeteria lunch ($8–10)',emoji:'🍱',cost:45,tier:'vending',category:'food'},
+  {id:'vm-pizza',name:'Emergency Pizza Protocol',desc:'Pizza. Fifteen dollars. The dungeon notes this with concern. Meal prep on Sunday would have prevented this. The dungeon is not subtle about this.',real:'Pizza ($15)',emoji:'🍕',cost:75,tier:'vending',category:'food'},
+  // ─── COMMON LOOT — 25–50 🪙 ───────────────────────────────────
   {id:'r-coffee',name:'Elixir of Alertness',desc:'A rare brew, hot and bitter, said to grant focus and ward off the morning fog.',real:'Fancy coffee',emoji:'☕',cost:30,tier:'small',category:'you'},
   {id:'r-snack',name:'Dungeon Rations (The Good Kind)',desc:'Not the grey slop they serve on floor 4. Your favorite snack, procured from the outside world.',real:'Favorite snack',emoji:'🍫',cost:25,tier:'small',category:'you'},
   {id:'r-gaming',name:'Bonus Rest Cycle',desc:'The dungeon authorizes one hour of guilt-free entertainment. The System has noted this.',real:'Extra hour of gaming/TV',emoji:'🎮',cost:25,tier:'small',category:'you'},
@@ -3243,14 +3514,30 @@ const DEFAULT_REWARDS=[
 
 // Points values
 const PTS={
-  task:1,           // per routine task completed
-  dogTask:2,        // per dog care task
-  spinTask:3,       // per spin wheel task done
-  bonusTask:2,      // per dog mental health task
-  streak7:15,       // 7-day streak bonus (awarded once per week)
-  streak30:75,      // 30-day streak bonus
-  dayComplete:8,    // 100% day bonus
-  weekComplete:35,  // all 7 days 80%+ bonus
+  task:2,            // routine task default (green) — quality overrides below
+  dogTask:2,         // per dog care task
+  spinTask:3,        // per spin wheel task done
+  bonusTask:2,       // per dog mental health task
+  streak7:12,        // 7-day streak bonus
+  streak30:60,       // 30-day streak bonus
+  dayComplete:6,     // 100% day bonus
+  weekComplete:25,   // all 7 days 80%+ bonus
+};
+
+// Quality-specific coin rewards (override PTS.task)
+const QUALITY_PTS = {
+  purple: 5,
+  green:  3,
+  yellow: 1,
+  red:    0,
+  gray:   0,
+};
+const QUALITY_XP = {
+  purple: 15,
+  green:  8,
+  yellow: 3,
+  red:    0,
+  gray:   0,
 };
 
 const DEFAULT_REWARDS_STATE={
@@ -3289,12 +3576,18 @@ function showPtsToast(msg){
   setTimeout(()=>toast.classList.remove('show'),2500);
 }
 
-// Called whenever a routine task is toggled ON
-function maybeAwardTaskPoints(taskId,dayIdx){
+// Called whenever a routine task is toggled ON or quality orb sets to a checked state
+function maybeAwardTaskPoints(taskId,dayIdx,quality){
   const k=dayKey(dayIdx);
   if(!(state[k]&&state[k][taskId]))return;
-  awardPoints(PTS.task,'Routine task',taskId);
-  awardXP(XP_PTS.task,'Routine task');
+  // Use quality-specific rates; default to green if quality not specified
+  const q=quality||getQuality(dayIdx,taskId)||'green';
+  if(q==='red'||q==='gray')return; // no coins for skip/N/A
+  const coins=QUALITY_PTS[q]||QUALITY_PTS.green;
+  const xp=QUALITY_XP[q]||QUALITY_XP.green;
+  const qLabel={purple:'⚡ Legendary!',green:'Done',yellow:'Barely',gray:'N/A',red:'Skipped'}[q]||'Done';
+  awardPoints(coins,'Routine task — '+qLabel,taskId);
+  awardXP(xp,'Routine task');
   const dateStr=k;
   if(!rewardsState.lastDayBonuses[dateStr]){
     const pct=dayPct(dayIdx);
@@ -3466,13 +3759,14 @@ function renderRewards(){
   const earnHtml=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
       ${[
-        ['Routine task','2 pts','✓'],
-        ['Dog care task','3 pts',pixelIcon(ICON_PAW,20)],
-        ['Spin task done','5 pts',pixelIcon(ICON_FIRE,20)],
-        ['Dog mental moment','3 pts','💜'],
-        ['100% day','10 pts',pixelIcon(ICON_STAR,20)],
-        ['7-day streak','20 pts',pixelIcon(ICON_FIRE,20)],
-        ['30-day streak','100 pts','🏆'],
+        ['Purple (Legendary)','5 🪙 / 15 ⚡','🟣'],
+        ['Green (Done)','3 🪙 / 8 ⚡','🟢'],
+        ['Yellow (Barely)','1 🪙 / 3 ⚡','🟡'],
+        ['Dog care task','2 🪙 / 8 ⚡',pixelIcon(ICON_PAW,20)],
+        ['Spin encounter done','3 🪙 / 10 ⚡',pixelIcon(ICON_FIRE,20)],
+        ['100% day bonus','6 🪙 / 25 ⚡',pixelIcon(ICON_STAR,20)],
+        ['7-day streak','12 🪙','🔥'],
+        ['30-day streak','60 🪙','🏆'],
       ].map(([label,pts,icon])=>`<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;display:flex;align-items:center;gap:8px;">
         <span style="font-size:16px;">${icon}</span>
         <div><div style="font-size:11px;color:var(--text);">${label}</div><div style="font-size:12px;color:var(--teal);font-weight:500;">${pts}</div></div>
@@ -3581,6 +3875,9 @@ async function init(){
   migrateDogTasks();
   migrateGymIntoSchedule();
   renderToday();renderInbox();updateProjectDropdown();refreshWheel();renderTaskManager();
+
+  // Update floor countdown every minute
+  setInterval(renderFloorCountdown, 60000);
 
   const last=loadLocal('dr-last-screen','today');
   if(last&&last!=='today'){
