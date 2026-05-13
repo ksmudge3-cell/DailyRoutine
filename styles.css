@@ -366,7 +366,7 @@ canvas {
   letter-spacing: 0.05em;
 }
 .crawler-title { font-size: 11px; color: var(--amber); letter-spacing: 0.06em; margin-top: 2px; }
-.crawler-level { display: flex; align-items: center; gap: 16px; margin-top: 14px; }
+.crawler-level { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 14px; }
 .level-badge {
   background: #0a0a0c;
   color: var(--gold);
@@ -377,7 +377,7 @@ canvas {
   border-radius: 4px;
   padding: 5px 10px;
 }
-.xp-bar-wrap { flex: 1; }
+.xp-bar-wrap { width: 100%; }
 .xp-bar-label { font-size: 9px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
 .xp-bar-bg { background: var(--surface2); border-radius: 99px; height: 6px; overflow: hidden; }
 .xp-bar-fill { background: linear-gradient(90deg, var(--teal), var(--purple)); height: 100%; border-radius: 99px; transition: width 0.6s ease; }
@@ -639,7 +639,7 @@ body {
 .hero-bar-wrap {
   position: relative;
   width: 100%;
-  height: 56px;
+  height: 44px;
   overflow: hidden;
   user-select: none;
 }
@@ -917,9 +917,10 @@ body { font-family: var(--font-body); }
 /* ─── COMPANION STAT BARS (neon tube assets) ─────────────────────── */
 .stat-row {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  margin-bottom: 8px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 .stat-label {
   font-family: var(--font-hotdog);
@@ -927,10 +928,15 @@ body { font-family: var(--font-body); }
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  width: 96px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
 }
 .stat-bar-wrap {
   position: relative;
-  width: 100%;
+  flex: 1;
+  width: auto;
   height: 8px;
   border-radius: 2px;
   overflow: hidden;
@@ -1037,50 +1043,4 @@ body { font-family: var(--font-body); }
 /* Remove task bottom border on last item in group */
 .task-section-group .task:last-child {
   margin-bottom: 0;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   BAR FIXES
-═══════════════════════════════════════════════════════════ */
-
-/* ── FIX 1: Hero bar height — less stretched ──────────────── */
-.bar-wrap,
-.hero-bar-wrap {
-  height: 44px !important;
-}
-
-/* ── FIX 2: XP bar = Boss bar — grid stacks badge above bar ── */
-.crawler-level {
-  display: grid !important;
-  grid-template-columns: 1fr !important;
-  gap: 8px !important;
-  margin-top: 14px !important;
-}
-.level-badge {
-  position: static !important;
-  display: inline-flex !important;
-}
-.xp-bar-wrap {
-  width: 100% !important;
-  flex: unset !important;
-}
-
-/* ── FIX 3: Companion stat bars — row layout, aligned start ── */
-.stat-row {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  gap: 8px !important;
-  margin-bottom: 10px !important;
-}
-.stat-label {
-  width: 96px !important;
-  flex-shrink: 0 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-}
-.stat-bar-wrap {
-  flex: 1 !important;
-  width: auto !important;
-  height: 8px !important;
 }
