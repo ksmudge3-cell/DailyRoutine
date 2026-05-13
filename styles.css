@@ -376,6 +376,7 @@ canvas {
   letter-spacing: 0.08em;
   border-radius: 4px;
   padding: 5px 10px;
+  justify-self: start;
 }
 .xp-bar-wrap { width: 100%; }
 .xp-bar-label { font-size: 9px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
