@@ -1072,10 +1072,10 @@ body { font-family: var(--font-body); }
   margin-bottom: 10px;
 }
 .stat-label {
-  width: 80px;
-  flex-shrink: 0;
-  white-space: nowrap;
-  overflow: hidden;
+  width: 96px !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
 }
 .stat-bar-wrap {
   flex: 1;

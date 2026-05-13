@@ -2411,7 +2411,6 @@ function renderRewards(){
 
         </div>
         ${canAfford?pixelIcon(ICON_CHEST,12)+' Redeem':coinImg+r.cost}
-          ${canAfford?pixelIcon(ICON_CHEST,12)+' Redeem':r.cost+' 🪙'}
         </button>
       </div>`;
     }).join('');
