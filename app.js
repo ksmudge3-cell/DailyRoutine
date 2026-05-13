@@ -2407,9 +2407,10 @@ function renderRewards(){
           <div class="reward-name">${r.name}</div>
           <div style="font-size:10px;color:var(--muted);line-height:1.5;margin:3px 0;">${r.desc}</div>
           <div style="font-size:10px;color:var(--hint);font-style:italic;">→ ${r.real}</div>
-          <div class="reward-cost${canAfford?' can-afford':''}" style="margin-top:4px;">${r.cost} 🪙${timesRedeemed>0?' · redeemed '+timesRedeemed+'×':''}</div>
+          <div class="reward-cost${canAfford?' can-afford':''}" style="margin-top:4px;">${coinImg}${r.cost}${timesRedeemed>0?' · redeemed '+timesRedeemed+'×':''}</div>
+
         </div>
-        <button class="redeem-btn" onclick="redeemReward('${r.id}')" ${!canAfford?'disabled':''}>
+        ${canAfford?pixelIcon(ICON_CHEST,12)+' Redeem':coinImg+r.cost}
           ${canAfford?pixelIcon(ICON_CHEST,12)+' Redeem':r.cost+' 🪙'}
         </button>
       </div>`;
@@ -2433,14 +2434,14 @@ function renderRewards(){
   const earnHtml=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
       ${[
-        ['Purple (Legendary)','5 🪙 / 15 ⚡',pixelIcon(ORB_PURPLE,20)],
-        ['Green (Done)','3 🪙 / 8 ⚡',pixelIcon(ORB_TEAL,20)],
-        ['Yellow (Barely)','1 🪙 / 3 ⚡',pixelIcon(ORB_YELLOW,20)],
-        ['Dog care task','2 🪙 / 8 ⚡',pixelIcon(ICON_PAW,20)],
-        ['Spin encounter done','3 🪙 / 10 ⚡',pixelIcon(ICON_FIRE,20)],
-        ['100% day bonus','6 🪙 / 25 ⚡',pixelIcon(ICON_STAR,20)],
-        ['7-day streak','12 🪙','🔥'],
-        ['30-day streak','60 🪙','🏆'],
+        ['Purple (Legendary)',`5 ${coinImg} / 15 ⚡`,pixelIcon(ORB_PURPLE,20)],
+      ['Green (Done)',`3 ${coinImg} / 8 ⚡`,pixelIcon(ORB_TEAL,20)],
+      ['Yellow (Barely)',`1 ${coinImg} / 3 ⚡`,pixelIcon(ORB_YELLOW,20)],
+      ['Dog care task',`2 ${coinImg} / 8 ⚡`,pixelIcon(ICON_PAW,20)],
+      ['Spin encounter done',`3 ${coinImg} / 10 ⚡`,pixelIcon(ICON_FIRE,20)],
+      ['100% day bonus',`6 ${coinImg} / 25 ⚡`,pixelIcon(ICON_STAR,20)],
+      ['7-day streak',`12 ${coinImg}`,'🔥'],
+      ['30-day streak',`60 ${coinImg}`,'🏆'],
       ].map(([label,pts,icon])=>`<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;display:flex;align-items:center;gap:8px;">
         <span style="font-size:16px;">${icon}</span>
         <div><div style="font-size:11px;color:var(--text);">${label}</div><div style="font-size:12px;color:var(--teal);font-weight:500;">${pts}</div></div>
@@ -2496,9 +2497,9 @@ function renderRewards(){
       const can=pts>=r.cost;
       return '<div class="reward-item'+(can?' affordable':'')+'" style="margin-bottom:6px;display:flex;align-items:center;gap:8px;">'+
         '<div class="reward-info" style="flex:1;"><div class="reward-name">'+r.name+'</div>'+
-        '<div class="reward-cost'+(can?' can-afford':'')+'">'+r.cost+' 🪙</div></div>'+
+        '<div class="reward-cost'+(can?' can-afford':'')+'">'+coinImg+r.cost+'</div></div>'+
         '<button class="redeem-btn" onclick="spendCoins('+r.cost+',\''+r.name.replace(/'/g,'')+'\')" '+(can?'':'disabled')+'>'+
-        (can?pixelIcon(ICON_CHEST,12)+' Redeem':r.cost+' 🪙')+'</button>'+
+        (can?pixelIcon(ICON_CHEST,12)+' Redeem':coinImg+r.cost)+'</button>'+
         '<button onclick="deleteCustomReward(\''+r.id+'\')" style="background:none;border:none;color:var(--hint);cursor:pointer;font-size:18px;padding:0 6px;" title="Remove">×</button>'+
         '</div>';
     }).join(''):'<div style="font-size:12px;color:var(--hint);padding:6px 0 12px;">No custom rewards yet.</div>'}
