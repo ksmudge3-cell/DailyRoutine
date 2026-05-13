@@ -2433,9 +2433,9 @@ function renderRewards(){
   const earnHtml=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
       ${[
-        ['Purple (Legendary)','5 🪙 / 15 ⚡','🟣'],
-        ['Green (Done)','3 🪙 / 8 ⚡','🟢'],
-        ['Yellow (Barely)','1 🪙 / 3 ⚡','🟡'],
+        ['Purple (Legendary)','5 🪙 / 15 ⚡',pixelIcon(ORB_PURPLE,20)],
+        ['Green (Done)','3 🪙 / 8 ⚡',pixelIcon(ORB_TEAL,20)],
+        ['Yellow (Barely)','1 🪙 / 3 ⚡',pixelIcon(ORB_YELLOW,20)],
         ['Dog care task','2 🪙 / 8 ⚡',pixelIcon(ICON_PAW,20)],
         ['Spin encounter done','3 🪙 / 10 ⚡',pixelIcon(ICON_FIRE,20)],
         ['100% day bonus','6 🪙 / 25 ⚡',pixelIcon(ICON_STAR,20)],
