@@ -1054,3 +1054,84 @@ body { font-family: var(--font-body); }
 .task-section-group .task:last-child {
   margin-bottom: 0;
 }
+
+/* ─── FLOOR CLEAR / CONDITION BANNERS ───────────────────────────────────── */
+
+.condition-active-banner {
+  background: var(--surface);
+  border: 0.5px solid rgba(251,191,36,0.15);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.active-condition-card {
+  background: var(--surface2);
+  border: 0.5px solid rgba(251,191,36,0.08);
+  border-left: 1.5px solid rgba(251,191,36,0.3);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.fc-cat-label {
+  font-family: var(--font-hotdog);
+  font-size: 7px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hint);
+  margin-bottom: 8px;
+}
+
+.fc-active {
+  color: var(--teal);
+  font-family: var(--font-game);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.fc-btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.fc-btn {
+  background: var(--surface2);
+  border: 0.5px solid rgba(251,191,36,0.15);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s;
+}
+
+.fc-btn:hover,
+.fc-btn:active {
+  border-color: rgba(251,191,36,0.4);
+  background: var(--surface);
+}
+
+.condition-end-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+  background: none;
+  border: 0.5px solid var(--coral);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--coral);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.condition-end-btn:hover,
+.condition-end-btn:active {
+  background: var(--coral-dim);
+}
