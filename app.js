@@ -2482,11 +2482,7 @@ WHEN THEY SEEM TO BE STRUGGLING:
 - You are not a therapist but you are paying attention
 - You can suggest they talk to someone if it seems warranted, but you do it as Donut: "The dungeon has professionals for this. Your therapist specifically. Use them."`;
 
-let donutChat=load('dr-donut-chat',[]);
-let donutWeeklySummary=load('dr-donut-summary',null);
-let donutTherapistSummary=load('dr-donut-therapist',null);
-let donutApiKey=loadLocal('dr-anthropic-key',null);
-let donutView='donut';
+
 let donutLoading=false;
 
 /* ── Data helpers ── */
