@@ -1151,3 +1151,227 @@ body { font-family: var(--font-body); }
 .condition-end-btn:active {
   background: var(--coral-dim);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   GYM TAB
+═══════════════════════════════════════════════════════════ */
+
+/* ── Header ─────────────────────────────────────────────── */
+.gym-header { padding: 8px 0 16px; }
+.gym-title { font-family: var(--font-title); font-size: 22px; font-weight: 400; letter-spacing: 0.03em; color: var(--text); }
+.gym-subtitle { font-family: var(--font-game); font-size: 9px; color: var(--muted); letter-spacing: 0.06em; margin-top: 4px; }
+
+/* ── Template grid ───────────────────────────────────────── */
+.gym-template-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+@media (max-width: 480px) { .gym-template-grid { grid-template-columns: 1fr; } }
+
+.gym-template-btn,
+.gym-template-cardio {
+  position: relative;
+  background: var(--surface);
+  border: 0.5px solid rgba(212,154,0,0.2);
+  border-radius: var(--radius-sm);
+  padding: 14px 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.gym-template-btn::before,
+.gym-template-cardio::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  z-index: 2;
+  border-radius: inherit;
+  background:
+    linear-gradient(rgba(212,154,0,0.5),rgba(212,154,0,0.5)) top    left  / 8px 1.5px no-repeat,
+    linear-gradient(rgba(212,154,0,0.5),rgba(212,154,0,0.5)) top    left  / 1.5px 8px no-repeat,
+    linear-gradient(rgba(212,154,0,0.5),rgba(212,154,0,0.5)) top    right / 8px 1.5px no-repeat,
+    linear-gradient(rgba(212,154,0,0.5),rgba(212,154,0,0.5)) top    right / 1.5px 8px no-repeat,
+    linear-gradient(rgba(212,154,0,0.5),rgba(212,154,0,0.5)) bottom left  / 8px 1.5px no-repeat,
+    linear-gradient(rgba(212,154,0,0.5),rgba(212,154,0,0.5)) bottom left  / 1.5px 8px no-repeat,
+    linear-gradient(rgba(212,154,0,0.5),rgba(212,154,0,0.5)) bottom right / 8px 1.5px no-repeat,
+    linear-gradient(rgba(212,154,0,0.5),rgba(212,154,0,0.5)) bottom right / 1.5px 8px no-repeat;
+}
+.gym-template-btn:hover, .gym-template-btn:active,
+.gym-template-cardio:hover, .gym-template-cardio:active {
+  border-color: rgba(212,154,0,0.5);
+  background: var(--surface2);
+}
+.gym-template-cardio { border-color: rgba(0,122,122,0.25); }
+.gym-template-cardio::before {
+  background:
+    linear-gradient(rgba(0,122,122,0.4),rgba(0,122,122,0.4)) top    left  / 8px 1.5px no-repeat,
+    linear-gradient(rgba(0,122,122,0.4),rgba(0,122,122,0.4)) top    left  / 1.5px 8px no-repeat,
+    linear-gradient(rgba(0,122,122,0.4),rgba(0,122,122,0.4)) top    right / 8px 1.5px no-repeat,
+    linear-gradient(rgba(0,122,122,0.4),rgba(0,122,122,0.4)) top    right / 1.5px 8px no-repeat,
+    linear-gradient(rgba(0,122,122,0.4),rgba(0,122,122,0.4)) bottom left  / 8px 1.5px no-repeat,
+    linear-gradient(rgba(0,122,122,0.4),rgba(0,122,122,0.4)) bottom left  / 1.5px 8px no-repeat,
+    linear-gradient(rgba(0,122,122,0.4),rgba(0,122,122,0.4)) bottom right / 8px 1.5px no-repeat,
+    linear-gradient(rgba(0,122,122,0.4),rgba(0,122,122,0.4)) bottom right / 1.5px 8px no-repeat;
+}
+
+/* ── Section label ───────────────────────────────────────── */
+.gym-section-label { font-size: 9px; letter-spacing: 0.14em; color: var(--hint); text-transform: uppercase; margin: 18px 0 8px; display: flex; align-items: center; justify-content: space-between; }
+.gym-section-label::before { content: '▸'; margin-right: 6px; color: var(--teal); font-size: 8px; }
+
+/* ── PR list ─────────────────────────────────────────────── */
+.gym-pr-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 0.5px solid var(--border); font-size: 12px; }
+.gym-pr-row:last-child { border-bottom: none; }
+.gym-pr-name { color: var(--muted); font-family: var(--font-body); }
+.gym-pr-val { font-family: var(--font-game); font-size: 10px; color: var(--amber); letter-spacing: 0.04em; }
+
+/* ── Session header ──────────────────────────────────────── */
+.gym-session-header { margin-bottom: 14px; }
+.gym-session-title { font-family: var(--font-title); font-size: 18px; font-weight: 400; letter-spacing: 0.03em; color: var(--text); }
+.gym-session-meta { font-family: var(--font-game); font-size: 9px; color: var(--muted); letter-spacing: 0.05em; margin-top: 3px; }
+
+/* ── Exercise list ───────────────────────────────────────── */
+.gym-ex-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.gym-ex-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  background: var(--surface);
+  border: 0.5px solid rgba(212,154,0,0.08);
+  border-left: 1.5px solid rgba(212,154,0,0.18);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.12s;
+  user-select: none;
+}
+.gym-ex-row.done { opacity: 0.45; border-left-color: rgba(0,122,122,0.3); }
+.gym-ex-row.active { border-color: rgba(212,154,0,0.3); border-left-color: var(--amber); background: var(--surface2); }
+.gym-ex-check { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid rgba(212,154,0,0.3); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all 0.15s; }
+.gym-ex-row.done .gym-ex-check { background: rgba(0,122,122,0.15); border-color: var(--teal); color: var(--teal); }
+.gym-ex-row.active .gym-ex-check { border-color: var(--amber); }
+.gym-ex-info { flex: 1; min-width: 0; }
+.gym-ex-name { font-family: var(--font-body); font-size: 13px; color: var(--text); }
+.gym-ex-sets { font-family: var(--font-game); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; margin-top: 2px; }
+.gym-ex-tap { font-family: var(--font-game); font-size: 8px; color: var(--hint); letter-spacing: 0.04em; flex-shrink: 0; }
+
+/* ── Log panel ───────────────────────────────────────────── */
+.gym-log-panel { background: var(--surface2); border: 0.5px solid rgba(212,154,0,0.15); border-radius: var(--radius-sm); padding: 14px; margin-top: 4px; margin-bottom: 8px; }
+.gym-prev-weight { font-family: var(--font-game); font-size: 9px; color: var(--hint); letter-spacing: 0.04em; margin-bottom: 12px; }
+.gym-inputs-row { display: flex; gap: 10px; margin-bottom: 12px; }
+.gym-input-group { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.gym-input-label { font-family: var(--font-hotdog); font-size: 7px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hint); }
+
+/* ── Stepper ─────────────────────────────────────────────── */
+.gym-stepper { display: flex; align-items: center; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); overflow: hidden; }
+.gym-stepper button { background: none; border: none; color: var(--muted); font-size: 16px; padding: 8px 12px; cursor: pointer; transition: color 0.12s; flex-shrink: 0; }
+.gym-stepper button:hover { color: var(--amber); }
+.gym-stepper input { flex: 1; background: none; border: none; text-align: center; font-family: var(--font-game); font-size: 13px; color: var(--text); outline: none; min-width: 0; padding: 8px 0; }
+
+/* ── Effort row ──────────────────────────────────────────── */
+.gym-effort-row { display: flex; gap: 6px; margin-bottom: 12px; }
+.gym-effort-btn { flex: 1; padding: 7px 4px; background: none; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); font-family: var(--font-game); font-size: 8px; color: var(--muted); cursor: pointer; text-align: center; transition: all 0.12s; }
+.gym-effort-btn.active { background: rgba(212,154,0,0.08); border-color: var(--gold); color: var(--gold); }
+
+/* ── Set log ─────────────────────────────────────────────── */
+.gym-set-log { font-family: var(--font-game); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; padding: 5px 0; border-bottom: 0.5px solid var(--border); }
+.gym-set-log:last-child { border-bottom: none; }
+
+/* ── Action row ──────────────────────────────────────────── */
+.gym-action-row { display: flex; gap: 8px; margin-top: 12px; }
+.gym-log-btn { flex: 1; background: var(--teal); color: #0a0a0c; border: none; border-radius: var(--radius-sm); padding: 12px; font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+.gym-log-btn:active { opacity: 0.85; }
+.gym-done-ex-btn { background: none; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 12px 14px; font-family: var(--font-body); font-size: 13px; color: var(--muted); cursor: pointer; transition: border-color 0.15s; }
+.gym-done-ex-btn:hover { border-color: var(--teal); color: var(--teal); }
+
+/* ── Rest timer ──────────────────────────────────────────── */
+.gym-rest-timer {
+  background: rgba(161,13,13,0.06);
+  border: 0.5px solid rgba(161,13,13,0.3);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  margin-bottom: 16px;
+  text-align: center;
+  position: relative;
+}
+.gym-rest-timer::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  z-index: 2;
+  border-radius: inherit;
+  background:
+    linear-gradient(rgba(161,13,13,0.7),rgba(161,13,13,0.7)) top    left  / 10px 1.5px no-repeat,
+    linear-gradient(rgba(161,13,13,0.7),rgba(161,13,13,0.7)) top    left  / 1.5px 10px no-repeat,
+    linear-gradient(rgba(161,13,13,0.7),rgba(161,13,13,0.7)) top    right / 10px 1.5px no-repeat,
+    linear-gradient(rgba(161,13,13,0.7),rgba(161,13,13,0.7)) top    right / 1.5px 10px no-repeat,
+    linear-gradient(rgba(161,13,13,0.7),rgba(161,13,13,0.7)) bottom left  / 10px 1.5px no-repeat,
+    linear-gradient(rgba(161,13,13,0.7),rgba(161,13,13,0.7)) bottom left  / 1.5px 10px no-repeat,
+    linear-gradient(rgba(161,13,13,0.7),rgba(161,13,13,0.7)) bottom right / 10px 1.5px no-repeat,
+    linear-gradient(rgba(161,13,13,0.7),rgba(161,13,13,0.7)) bottom right / 1.5px 10px no-repeat;
+}
+.gym-rest-label { font-family: var(--font-hotdog); font-size: 7px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; }
+.gym-rest-countdown { font-family: var(--font-game); font-size: 42px; color: var(--red); line-height: 1; margin-bottom: 6px; letter-spacing: 0.04em; }
+.gym-rest-msg { font-family: var(--font-body); font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.gym-rest-skip { background: none; border: 0.5px solid rgba(161,13,13,0.4); border-radius: var(--radius-sm); padding: 8px 20px; font-family: var(--font-body); font-size: 12px; color: var(--red); cursor: pointer; transition: background 0.15s; }
+.gym-rest-skip:hover { background: rgba(161,13,13,0.08); }
+
+/* ── End session button ──────────────────────────────────── */
+.gym-end-btn { width: 100%; margin-top: 8px; padding: 13px; background: none; border: 0.5px solid var(--coral); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 13px; color: var(--coral); cursor: pointer; transition: background 0.15s; }
+.gym-end-btn:hover { background: var(--coral-dim); }
+
+/* ── Session complete card ───────────────────────────────── */
+.gym-complete-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(212,154,0,0.06), rgba(0,122,122,0.04));
+  border: 0.5px solid rgba(212,154,0,0.3);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 0 24px rgba(212,154,0,0.04), inset 0 0 40px rgba(0,0,0,0.2);
+}
+.gym-complete-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  z-index: 2;
+  border-radius: inherit;
+  background:
+    linear-gradient(var(--gold),var(--gold)) top    left  / 14px 2px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) top    left  / 2px 14px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) top    right / 14px 2px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) top    right / 2px 14px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) bottom left  / 14px 2px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) bottom left  / 2px 14px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) bottom right / 14px 2px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) bottom right / 2px 14px no-repeat;
+}
+.gym-complete-title { font-family: var(--font-dramatic); font-size: 20px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); text-align: center; margin-bottom: 16px; }
+.gym-complete-divider { height: 0.5px; background: rgba(212,154,0,0.2); margin: 14px 0; }
+.gym-complete-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+.gym-stat { text-align: center; }
+.gym-stat-label { font-family: var(--font-hotdog); font-size: 7px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hint); margin-bottom: 4px; }
+.gym-stat-val { font-family: var(--font-game); font-size: 16px; color: var(--text); letter-spacing: 0.04em; }
+
+/* ── PR complete / buff ──────────────────────────────────── */
+.gym-pr-complete { display: flex; align-items: center; gap: 10px; background: rgba(101,17,168,0.08); border: 0.5px solid rgba(101,17,168,0.25); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px; font-family: var(--font-body); font-size: 12px; color: var(--purple); }
+.gym-complete-buff { display: flex; align-items: center; gap: 8px; font-family: var(--font-body); font-size: 12px; color: var(--teal); margin-bottom: 6px; }
+.gym-complete-orb { width: 10px; height: 10px; border-radius: 50%; background: var(--teal); flex-shrink: 0; }
+
+/* ── Done button ─────────────────────────────────────────── */
+.gym-done-btn { width: 100%; padding: 13px; background: var(--teal); color: #0a0a0c; border: none; border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+.gym-done-btn:active { opacity: 0.85; }
+
+/* ── PR flash banner ─────────────────────────────────────── */
+@keyframes gym-pr-flash {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  15%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.gym-pr-flash { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: rgba(101,17,168,0.12); border: 0.5px solid rgba(101,17,168,0.5); border-radius: var(--radius-sm); padding: 10px 20px; font-family: var(--font-title); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--purple); z-index: 600; white-space: nowrap; pointer-events: none; animation: gym-pr-flash 2.4s ease forwards; }
+
+/* ── Cardio form ─────────────────────────────────────────── */
+.gym-cardio-form { background: var(--surface2); border: 0.5px solid rgba(0,122,122,0.15); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; }
