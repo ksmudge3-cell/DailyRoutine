@@ -621,9 +621,21 @@ function renderBar(pct, type='hp', opts={}){
   const fill = Math.max(0, Math.min(100, pct));
   const dim  = fill <= 20;
   const mw   = opts.maxWidth || '100%';
-  const fillImg = type==='xp'||type==='wide' ? ICON_BAR_FILL_TEAL : ICON_BAR_FILL_RED;
+  let housingImg = BAR_GOLD_HOUSING;
+  let fillImg;
+  switch(type){
+    case 'xp':
+    case 'wide':
+      fillImg = ICON_BAR_FILL_TEAL; break;
+    case 'edna-xp':
+      fillImg = ICON_BAR_FILL_PURPLE; break;
+    case 'kronk-xp':
+      fillImg = ICON_BAR_FILL_GOLD; break;
+    default:
+      fillImg = ICON_BAR_FILL_RED;
+  }
   return `<div class="hero-bar-wrap" style="max-width:${mw};">
-    <img class="hero-bar-housing" src="${BAR_GOLD_HOUSING}" alt="">
+    <img class="hero-bar-housing" src="${housingImg}" alt="">
     <img class="hero-bar-fill${dim?' dim':''}" src="${fillImg}"
          style="--fill:${fill}%;" alt="">
   </div>`;
@@ -2345,7 +2357,7 @@ function renderProfile(){
         <div>
           <div class="companion-name">Edna</div>
           <div class="companion-title-text">The Hurricane Dwarf · Age 2 · ${ednaEvo.name}</div>
-          <div style="margin:6px 0 4px;">${renderBar(ednaXpPct,'xp',{maxWidth:'100%'})}</div>
+          <div style="margin:6px 0 4px;">${renderBar(ednaXpPct,'edna-xp',{maxWidth:'100%'})}</div>
           <div class="companion-mood">\"${ednaM}\"</div>
           <div class="companion-passive">PASSIVE: Chaos Engine — converts failed tasks to partial XP</div>
         </div>
@@ -2376,7 +2388,7 @@ function renderProfile(){
         <div>
           <div class="companion-name">Kronk</div>
           <div class="companion-title-text">The Forbidden Snack Enthusiast · Age 1 · ${kronkEvo.name}</div>
-          <div style="margin:6px 0 4px;">${renderBar(kronkXpPct,'xp',{maxWidth:'100%'})}</div>
+          <div style="margin:6px 0 4px;">${renderBar(kronkXpPct,'kronk-xp',{maxWidth:'100%'})}</div>
           <div class="companion-mood">\"${kronkM}\"</div>
           <div class="companion-passive">PASSIVE: Emotional Support Aura — protects sanity after missed days</div>
         </div>
