@@ -948,7 +948,9 @@ body { font-family: var(--font-body); }
   border-radius: 2px;
   overflow: hidden;
   isolation: isolate;
+  background: rgba(0, 0, 0, 0.4);
 }
+
 .stat-bar-wrap {
   position: relative;
   flex: 1;
@@ -962,7 +964,8 @@ body { font-family: var(--font-body); }
 .stat-bar-fill {
   position: absolute;
   inset: 0;
-  width: 100%;
+  left: -5%;
+  width: 110%;
   height: 100%;
   object-fit: fill;
   image-rendering: pixelated;
