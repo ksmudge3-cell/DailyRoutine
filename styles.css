@@ -948,7 +948,7 @@ body { font-family: var(--font-body); }
   border-radius: 2px;
   overflow: hidden;
   isolation: isolate;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0);
 }
 
 .stat-bar-wrap {
@@ -959,7 +959,7 @@ body { font-family: var(--font-body); }
   border-radius: 2px;
   overflow: hidden;
   isolation: isolate;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0);
 }
 .stat-bar-fill {
   position: absolute;
@@ -970,7 +970,7 @@ body { font-family: var(--font-body); }
   object-fit: fill;
   image-rendering: pixelated;
   transition: clip-path 0.8s cubic-bezier(0.4,0,0.2,1);
-  mix-blend-mode: normal;
+  mix-blend-mode: screen;
 }
 .stat-label-loyalty { color: rgba(251,191,36,0.85); }
 .stat-label-chaos   { color: rgba(255,107,53,0.85); }
