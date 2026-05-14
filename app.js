@@ -864,7 +864,8 @@ function renderToday(){
   document.getElementById('today-sub').textContent=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}).toUpperCase();
 
   const strip=document.getElementById('date-strip');strip.innerHTML='';
-  for(let i=0;i<7;i++){
+  const todayDowOffset=(new Date().getDay()+6)%7; // 0=Mon, 6=Sun
+  for(let i=0;i<=todayDowOffset;i++){
     const btn=document.createElement('button');const p=dayPct(i);
     btn.className='date-pill'+(i===selectedDay?' active':'')+(p===100&&i!==selectedDay?' done':'');
     btn.textContent=SHORT[i]+(p>0&&i!==selectedDay?' '+p+'%':'');
