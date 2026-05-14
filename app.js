@@ -692,9 +692,8 @@ function renderOrb(quality, taskId){
   if(orbSrc){
     return `<img src="${orbSrc}" class="q-orb-img" title="${orbLabel(quality)}" alt="${orbLabel(quality)}">`;
   }
-  // Unset = dim ring placeholder
   const title = canPurple ? 'Tap: purple→green→yellow→gray→red' : 'Tap: green→yellow→gray→red';
-  return `<div class="q-orb q-orb-unset" title="${title}"></div>`;
+  return `<img src="${ORB_WHITE}" class="q-orb-img" title="${title}" alt="Unset">`;
 }
 
 // Thin neon stat bar for companion cards
