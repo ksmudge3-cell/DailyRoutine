@@ -31,6 +31,42 @@ const QUALITY_TASKS = {
   'sleep':     { debuff:'sleep-deprived',  label:'Sleep Deprived',   debuffOnYellow:true  },
 };
 
+const FLOOR_CONDITIONS=[
+  {id:'sick-day',name:'Sick Day',cat:'Physical',
+   tasks:['gym','shower','facewash','moisturize','deodorant'],effect:'recovering',
+   desc:'Movement + self-care tasks set to Recovering. Streak protected.'},
+  {id:'injury',name:'Injury',cat:'Physical',
+   tasks:['gym'],effect:'recovering',
+   desc:'Gym set to Recovering. No penalty.'},
+  {id:'chronic-flare',name:'Chronic Flare',cat:'Physical',
+   tasks:'all',effect:'recovery-mode',
+   desc:'All tasks. Recovery Mode pre-activated. Streak protected.'},
+  {id:'day-off',name:'Day Off',cat:'Schedule',
+   tasks:['work','leave'],effect:'reconfigured',
+   desc:'Work tasks removed from floor today.'},
+  {id:'working-late',name:'Working Late',cat:'Schedule',
+   tasks:['home','winddown','sleep'],effect:'recovering',
+   desc:'Evening tasks set to Recovering. Sleep Deprived risk noted.'},
+  {id:'vet-emergency',name:'Vet Emergency',cat:'Schedule',
+   tasks:['work','home','dinner','nightprep','winddown','sleep'],effect:'recovering',
+   desc:'Work + evening tasks. No penalty.'},
+  {id:'travel-day',name:'Travel Day',cat:'Schedule',
+   tasks:['gym','work','dogs-walk-am','dogs-walk-pm'],effect:'reconfigured',
+   desc:'Location-dependent tasks removed from floor.'},
+  {id:'appointment-heavy',name:'Appointment Heavy Day',cat:'Life',
+   tasks:['personal','intentions'],effect:'reconfigured',
+   desc:'Personal time + intentions adjusted.'},
+  {id:'weather-event',name:'Weather / Power Event',cat:'Life',
+   tasks:['gym','dogs-walk-am','dogs-walk-pm'],effect:'recovering',
+   desc:'Force majeure. No penalty.'},
+  {id:'low-capacity',name:'Low Capacity Day',cat:'Mental Health',
+   tasks:'all',effect:'recovery-mode',
+   desc:'All tasks. Recovery Mode pre-activated. Three tasks clears the floor.'},
+  {id:'therapy-day',name:'Therapy Day',cat:'Mental Health',
+   tasks:['work'],effect:'reconfigured',
+   desc:'Schedule adjusted. Intentions weighted higher.'},
+];
+
 const DEFAULT_SCHEDULE={
   weekday:[
     {section:'Morning',tasks:[
@@ -301,6 +337,7 @@ let shopCat='all', spinCat='clean', spinProject='all', selectedDay=new Date().ge
 let timerInterval=null, timerSeconds=0, timerRunning=false;
 let qualityState=load('dr-quality',{});
 let collapseState=load('dr-collapse',{});
+let floorCondition=load('dr-floor-condition',null);
 let currentSpinTask=null, reSpinsLeft=3;
 
 // Edit overlay state
@@ -341,15 +378,16 @@ function dayPct(idx){
   const sc=getScheduleFor(idx);
   const ids=sc.reduce((a,s)=>a.concat(s.tasks.map(t=>t.id)),[]);
   if(!ids.length)return 0;
-  const data=state[dayKey(idx)]||{};
-  const qDay=qualityState[dayKey(idx)]||{};
-  // Exclude N/A (gray checked) tasks from denominator
+  const k=dayKey(idx);
+  const data=state[k]||{};
+  const qDay=qualityState[k]||{};
   const naIds=new Set(ids.filter(id=>qDay[id]==='gray'));
-  const denom=ids.length-naIds.size;
+  const fc=k===todayStr()?getActiveFloorCondition():null;
+  const recIds=fc?new Set(fc.tasks==='all'?ids:ids.filter(id=>(fc.tasks||[]).includes(id))):new Set();
+  const excludedIds=new Set([...naIds,...recIds]);
+  const denom=ids.length-excludedIds.size;
   if(!denom)return 100;
-  // Count: purple+green+yellow checked, not red, not gray
-  const done=ids.filter(id=>!naIds.has(id)&&data[id]&&qDay[id]!=='red').length
-           + ids.filter(id=>!naIds.has(id)&&data[id]&&!qDay[id]).length; // plain checked no orb
+  const done=ids.filter(id=>!excludedIds.has(id)&&data[id]&&qDay[id]!=='red').length;
   return Math.round(done/denom*100);
 }
 
@@ -590,6 +628,17 @@ function renderBar(pct, type='hp', opts={}){
          style="--fill:${fill}%;" alt="">
   </div>`;
 }
+
+function getActiveFloorCondition(){
+  if(!floorCondition||floorCondition.date!==todayStr())return null;
+  return floorCondition;
+}
+function isTaskRecovering(taskId){
+  const fc=getActiveFloorCondition();
+  if(!fc)return false;
+  return fc.tasks==='all'||(fc.tasks||[]).includes(taskId);
+}
+
 function getConsecutiveGrayDays(taskId){
   if(!(taskId in GRAY_GRACE))return 0;
   if(taskId==='sunday-pillbox'){
@@ -608,7 +657,10 @@ function getConsecutiveGrayDays(taskId){
   return count;
 }
 function isGrayLocked(taskId){
-  const g=GRAY_GRACE[taskId];return g&&getConsecutiveGrayDays(taskId)>=g;
+  const grace=GRAY_GRACE[taskId];
+  if(!grace)return false;
+  if(isTaskRecovering(taskId))return false;
+  return getConsecutiveGrayDays(taskId)>=grace;
 }
 function getGrayWarning(taskId){
   const g=GRAY_GRACE[taskId];if(!g)return null;
@@ -749,6 +801,8 @@ function countDebuffs(){
 function isRecoveryMode(){
   const c=collapseState.active;
   if(c&&c.type==='total'&&c.applyDate===todayStr())return true;
+  const fc=getActiveFloorCondition();
+  if(fc&&fc.effect==='recovery-mode')return true;
   return countDebuffs()>=4;
 }
 
@@ -787,6 +841,7 @@ function renderToday(){
   renderFloorCountdown();
   renderRecoveryMode();
   renderCollapseEvent();
+  renderFloorConditionBanner();
   const isComplete=_recovery?(done>=3&&total>0):(pct===100&&total>0);
   document.getElementById('congrats-banner').style.display=isComplete?'block':'none';
   if(isComplete&&!wasComplete)fireConfetti();
@@ -2115,6 +2170,55 @@ function checkFloorCollapse(){
   }
   saveLocal('dr-collapse',collapseState);
 }
+function declareFloorCondition(id){
+  const def=FLOOR_CONDITIONS.find(f=>f.id===id);if(!def)return;
+  const sc=getScheduleFor(new Date().getDay());
+  const allT=sc.reduce((a,s)=>a.concat(s.tasks),[]);
+  const taskNames=def.tasks==='all'?'All tasks':(def.tasks||[]).map(tid=>{
+    const t=allT.find(t=>t.id===tid);return t?t.name:null;
+  }).filter(Boolean).join(', ');
+  const ov=document.createElement('div');ov.id='fc-confirm-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  ov.innerHTML=`<div style="background:var(--surface);border:1px solid rgba(251,191,36,0.3);border-radius:var(--radius);padding:20px;max-width:340px;width:100%;">
+    <div style="font-family:var(--font-game);font-size:9px;color:var(--amber);letter-spacing:0.1em;margin-bottom:12px;">FLOOR CONDITION REQUEST</div>
+    <div style="font-family:var(--font-system);font-size:12px;color:var(--teal);margin-bottom:6px;">CONDITION: ${def.name.toUpperCase()}</div>
+    <div style="font-family:var(--font-body);font-size:13px;color:var(--muted);margin-bottom:4px;">Affected: ${taskNames}</div>
+    <div style="font-family:var(--font-body);font-size:13px;color:var(--muted);margin-bottom:12px;">Effect: ${def.desc}</div>
+    <div style="font-family:var(--font-system);font-size:10px;color:var(--hint);margin-bottom:12px;">DURATION: Today only. Resets at midnight.</div>
+    <div style="font-family:var(--font-body);font-size:12px;color:var(--hint);font-style:italic;margin-bottom:16px;padding:8px;border-left:2px solid rgba(255,92,92,0.4);">"The dungeon does not grant this lightly. Confirm only if the condition is real." — The System</div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="confirmFloorCondition('${id}')" style="flex:1;background:rgba(255,92,92,0.15);border:1px solid var(--red);color:var(--red);border-radius:var(--radius-sm);padding:10px;font-family:var(--font-game);font-size:9px;cursor:pointer;letter-spacing:0.05em;">DECLARE</button>
+      <button onclick="document.getElementById('fc-confirm-overlay').remove()" style="flex:1;background:var(--surface2);border:1px solid rgba(255,255,255,0.1);color:var(--hint);border-radius:var(--radius-sm);padding:10px;font-family:var(--font-game);font-size:9px;cursor:pointer;">CANCEL</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function confirmFloorCondition(id){
+  const def=FLOOR_CONDITIONS.find(f=>f.id===id);if(!def)return;
+  floorCondition={id:def.id,name:def.name,tasks:def.tasks,effect:def.effect,date:todayStr()};
+  saveLocal('dr-floor-condition',floorCondition);
+  document.getElementById('fc-confirm-overlay')?.remove();
+  renderToday();renderProfile();
+}
+
+function clearFloorCondition(){
+  floorCondition=null;
+  saveLocal('dr-floor-condition',null);
+  renderToday();renderProfile();
+}
+
+function renderFloorConditionBanner(){
+  const el=document.getElementById('floor-condition-banner');if(!el)return;
+  const fc=getActiveFloorCondition();
+  if(!fc){el.innerHTML='';return;}
+  const effectLabel=fc.effect==='recovery-mode'?'Recovery Mode Active':fc.effect==='recovering'?'Recovering — affected tasks excluded':'Floor Reconfigured';
+  el.innerHTML=`<div class="condition-active-banner">
+    <span class="condition-active-name">⚑ ${fc.name}</span>
+    <span class="condition-active-effect">${effectLabel}</span>
+    <button onclick="clearFloorCondition()" class="condition-clear-btn">End</button>
+  </div>`;
+}
 
 function renderCollapseEvent(){
   const el=document.getElementById('collapse-event-banner');if(!el)return;
@@ -2176,8 +2280,8 @@ function renderProfile(){
   // Stat bars: Loyalty tracks streak, Chaos/Morale track dog care, Zoomies tracks weekend activity
   const loyalty=Math.min(100,streak*10);
   const morale=dogPct;
-  const ednaFloof=Math.min(100,(cxp.edna||0)/100);
-  const kronkZoomies=Math.min(100,(cxp.kronk||0)/60);
+  const ednaFloof=ednaXpPct;
+  const kronkZoomies=kronkXpPct;
 
   // Titles
   const allTitles=[
@@ -2304,6 +2408,24 @@ function renderProfile(){
         ${!t.unlocked?`<span style="font-size:10px;color:var(--hint);margin-left:auto;">${t.req}</span>`:''}
       </div>`).join('')}
     </div>
+
+    <div class="section-label" style="margin-top:20px;">⚑ Floor Conditions</div>
+    ${(()=>{
+      const fc=getActiveFloorCondition();
+      const cats=['Physical','Schedule','Life','Mental Health'];
+      return (fc?`<div class="active-condition-card">
+        <div class="active-condition-name">${fc.name}</div>
+        <div class="active-condition-desc">${fc.effect==='recovery-mode'?'Recovery Mode Active':fc.effect==='recovering'?'Recovering':'Reconfigured'} — expires midnight</div>
+        <button onclick="clearFloorCondition()" class="condition-end-btn">End Condition</button>
+      </div>`:'') +
+      cats.map(cat=>`
+        <div class="fc-cat-label">${cat}</div>
+        <div class="fc-btn-grid">
+          ${FLOOR_CONDITIONS.filter(f=>f.cat===cat).map(f=>`
+            <button class="fc-btn${fc&&fc.id===f.id?' fc-active':''}" onclick="declareFloorCondition('${f.id}')" title="${f.desc}">${f.name}</button>
+          `).join('')}
+        </div>`).join('');
+    })()}
 
     <div class="system-msg"><div class="sys-body">${DCC.system.broadcast}</div></div>`;
 }
@@ -2746,6 +2868,8 @@ async function init(){
     archived=load('dr-archived',{tasks:[]});
     if(!archived.tasks)archived.tasks=[];
     checkFloorCollapse();
+    // Expire stale floor condition
+    if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;saveLocal('dr-floor-condition',null);}
     migrateDogTasks();
     migrateGymIntoSchedule();
     const cur=loadLocal('dr-last-screen','today');
