@@ -646,8 +646,6 @@ function cycleQuality(dayIdx, taskId){
   } else if(cur==='green') {
     next = 'yellow';
   } else if(cur==='yellow') {
-    next = 'gray';
-  } else if(cur==='yellow') {
     next = isGrayLocked(taskId) ? 'red' : 'gray';
   } else {
     next = null; // red → unset
