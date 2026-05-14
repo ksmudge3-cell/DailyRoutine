@@ -2568,7 +2568,7 @@ async function generateWeeklySummary(force=false){
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':donutApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:DONUT_SYSTEM_SUMMARY,messages:[{role:'user',content:`Here is the Crawler's weekly data:\n${JSON.stringify(weekData,null,2)}\n\nGenerate the weekly floor report.`}]})
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,system:DONUT_SYSTEM_SUMMARY,messages:[{role:'user',content:`Here is the Crawler's weekly data:\n${JSON.stringify(weekData,null,2)}\n\nGenerate the weekly floor report.`}]})
     });
     const data=await resp.json();
     const text=data.content?.[0]?.text||'';
@@ -2603,7 +2603,7 @@ async function sendDonutMessage(message){
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':donutApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:DONUT_SYSTEM_CHAT+`\n\nCurrent week data:\n${JSON.stringify(weekData,null,2)}`,messages:history})
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,system:DONUT_SYSTEM_CHAT+`\n\nCurrent week data:\n${JSON.stringify(weekData,null,2)}`,messages:history})
     });
     const data=await resp.json();
     const text=data.content?.[0]?.text||'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference. Try again.';
