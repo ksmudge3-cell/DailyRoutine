@@ -941,7 +941,7 @@ body { font-family: var(--font-body); }
   position: relative;
   flex: 1;
   width: auto;
-  height: 20px;
+  height: 14px;
   border-radius: 2px;
   overflow: hidden;
   isolation: isolate;
@@ -968,11 +968,11 @@ body { font-family: var(--font-body); }
   transition: clip-path 0.8s cubic-bezier(0.4,0,0.2,1);
   mix-blend-mode: screen;
 }
-.stat-label-loyalty { color: rgba(251,191,36,0.85); }
-.stat-label-chaos   { color: rgba(255,107,53,0.85); }
-.stat-label-morale  { color: rgba(45,212,160,0.85); }
-.stat-label-floof   { color: rgba(167,139,250,0.85); }
-.stat-label-zoomies { color: rgba(45,212,160,0.85); }
+.stat-label-loyalty { color: #f5a623; }
+.stat-label-chaos   { color: #ff6b35; }
+.stat-label-morale  { color: #2dd4a0; }
+.stat-label-floof   { color: #c084fc; }
+.stat-label-zoomies { color: #4ade80; }
 
 /* Recovery Mode banner */
 .recovery-banner {
