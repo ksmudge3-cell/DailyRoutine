@@ -783,12 +783,12 @@ function renderOrb(quality, taskId){
                  quality==='green'  ? ORB_TEAL   :
                  quality==='yellow' ? ORB_YELLOW :
                  quality==='red'    ? ORB_RED    :
-                 quality==='gray'   ? ORB_WHITE  : null;
+                 quality==='gray'   ? ORB_GRAY  : null;
   if(orbSrc){
     return `<img src="${orbSrc}" class="q-orb-img" title="${orbLabel(quality)}" alt="${orbLabel(quality)}">`;
   }
   const title = canPurple ? 'Tap: purple→green→yellow→gray→red' : 'Tap: green→yellow→gray→red';
-  return `<img src="${ORB_WHITE}" class="q-orb-img" title="${title}" alt="Unset">`;
+  return `<img src="${ORB_GRAY}" class="q-orb-img" title="${title}" alt="Unset">`;
 }
 
 // Thin neon stat bar for companion cards
