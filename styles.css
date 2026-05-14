@@ -2,14 +2,33 @@
   --bg: #0a0a0c; --surface: #111116; --surface2: #1a1a22;
   --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
   --text: #e8e4dc; --muted: #807c74; --hint: #4a4644;
-  --teal: #2dd4a0; --teal-dim: rgba(45,212,160,0.10);
-  --amber: #f5a623; --amber-dim: rgba(245,166,35,0.10);
-  --coral: #f87171; --coral-dim: rgba(248,113,113,0.10);
-  --purple: #a78bfa; --purple-dim: rgba(167,139,250,0.10);
-  --red: #ff5c5c; --fire: #ff6b35;
-  --gold: #fbbf24; --gold-dim: rgba(251,191,36,0.10);
+--teal:   #007A7A;  --teal-dim:   rgba(0,122,122,0.12);
+--amber:  #D49A00;  --amber-dim:  rgba(212,154,0,0.12);
+--purple: #6511A8;  --purple-dim: rgba(101,17,168,0.12);
+--coral:  #D65A73;  --coral-dim:  rgba(214,90,115,0.12);
+--red:    #A10D0D;
+--fire:   #C64A00;
+--gold:   #D49A00;  --gold-dim:   rgba(212,154,0,0.12);
+--blue:   #004DB5;
+--yellow: #F2D400;
+--green:  #15992D;
+--pearl:  #D9DCE1;
+--void:   #4120A8;  /* glow kept */
   --mono: 'DM Mono', monospace; --serif: 'Fraunces', serif;
   --radius: 10px; --radius-sm: 6px;
+
+  /* ── Neon arcade palette ── */
+  --neon-red:    #FF3B1F; --neon-red-core:    #A10D0D; --neon-red-hi:    #FFD2A8;
+  --neon-fire:   #FF8A1E; --neon-fire-core:   #C64A00; --neon-fire-hi:   #FFE08A;
+  --neon-gold:   #FFD43A; --neon-gold-core:   #D49A00; --neon-gold-hi:   #FFF4B0;
+  --neon-yellow: #FFF03A; --neon-yellow-core: #F2D400; --neon-yellow-hi: #FFFEE0;
+  --neon-green:  #6CFF42; --neon-green-core:  #15992D; --neon-green-hi:  #E4FFD0;
+  --neon-teal:   #2EF2E0; --neon-teal-core:   #007A7A; --neon-teal-hi:   #D6FFF8;
+  --neon-blue:   #45B7FF; --neon-blue-core:   #004DB5; --neon-blue-hi:   #E2F5FF;
+  --neon-purple: #D947FF; --neon-purple-core: #6511A8; --neon-purple-hi: #FFD6FF;
+  --neon-pink:   #FF8FA9; --neon-pink-core:   #D65A73; --neon-pink-hi:   #FFE2EB;
+  --neon-pearl:  #F6F7FF; --neon-pearl-core:  #D9DCE1; --neon-pearl-hi:  #FFFFFF;
+  --neon-void:   #4120A8; --neon-void-core:   #110B1F; --neon-void-hi:   #8E65FF;
   /* DCC font system */
   --font-dramatic: 'Cinzel Decorative', serif;
   --font-title:    'Cinzel', serif;
@@ -399,7 +418,10 @@ canvas {
 .stat-bar-row { display: flex; align-items: center; gap: 8px; }
 .stat-bar-name { font-size: 10px; color: var(--muted); width: 90px; flex-shrink: 0; }
 .stat-bar-bg { flex: 1; background: var(--surface2); border-radius: 99px; height: 4px; overflow: hidden; }
-
+.stat-bar-fill { height: 100%; border-radius: 99px; background: var(--teal); }
+.stat-bar-fill.chaos { background: var(--fire); }
+.stat-bar-fill.amber { background: var(--amber); }
+.stat-bar-fill.purple { background: var(--purple); }
 .title-list { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
 .title-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid var(--border); font-size: 12px; }
 .title-row:last-child { border-bottom: none; }
@@ -653,8 +675,8 @@ body {
 
 .hero-bar-fill {
   position: absolute;
-  top: 0; left: -5%;
-  width: 110%; height: 100%;
+  top: 0; left: -12%;
+  width: 124%; height: 100%;
   object-fit: fill;
   clip-path: inset(0 calc(100% - var(--fill, 100%)) 0 0);
   transition: clip-path 0.6s cubic-bezier(0.4, 0, 0.2, 1);
@@ -941,38 +963,39 @@ body { font-family: var(--font-body); }
   position: relative;
   flex: 1;
   width: auto;
-  height: 12px;
+  height: 20px;
   border-radius: 2px;
   overflow: hidden;
   isolation: isolate;
-  background: rgba(0, 0, 0, 0.4);
-}
-.stat-bar-empty {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-  opacity: 0.35;
-  image-rendering: pixelated;
+  background: rgba(0, 0, 0, 0);
 }
 
+.stat-bar-wrap {
+  position: relative;
+  flex: 1;
+  width: auto;
+  height: 20px;
+  border-radius: 2px;
+  overflow: hidden;
+  isolation: isolate;
+  background: rgba(0, 0, 0, 0);
+}
 .stat-bar-fill {
   position: absolute;
   inset: 0;
-  left: -2%;
-  width: 110%;
+  left: -12%;
+  width: 124%;
   height: 100%;
   object-fit: fill;
   image-rendering: pixelated;
   transition: clip-path 0.8s cubic-bezier(0.4,0,0.2,1);
   mix-blend-mode: screen;
 }
-.stat-label-loyalty { color: #f5a623; }
-.stat-label-chaos   { color: #ff6b35; }
-.stat-label-morale  { color: #2dd4a0; }
-.stat-label-floof   { color: #c084fc; }
-.stat-label-zoomies { color: #4ade80; }
+.stat-label-loyalty { color: #D49A00; }
+.stat-label-chaos   { color: #C64A00; }
+.stat-label-morale  { color: #007A7A; }
+.stat-label-floof   { color: #6511A8; }
+.stat-label-zoomies { color: #BFFF00; }
 
 /* Recovery Mode banner */
 .recovery-banner {
@@ -1054,7 +1077,7 @@ body { font-family: var(--font-body); }
   margin-bottom: 0;
 }
 
-/* ─── FLOOR CONDITIONS PANEL ────────────────────────────────────────────── */
+/* ─── FLOOR CLEAR / CONDITION BANNERS ───────────────────────────────────── */
 
 .condition-active-banner {
   background: var(--surface);
@@ -1064,22 +1087,14 @@ body { font-family: var(--font-body); }
   margin-bottom: 12px;
   position: relative;
 }
-.condition-active-banner::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  pointer-events: none;
-  z-index: 2;
-  border-radius: inherit;
-  background:
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) top    left  / 10px 1.5px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) top    left  / 1.5px 10px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) top    right / 10px 1.5px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) top    right / 1.5px 10px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) bottom left  / 10px 1.5px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) bottom left  / 1.5px 10px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) bottom right / 10px 1.5px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) bottom right / 1.5px 10px no-repeat;
+
+.active-condition-card {
+  background: var(--surface2);
+  border: 0.5px solid rgba(251,191,36,0.08);
+  border-left: 1.5px solid rgba(251,191,36,0.3);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 8px;
 }
 
 .fc-cat-label {
@@ -1089,50 +1104,35 @@ body { font-family: var(--font-body); }
   text-transform: uppercase;
   color: var(--hint);
   margin-bottom: 8px;
-  margin-top: 14px;
 }
-.fc-cat-label:first-child {
-  margin-top: 0;
+
+.fc-active {
+  color: var(--teal);
+  font-family: var(--font-game);
+  font-size: 9px;
+  letter-spacing: 0.06em;
 }
 
 .fc-btn-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-top: 6px;
-  margin-bottom: 4px;
+  margin-top: 10px;
 }
 
 .fc-btn {
   background: var(--surface2);
   border: 0.5px solid rgba(251,191,36,0.15);
   border-radius: var(--radius-sm);
-  padding: 10px 14px;
+  padding: 10px 12px;
   font-family: var(--font-body);
   font-size: 13px;
   color: var(--text);
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.15s, background 0.15s;
-  position: relative;
+  transition: border-color 0.15s;
 }
-.fc-btn::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  pointer-events: none;
-  z-index: 2;
-  border-radius: inherit;
-  background:
-    linear-gradient(rgba(251,191,36,0.3),rgba(251,191,36,0.3)) top    left  / 6px 1px no-repeat,
-    linear-gradient(rgba(251,191,36,0.3),rgba(251,191,36,0.3)) top    left  / 1px 6px no-repeat,
-    linear-gradient(rgba(251,191,36,0.3),rgba(251,191,36,0.3)) top    right / 6px 1px no-repeat,
-    linear-gradient(rgba(251,191,36,0.3),rgba(251,191,36,0.3)) top    right / 1px 6px no-repeat,
-    linear-gradient(rgba(251,191,36,0.3),rgba(251,191,36,0.3)) bottom left  / 6px 1px no-repeat,
-    linear-gradient(rgba(251,191,36,0.3),rgba(251,191,36,0.3)) bottom left  / 1px 6px no-repeat,
-    linear-gradient(rgba(251,191,36,0.3),rgba(251,191,36,0.3)) bottom right / 6px 1px no-repeat,
-    linear-gradient(rgba(251,191,36,0.3),rgba(251,191,36,0.3)) bottom right / 1px 6px no-repeat;
-}
+
 .fc-btn:hover,
 .fc-btn:active {
   border-color: rgba(251,191,36,0.4);
@@ -1141,7 +1141,7 @@ body { font-family: var(--font-body); }
 
 .condition-end-btn {
   width: 100%;
-  margin-top: 14px;
+  margin-top: 10px;
   padding: 11px;
   background: none;
   border: 0.5px solid var(--coral);
@@ -1152,588 +1152,8 @@ body { font-family: var(--font-body); }
   cursor: pointer;
   transition: background 0.15s;
 }
+
 .condition-end-btn:hover,
 .condition-end-btn:active {
   background: var(--coral-dim);
-}
-
-
-/* ═══════════════════════════════════════════════════════════
-   GYM TAB
-═══════════════════════════════════════════════════════════ */
-
-/* ── Header ─────────────────────────────────────────────── */
-.gym-header {
-  padding: 8px 0 16px;
-}
-.gym-title {
-  font-family: var(--font-title);
-  font-size: 22px;
-  font-weight: 400;
-  letter-spacing: 0.03em;
-  color: var(--text);
-}
-.gym-subtitle {
-  font-family: var(--font-game);
-  font-size: 9px;
-  color: var(--muted);
-  letter-spacing: 0.06em;
-  margin-top: 4px;
-}
-
-/* ── Template grid ───────────────────────────────────────── */
-.gym-template-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 20px;
-}
-@media (max-width: 480px) {
-  .gym-template-grid { grid-template-columns: 1fr; }
-}
-
-.gym-template-btn,
-.gym-template-cardio {
-  position: relative;
-  background: var(--surface);
-  border: 0.5px solid rgba(251,191,36,0.2);
-  border-radius: var(--radius-sm);
-  padding: 14px 12px;
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--text);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.15s, background 0.15s;
-}
-.gym-template-btn::before,
-.gym-template-cardio::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  pointer-events: none;
-  z-index: 2;
-  border-radius: inherit;
-  background:
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) top    left  / 8px 1.5px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) top    left  / 1.5px 8px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) top    right / 8px 1.5px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) top    right / 1.5px 8px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) bottom left  / 8px 1.5px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) bottom left  / 1.5px 8px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) bottom right / 8px 1.5px no-repeat,
-    linear-gradient(rgba(251,191,36,0.5),rgba(251,191,36,0.5)) bottom right / 1.5px 8px no-repeat;
-}
-.gym-template-btn:hover,
-.gym-template-btn:active,
-.gym-template-cardio:hover,
-.gym-template-cardio:active {
-  border-color: rgba(251,191,36,0.5);
-  background: var(--surface2);
-}
-.gym-template-cardio {
-  border-color: rgba(45,212,160,0.25);
-}
-.gym-template-cardio::before {
-  background:
-    linear-gradient(rgba(45,212,160,0.4),rgba(45,212,160,0.4)) top    left  / 8px 1.5px no-repeat,
-    linear-gradient(rgba(45,212,160,0.4),rgba(45,212,160,0.4)) top    left  / 1.5px 8px no-repeat,
-    linear-gradient(rgba(45,212,160,0.4),rgba(45,212,160,0.4)) top    right / 8px 1.5px no-repeat,
-    linear-gradient(rgba(45,212,160,0.4),rgba(45,212,160,0.4)) top    right / 1.5px 8px no-repeat,
-    linear-gradient(rgba(45,212,160,0.4),rgba(45,212,160,0.4)) bottom left  / 8px 1.5px no-repeat,
-    linear-gradient(rgba(45,212,160,0.4),rgba(45,212,160,0.4)) bottom left  / 1.5px 8px no-repeat,
-    linear-gradient(rgba(45,212,160,0.4),rgba(45,212,160,0.4)) bottom right / 8px 1.5px no-repeat,
-    linear-gradient(rgba(45,212,160,0.4),rgba(45,212,160,0.4)) bottom right / 1.5px 8px no-repeat;
-}
-
-/* ── Section label ───────────────────────────────────────── */
-.gym-section-label {
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  color: var(--hint);
-  text-transform: uppercase;
-  margin: 18px 0 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.gym-section-label::before {
-  content: '▸';
-  margin-right: 6px;
-  color: var(--teal);
-  font-size: 8px;
-}
-
-/* ── PR list ─────────────────────────────────────────────── */
-.gym-pr-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 7px 0;
-  border-bottom: 0.5px solid var(--border);
-  font-size: 12px;
-}
-.gym-pr-row:last-child { border-bottom: none; }
-.gym-pr-name { color: var(--muted); font-family: var(--font-body); }
-.gym-pr-val  {
-  font-family: var(--font-game);
-  font-size: 10px;
-  color: var(--amber);
-  letter-spacing: 0.04em;
-}
-
-/* ── Session header ──────────────────────────────────────── */
-.gym-session-header {
-  margin-bottom: 14px;
-}
-.gym-session-title {
-  font-family: var(--font-title);
-  font-size: 18px;
-  font-weight: 400;
-  letter-spacing: 0.03em;
-  color: var(--text);
-}
-.gym-session-meta {
-  font-family: var(--font-game);
-  font-size: 9px;
-  color: var(--muted);
-  letter-spacing: 0.05em;
-  margin-top: 3px;
-}
-
-/* ── Exercise list ───────────────────────────────────────── */
-.gym-ex-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-.gym-ex-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 11px 12px;
-  background: var(--surface);
-  border: 0.5px solid rgba(251,191,36,0.08);
-  border-left: 1.5px solid rgba(251,191,36,0.18);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.12s;
-  user-select: none;
-}
-.gym-ex-row.done {
-  opacity: 0.45;
-  border-left-color: rgba(45,212,160,0.3);
-}
-.gym-ex-row.active {
-  border-color: rgba(251,191,36,0.3);
-  border-left-color: var(--amber);
-  background: var(--surface2);
-}
-.gym-ex-check {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(251,191,36,0.3);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  transition: all 0.15s;
-}
-.gym-ex-row.done .gym-ex-check {
-  background: rgba(45,212,160,0.15);
-  border-color: var(--teal);
-  color: var(--teal);
-}
-.gym-ex-row.active .gym-ex-check {
-  border-color: var(--amber);
-}
-.gym-ex-info { flex: 1; min-width: 0; }
-.gym-ex-name {
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--text);
-}
-.gym-ex-sets {
-  font-family: var(--font-game);
-  font-size: 9px;
-  color: var(--muted);
-  letter-spacing: 0.04em;
-  margin-top: 2px;
-}
-.gym-ex-tap {
-  font-family: var(--font-game);
-  font-size: 8px;
-  color: var(--hint);
-  letter-spacing: 0.04em;
-  flex-shrink: 0;
-}
-
-/* ── Log panel ───────────────────────────────────────────── */
-.gym-log-panel {
-  background: var(--surface2);
-  border: 0.5px solid rgba(251,191,36,0.15);
-  border-radius: var(--radius-sm);
-  padding: 14px;
-  margin-top: 4px;
-  margin-bottom: 8px;
-}
-.gym-prev-weight {
-  font-family: var(--font-game);
-  font-size: 9px;
-  color: var(--hint);
-  letter-spacing: 0.04em;
-  margin-bottom: 12px;
-}
-.gym-inputs-row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-.gym-input-group {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.gym-input-label {
-  font-family: var(--font-hotdog);
-  font-size: 7px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--hint);
-}
-
-/* ── Stepper ─────────────────────────────────────────────── */
-.gym-stepper {
-  display: flex;
-  align-items: center;
-  background: var(--surface);
-  border: 0.5px solid var(--border2);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-.gym-stepper button {
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 16px;
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: color 0.12s;
-  flex-shrink: 0;
-}
-.gym-stepper button:hover { color: var(--amber); }
-.gym-stepper input {
-  flex: 1;
-  background: none;
-  border: none;
-  text-align: center;
-  font-family: var(--font-game);
-  font-size: 13px;
-  color: var(--text);
-  outline: none;
-  min-width: 0;
-  padding: 8px 0;
-}
-
-/* ── Effort row ──────────────────────────────────────────── */
-.gym-effort-row {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.gym-effort-btn {
-  flex: 1;
-  padding: 7px 4px;
-  background: none;
-  border: 0.5px solid var(--border2);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-game);
-  font-size: 8px;
-  color: var(--muted);
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.12s;
-}
-.gym-effort-btn.active {
-  background: rgba(251,191,36,0.08);
-  border-color: var(--gold);
-  color: var(--gold);
-}
-
-/* ── Set log ─────────────────────────────────────────────── */
-.gym-set-log {
-  font-family: var(--font-game);
-  font-size: 9px;
-  color: var(--muted);
-  letter-spacing: 0.04em;
-  padding: 5px 0;
-  border-bottom: 0.5px solid var(--border);
-}
-.gym-set-log:last-child { border-bottom: none; }
-
-/* ── Action row ──────────────────────────────────────────── */
-.gym-action-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-.gym-log-btn {
-  flex: 1;
-  background: var(--teal);
-  color: #0a0a0c;
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 12px;
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-.gym-log-btn:active { opacity: 0.85; }
-.gym-done-ex-btn {
-  background: none;
-  border: 0.5px solid var(--border2);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--muted);
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-.gym-done-ex-btn:hover { border-color: var(--teal); color: var(--teal); }
-
-/* ── Rest timer ──────────────────────────────────────────── */
-.gym-rest-timer {
-  background: rgba(255,92,92,0.06);
-  border: 0.5px solid rgba(255,92,92,0.3);
-  border-radius: var(--radius);
-  padding: 18px 16px;
-  margin-bottom: 16px;
-  text-align: center;
-  position: relative;
-}
-.gym-rest-timer::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  pointer-events: none;
-  z-index: 2;
-  border-radius: inherit;
-  background:
-    linear-gradient(rgba(255,92,92,0.7),rgba(255,92,92,0.7)) top    left  / 10px 1.5px no-repeat,
-    linear-gradient(rgba(255,92,92,0.7),rgba(255,92,92,0.7)) top    left  / 1.5px 10px no-repeat,
-    linear-gradient(rgba(255,92,92,0.7),rgba(255,92,92,0.7)) top    right / 10px 1.5px no-repeat,
-    linear-gradient(rgba(255,92,92,0.7),rgba(255,92,92,0.7)) top    right / 1.5px 10px no-repeat,
-    linear-gradient(rgba(255,92,92,0.7),rgba(255,92,92,0.7)) bottom left  / 10px 1.5px no-repeat,
-    linear-gradient(rgba(255,92,92,0.7),rgba(255,92,92,0.7)) bottom left  / 1.5px 10px no-repeat,
-    linear-gradient(rgba(255,92,92,0.7),rgba(255,92,92,0.7)) bottom right / 10px 1.5px no-repeat,
-    linear-gradient(rgba(255,92,92,0.7),rgba(255,92,92,0.7)) bottom right / 1.5px 10px no-repeat;
-}
-.gym-rest-label {
-  font-family: var(--font-hotdog);
-  font-size: 7px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--red);
-  margin-bottom: 8px;
-}
-.gym-rest-countdown {
-  font-family: var(--font-game);
-  font-size: 42px;
-  color: var(--red);
-  line-height: 1;
-  margin-bottom: 6px;
-  letter-spacing: 0.04em;
-}
-.gym-rest-msg {
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 12px;
-}
-.gym-rest-skip {
-  background: none;
-  border: 0.5px solid rgba(255,92,92,0.4);
-  border-radius: var(--radius-sm);
-  padding: 8px 20px;
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--red);
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.gym-rest-skip:hover { background: rgba(255,92,92,0.08); }
-
-/* ── End session button ──────────────────────────────────── */
-.gym-end-btn {
-  width: 100%;
-  margin-top: 8px;
-  padding: 13px;
-  background: none;
-  border: 0.5px solid var(--coral);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--coral);
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.gym-end-btn:hover { background: var(--coral-dim); }
-
-/* ── Session complete card ───────────────────────────────── */
-.gym-complete-card {
-  position: relative;
-  background: linear-gradient(135deg, rgba(251,191,36,0.06), rgba(45,212,160,0.04));
-  border: 0.5px solid rgba(251,191,36,0.3);
-  border-radius: var(--radius);
-  padding: 24px 20px;
-  margin-bottom: 16px;
-  box-shadow: 0 0 24px rgba(251,191,36,0.04), inset 0 0 40px rgba(0,0,0,0.2);
-}
-.gym-complete-card::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  pointer-events: none;
-  z-index: 2;
-  border-radius: inherit;
-  background:
-    linear-gradient(var(--gold),var(--gold)) top    left  / 14px 2px no-repeat,
-    linear-gradient(var(--gold),var(--gold)) top    left  / 2px 14px no-repeat,
-    linear-gradient(var(--gold),var(--gold)) top    right / 14px 2px no-repeat,
-    linear-gradient(var(--gold),var(--gold)) top    right / 2px 14px no-repeat,
-    linear-gradient(var(--gold),var(--gold)) bottom left  / 14px 2px no-repeat,
-    linear-gradient(var(--gold),var(--gold)) bottom left  / 2px 14px no-repeat,
-    linear-gradient(var(--gold),var(--gold)) bottom right / 14px 2px no-repeat,
-    linear-gradient(var(--gold),var(--gold)) bottom right / 2px 14px no-repeat;
-}
-.gym-complete-title {
-  font-family: var(--font-dramatic);
-  font-size: 20px;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--gold);
-  text-align: center;
-  margin-bottom: 16px;
-}
-.gym-complete-divider {
-  height: 0.5px;
-  background: rgba(251,191,36,0.2);
-  margin: 14px 0;
-}
-.gym-complete-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 14px;
-}
-.gym-stat {
-  text-align: center;
-}
-.gym-stat-label {
-  font-family: var(--font-hotdog);
-  font-size: 7px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--hint);
-  margin-bottom: 4px;
-}
-.gym-stat-val {
-  font-family: var(--font-game);
-  font-size: 16px;
-  color: var(--text);
-  letter-spacing: 0.04em;
-}
-
-/* ── PR complete / buff ──────────────────────────────────── */
-.gym-pr-complete {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(167,139,250,0.08);
-  border: 0.5px solid rgba(167,139,250,0.25);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--purple);
-}
-.gym-complete-buff {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--teal);
-  margin-bottom: 6px;
-}
-.gym-complete-orb {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--teal);
-  flex-shrink: 0;
-}
-
-/* ── Done button ─────────────────────────────────────────── */
-.gym-done-btn {
-  width: 100%;
-  padding: 13px;
-  background: var(--teal);
-  color: #0a0a0c;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-.gym-done-btn:active { opacity: 0.85; }
-
-/* ── PR flash banner ─────────────────────────────────────── */
-@keyframes gym-pr-flash {
-  0%   { opacity: 0; transform: translateY(-6px); }
-  15%  { opacity: 1; transform: translateY(0); }
-  80%  { opacity: 1; }
-  100% { opacity: 0; }
-}
-.gym-pr-flash {
-  position: fixed;
-  top: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(167,139,250,0.12);
-  border: 0.5px solid rgba(167,139,250,0.5);
-  border-radius: var(--radius-sm);
-  padding: 10px 20px;
-  font-family: var(--font-title);
-  font-size: 13px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--purple);
-  z-index: 600;
-  white-space: nowrap;
-  pointer-events: none;
-  animation: gym-pr-flash 2.4s ease forwards;
-}
-
-/* ── Cardio form ─────────────────────────────────────────── */
-.gym-cardio-form {
-  background: var(--surface2);
-  border: 0.5px solid rgba(45,212,160,0.15);
-  border-radius: var(--radius-sm);
-  padding: 14px;
-  margin-bottom: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
