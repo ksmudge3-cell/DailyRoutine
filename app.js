@@ -256,7 +256,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapist,SummarydonutApiKey},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -320,6 +320,7 @@ async function loadFromSupabase(){
       if(d.donutChat)donutChat=d.donutChat;
       if(d.donutWeeklySummary)donutWeeklySummary=d.donutWeeklySummary;
       if(d.donutTherapistSummary)donutTherapistSummary=d.donutTherapistSummary;
+      if(d.donutApiKey){donutApiKey=d.donutApiKey;saveLocal('dr-anthropic-key',donutApiKey);}
       if(d.archived){archived=d.archived;if(!archived.tasks)archived.tasks=[];}
       ['state','schedule','dogTasks','dogState','groomState','prevState','notifs','wheel','wheelDone','wheelSkips','wheelPinned','inbox','shopItems','archived'].forEach(k=>saveLocal('dr-'+k.replace(/([A-Z])/g,'-$1').toLowerCase(),eval(k)));
       saveLocal('dr-rewards',rewardsState);
