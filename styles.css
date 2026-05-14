@@ -7,7 +7,7 @@
 --purple: #6511A8;  --purple-dim: rgba(101,17,168,0.12);
 --coral:  #D65A73;  --coral-dim:  rgba(214,90,115,0.12);
 --red:    #A10D0D;
---fire:   #C64A00;
+--fire:   #C64A00;f
 --gold:   #D49A00;  --gold-dim:   rgba(212,154,0,0.12);
 --blue:   #004DB5;
 --yellow: #F2D400;
@@ -960,11 +960,11 @@ body { font-family: var(--font-body); }
   position: relative;
   flex: 1;
   width: auto;
-  height: 20px;
+  height: 14px;
   border-radius: 2px;
   overflow: hidden;
   isolation: isolate;
-  background: rgba(0, 0, 0, 0);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .stat-bar-empty {
