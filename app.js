@@ -2483,7 +2483,6 @@ WHEN THEY SEEM TO BE STRUGGLING:
 - You can suggest they talk to someone if it seems warranted, but you do it as Donut: "The dungeon has professionals for this. Your therapist specifically. Use them."`;
 
 
-let donutLoading=false;
 
 /* ── Data helpers ── */
 function getWeekNumber(){
