@@ -14,7 +14,10 @@ const SUNDAY_PILL_TASK={id:'sunday-pillbox',name:'Fill weekly pill box',time:'Ev
 const PURPLE_ELIGIBLE = new Set([
   'wakeup','gym','breakfast','work','dinner','intentions','personal','winddown','sleep'
 ]);
-
+const GRAY_GRACE={
+  'gym':2,'shower':3,'intentions':3,
+  'winddown':3,'sleep':3,'wakeup':5,'sunday-pillbox':1
+};
 const QUALITY_TASKS = {
   'wakeup':    { debuff:'sluggish',        label:'Sluggish',         debuffOnYellow:true  },
   'gym':       { debuff:'undertrained',    label:'Undertrained',     debuffOnYellow:false },
@@ -600,7 +603,33 @@ function renderBar(pct, type='hp', opts={}){
          style="--fill:${fill}%;" alt="">
   </div>`;
 }
-
+function getConsecutiveGrayDays(taskId){
+  if(!(taskId in GRAY_GRACE))return 0;
+  if(taskId==='sunday-pillbox'){
+    const today=new Date();
+    const dss=today.getDay()===0?7:today.getDay();
+    const ls=new Date(today);ls.setDate(today.getDate()-dss);
+    const lsk=`${ls.getFullYear()}-${ls.getMonth()}-${ls.getDate()}`;
+    return qualityState[lsk]?.['sunday-pillbox']==='gray'?1:0;
+  }
+  let count=0,today=new Date();
+  for(let i=1;i<=10;i++){
+    const d=new Date(today);d.setDate(today.getDate()-i);
+    const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if(qualityState[k]?.[taskId]==='gray')count++;else break;
+  }
+  return count;
+}
+function isGrayLocked(taskId){
+  const g=GRAY_GRACE[taskId];return g&&getConsecutiveGrayDays(taskId)>=g;
+}
+function getGrayWarning(taskId){
+  const g=GRAY_GRACE[taskId];if(!g)return null;
+  const c=getConsecutiveGrayDays(taskId);
+  if(c>=g)return 'locked';
+  if(c===g-1&&g>1)return 'warn';
+  return null;
+}
 
 function cycleQuality(dayIdx, taskId){
   const k=dayKey(dayIdx);
@@ -618,8 +647,8 @@ function cycleQuality(dayIdx, taskId){
     next = 'yellow';
   } else if(cur==='yellow') {
     next = 'gray';
-  } else if(cur==='gray') {
-    next = 'red';
+  } else if(cur==='yellow') {
+    next = isGrayLocked(taskId) ? 'red' : 'gray';
   } else {
     next = null; // red → unset
   }
@@ -800,14 +829,17 @@ function renderToday(){
       const _isDone=!!data[task.id];
       const _qCfg=true;  // orb on all tasks; debuffs still only fire for QUALITY_TASKS
       const _q=getQuality(selectedDay,task.id);
+      const _grayWarn=getGrayWarning(task.id);
       // Gray-checked = N/A: show checked but dimmed
       const _isNA=_q==='gray';
       div.className='task'+(_isDone&&!_isNA?' done':'')+(_q==='yellow'?' quality-low':'')+(_isNA?' task-na':'');
       div.innerHTML=`<div class="check"><span class="check-mark">✓</span></div>
         <div style="flex:1;"><div class="task-name">${task.name}</div>
         <div class="task-time">${task.time}${_isDone&&data[task.id+'_ts']?' · done '+fmtTime(data[task.id+'_ts']):''}</div></div>
-        ${_qCfg?`<div class="q-orb-tap" onclick="event.stopPropagation();cycleQuality(${selectedDay},'${task.id}')" title="${orbLabel(_q)}">
-          ${renderOrb(_q,task.id)}
+        ${_qCfg?`<div class="q-orb-tap" onclick="event.stopPropagation();cycleQuality(${selectedDay},'${task.id}')" title="${orbLabel(_q)}${_grayWarn?' — gray '+(_grayWarn==='locked'?'LOCKED':'warning'):''}">
+        ${renderOrb(_q,task.id)}
+        ${_grayWarn?`<span class="gray-warn-badge ${_grayWarn}">${_grayWarn==='locked'?'🔒':'⚠'}</span>`:''}
+
         </div>` : (!isSundayInjected?'<span class="task-edit-hint">hold to edit</span>':'')}`;
 
       // Tap = toggle, long press = edit
