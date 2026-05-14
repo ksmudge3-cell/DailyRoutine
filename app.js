@@ -18,6 +18,29 @@ const GRAY_GRACE={
   'gym':2,'shower':3,'intentions':3,
   'winddown':3,'sleep':3,'wakeup':5,'sunday-pillbox':1
 };
+const GYM_TEMPLATES={
+  upper:{name:'Upper Body',exercises:[
+    {id:'lat-pulldown',name:'Lat Pulldown'},
+    {id:'seated-row',name:'Seated Row'},
+    {id:'chest-fly',name:'Chest Fly'},
+    {id:'bicep-curl',name:'Bicep Curl'},
+    {id:'incline-press',name:'Incline Press'},
+    {id:'tricep-press',name:'Tricep Press'},
+  ]},
+  legs:{name:'Leg Day',exercises:[
+    {id:'leg-press',name:'Leg Press'},
+    {id:'leg-extension',name:'Leg Extension'},
+    {id:'leg-curl',name:'Leg Curl'},
+    {id:'hip-adductor',name:'Hip Adductor'},
+  ]},
+  cardio:{name:'Cardio — Elliptical',type:'cardio',exercises:[]}
+};
+const GYM_EFFORT=[
+  {id:'warmup',label:'😤 Warm Up'},
+  {id:'solid',label:'💪 Solid'},
+  {id:'pushed',label:'🔥 Pushed It'},
+  {id:'destroyed',label:'💀 Destroyed'},
+];
 const QUALITY_TASKS = {
   'wakeup':    { debuff:'sluggish',        label:'Sluggish',         debuffOnYellow:true  },
   'gym':       { debuff:'undertrained',    label:'Undertrained',     debuffOnYellow:false },
@@ -315,6 +338,10 @@ let schedule=load('dr-schedule',DEFAULT_SCHEDULE);
 let dogTasks=load('dr-dog-tasks',DEFAULT_DOG_TASKS);
 let dogState=load('dr-dog-state',{});
 let groomState=load('dr-groom-state',{});
+let gymSession=loadLocal('dr-gym-session',null);
+let gymHistory=loadLocal('dr-gym-history',{prs:{},sessions:[]});
+let gymRestInterval=null,gymRestSecondsLeft=0,gymActiveExercise=null,gymElapsedInterval=null;
+const gymInputs={weight:{},reps:{},effort:{}};
 let prevState=load('dr-prev-state',{});
 let notifs=load('dr-notifs',[]);
 let wheel=load('dr-wheel',DEFAULT_WHEEL);
@@ -338,6 +365,13 @@ let timerInterval=null, timerSeconds=0, timerRunning=false;
 let qualityState=load('dr-quality',{});
 let collapseState=load('dr-collapse',{});
 let floorCondition=load('dr-floor-condition',null);
+let gymSession=loadLocal('dr-gym-session',null);
+let gymHistory=loadLocal('dr-gym-history',{prs:{},sessions:[]});
+let gymRestInterval=null;
+let gymRestSecondsLeft=0;
+let gymActiveExercise=null;
+let gymElapsedInterval=null;
+const gymInputs={weight:{},reps:{},effort:{}};
 let currentSpinTask=null, reSpinsLeft=3;
 
 // Edit overlay state
@@ -2815,7 +2849,320 @@ function renderRewards(){
 
 /* ─── PATCH: award points when tasks are toggled ─────────────────────────── */
 // We'll hook into toggleTask, toggleDogTask, markSpinDone, toggleDogTask for mental
+/* ─── GYM TAB ────────────────────────────────────────────────────────────── */
+function fmtElapsed(ms){const m=Math.floor(ms/60000),s=Math.floor((ms%60000)/1000);return`${m}:${s.toString().padStart(2,'0')}`;}
 
+function renderGym(){
+  const wrap=document.getElementById('gym-content');if(!wrap)return;
+  if(!gymSession)renderGymSelect(wrap);
+  else if(gymSession.complete)renderGymComplete(wrap);
+  else renderGymSession(wrap);
+}
+
+function renderGymSelect(wrap){
+  const prs=gymHistory.prs||{};
+  const prEntries=Object.entries(prs).slice(0,4);
+  const allEx=Object.values(GYM_TEMPLATES).flatMap(t=>t.exercises||[]);
+  wrap.innerHTML=`
+    <div class="gym-header">
+      <div class="gym-title">SELECT WORKOUT</div>
+      <div class="gym-subtitle">Choose your template to begin</div>
+    </div>
+    <div class="gym-template-grid">
+      <button class="gym-template-btn" onclick="startGymSession('upper')">
+        <div class="gym-template-name">Upper Body</div>
+        <div class="gym-template-detail">6 exercises · Lat, Row, Chest, Arms</div>
+      </button>
+      <button class="gym-template-btn" onclick="startGymSession('legs')">
+        <div class="gym-template-name">Leg Day</div>
+        <div class="gym-template-detail">4 exercises · Press, Extension, Curl, Adductor</div>
+      </button>
+      <button class="gym-template-btn gym-template-cardio" onclick="startGymSession('cardio')">
+        <div class="gym-template-name">Cardio</div>
+        <div class="gym-template-detail">Elliptical · Duration + Distance + Resistance</div>
+      </button>
+    </div>
+    ${prEntries.length?`<div class="gym-section-label" style="margin-top:20px;">Recent PRs</div>
+    ${prEntries.map(([id,w])=>{const ex=allEx.find(e=>e.id===id);return ex?`<div class="gym-pr-row"><span class="gym-pr-name">${ex.name}</span><span class="gym-pr-val">${w} lbs</span></div>`:''}).join('')}`:''}`;
+}
+
+function startGymSession(templateKey){
+  gymSession={template:templateKey,startTime:Date.now(),exercises:{},cardio:{resistance:8,distance:''},complete:false};
+  gymActiveExercise=null;
+  Object.assign(gymInputs,{weight:{},reps:{},effort:{}});
+  saveLocal('dr-gym-session',gymSession);
+  clearInterval(gymElapsedInterval);
+  gymElapsedInterval=setInterval(()=>{const el=document.getElementById('gym-elapsed');if(el)el.textContent=fmtElapsed(Date.now()-gymSession.startTime);},1000);
+  renderGym();
+}
+
+function renderGymSession(wrap){
+  const template=GYM_TEMPLATES[gymSession.template];
+  if(gymSession.template==='cardio'){renderGymCardio(wrap);return;}
+  const exercises=template.exercises;
+  const totalSets=exercises.reduce((a,ex)=>a+(gymSession.exercises[ex.id]?.sets?.length||0),0);
+  const doneCount=exercises.filter(ex=>gymSession.exercises[ex.id]?.done).length;
+
+  const exHtml=exercises.map(ex=>{
+    const exS=gymSession.exercises[ex.id]||{};
+    const sets=exS.sets||[];
+    const isDone=exS.done;
+    const isActive=gymActiveExercise===ex.id;
+    if(!gymInputs.weight[ex.id])gymInputs.weight[ex.id]=gymHistory.prs[ex.id]||45;
+    if(!gymInputs.reps[ex.id])gymInputs.reps[ex.id]=10;
+    if(!gymInputs.effort[ex.id])gymInputs.effort[ex.id]='solid';
+    const prevW=gymHistory.prs[ex.id];
+
+    const setsLog=sets.map((s,i)=>`<div class="gym-set-log">Set ${i+1}: ${s.weight} lbs × ${s.reps} — ${GYM_EFFORT.find(e=>e.id===s.effort)?.label||s.effort}</div>`).join('');
+
+    const panel=isActive?`<div class="gym-log-panel">
+      ${sets.length===0&&prevW?`<div class="gym-prev-weight">Previous best: ${prevW} lbs</div>`:''}
+      <div class="gym-inputs-row">
+        <div class="gym-input-group">
+          <div class="gym-input-label">WEIGHT (lbs)</div>
+          <div class="gym-stepper">
+            <button onclick="gymAdj('weight','${ex.id}',-5)">−</button>
+            <span id="gw-${ex.id}">${gymInputs.weight[ex.id]}</span>
+            <button onclick="gymAdj('weight','${ex.id}',5)">+</button>
+          </div>
+        </div>
+        <div class="gym-input-group">
+          <div class="gym-input-label">REPS</div>
+          <div class="gym-stepper">
+            <button onclick="gymAdj('reps','${ex.id}',-1)">−</button>
+            <span id="gr-${ex.id}">${gymInputs.reps[ex.id]}</span>
+            <button onclick="gymAdj('reps','${ex.id}',1)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="gym-effort-row">
+        ${GYM_EFFORT.map(e=>`<button class="gym-effort-btn${gymInputs.effort[ex.id]===e.id?' active':''}" onclick="gymPickEffort('${ex.id}','${e.id}')">${e.label}</button>`).join('')}
+      </div>
+      ${setsLog}
+      <div class="gym-action-row">
+        <button class="gym-log-btn" onclick="logGymSet('${ex.id}')">LOG SET</button>
+        ${sets.length>0?`<button class="gym-done-ex-btn" onclick="doneGymEx('${ex.id}')">Done with Exercise ✓</button>`:''}
+      </div>
+    </div>`:(sets.length>0?`<div style="padding:0 12px 8px;">${setsLog}</div>`:'');
+
+    return`<div class="gym-ex-row${isDone?' done':''}${isActive?' active':''}" ${!isDone&&!isActive?`onclick="openGymEx('${ex.id}')"`:''}> 
+      <div class="gym-ex-check">${isDone?'✓':''}</div>
+      <div class="gym-ex-info">
+        <div class="gym-ex-name">${ex.name}</div>
+        ${sets.length>0&&!isActive?`<div class="gym-ex-sets">${sets.length} set${sets.length!==1?'s':''} logged</div>`:''}
+      </div>
+      ${!isDone&&!isActive?`<span class="gym-ex-tap">tap</span>`:''}
+    </div>${panel}`;
+  }).join('');
+
+  wrap.innerHTML=`
+    <div class="gym-session-header">
+      <div class="gym-session-title">${template.name.toUpperCase()}</div>
+      <div class="gym-session-meta"><span id="gym-elapsed">${fmtElapsed(Date.now()-gymSession.startTime)}</span> · ${doneCount}/${exercises.length} exercises · ${totalSets} sets</div>
+    </div>
+    <div id="gym-pr-banner"></div>
+    ${gymRestSecondsLeft>0?`<div class="gym-rest-timer">
+      <div class="gym-rest-label">REST PERIOD</div>
+      <div class="gym-rest-countdown" id="gym-rest-cd">${gymRestSecondsLeft}</div>
+      <div class="gym-rest-msg">"${DCC.getRandom(['Use the time. Don\'t scroll. I\'m watching.','Ninety seconds. Sit down. Breathe.','Rest period. This is not optional.'])}" — Princess Donut</div>
+      <button class="gym-rest-skip" onclick="skipRest()">Skip Rest</button>
+    </div>`:''}
+    <div class="gym-ex-list">${exHtml}</div>
+    <button class="gym-end-btn" onclick="endGymSession()">End Session</button>`;
+}
+
+function openGymEx(id){gymActiveExercise=id;renderGym();setTimeout(()=>{document.querySelector('.gym-ex-row.active')?.scrollIntoView({behavior:'smooth',block:'start'});},80);}
+
+function gymAdj(type,id,d){
+  if(type==='weight')gymInputs.weight[id]=Math.max(0,(gymInputs.weight[id]||0)+d);
+  else gymInputs.reps[id]=Math.max(1,(gymInputs.reps[id]||10)+d);
+  const el=document.getElementById(type==='weight'?`gw-${id}`:`gr-${id}`);
+  if(el)el.textContent=gymInputs[type][id];
+}
+
+function gymPickEffort(id,eff){gymInputs.effort[id]=eff;renderGym();}
+
+function logGymSet(id){
+  const w=gymInputs.weight[id]||45,r=gymInputs.reps[id]||10,e=gymInputs.effort[id]||'solid';
+  if(!gymSession.exercises[id])gymSession.exercises[id]={sets:[],done:false};
+  gymSession.exercises[id].sets.push({weight:w,reps:r,effort:e});
+  saveLocal('dr-gym-session',gymSession);
+  const isPR=checkGymPR(id,w);
+  startRestTimer();
+  renderGym();
+  if(isPR)showGymPR(id,w);
+}
+
+function checkGymPR(id,w){
+  if(w>(gymHistory.prs[id]||0)){gymHistory.prs[id]=w;saveLocal('dr-gym-history',gymHistory);return true;}
+  return false;
+}
+
+function showGymPR(id,w){
+  const el=document.getElementById('gym-pr-banner');if(!el)return;
+  const allEx=Object.values(GYM_TEMPLATES).flatMap(t=>t.exercises||[]);
+  const name=allEx.find(e=>e.id===id)?.name||id;
+  el.innerHTML=`<div class="gym-pr-flash">
+    <div class="gym-pr-title">⭐ PERSONAL RECORD</div>
+    <div class="gym-pr-ex">${name} — ${w} lbs</div>
+    <div class="donut-msg-wrap"><span class="donut-signature">Princess Donut:</span><p class="donut-msg">${DCC.getRandom(['A personal record. In my dungeon. The audience will be talking about this.','PR day. Purple tier. The dungeon has logged this in the permanent record.','New record. You exceeded yourself. I find this acceptable and also impressive.'])}</p></div>
+  </div>`;
+  setTimeout(()=>{if(el)el.innerHTML='';},5000);
+}
+
+function startRestTimer(){
+  clearInterval(gymRestInterval);gymRestSecondsLeft=90;
+  gymRestInterval=setInterval(()=>{
+    gymRestSecondsLeft--;
+    const el=document.getElementById('gym-rest-cd');
+    if(el)el.textContent=gymRestSecondsLeft;
+    if(gymRestSecondsLeft<=0){clearInterval(gymRestInterval);gymRestSecondsLeft=0;renderGym();}
+  },1000);
+}
+
+function skipRest(){clearInterval(gymRestInterval);gymRestSecondsLeft=0;renderGym();}
+
+function doneGymEx(id){
+  if(!gymSession.exercises[id])gymSession.exercises[id]={sets:[],done:false};
+  gymSession.exercises[id].done=true;
+  gymActiveExercise=null;
+  saveLocal('dr-gym-session',gymSession);
+  renderGym();
+}
+
+function endGymSession(){
+  const template=GYM_TEMPLATES[gymSession.template];
+  const exercises=template.exercises||[];
+  const undone=exercises.filter(ex=>!gymSession.exercises[ex.id]?.done);
+  if(undone.length>0){
+    const ov=document.createElement('div');ov.id='gym-end-ov';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    ov.innerHTML=`<div style="background:var(--surface);border:1px solid rgba(251,191,36,0.3);border-radius:var(--radius);padding:20px;max-width:340px;width:100%;">
+      <div style="font-family:var(--font-game);font-size:9px;color:var(--amber);letter-spacing:0.1em;margin-bottom:12px;">END SESSION?</div>
+      <div style="font-family:var(--font-body);font-size:13px;color:var(--muted);margin-bottom:16px;">${undone.length} exercise${undone.length!==1?'s':''} remaining:<br>${undone.map(e=>`· ${e.name}`).join('<br>')}</div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="document.getElementById('gym-end-ov').remove()" style="flex:1;background:var(--surface2);border:1px solid rgba(251,191,36,0.2);color:var(--text);border-radius:var(--radius-sm);padding:10px;font-family:var(--font-body);font-size:13px;cursor:pointer;">Keep Going</button>
+        <button onclick="confirmEndGym();document.getElementById('gym-end-ov').remove()" style="flex:1;background:rgba(255,92,92,0.15);border:1px solid var(--red);color:var(--red);border-radius:var(--radius-sm);padding:10px;font-family:var(--font-body);font-size:13px;cursor:pointer;">End Session</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+  } else {confirmEndGym();}
+}
+
+function confirmEndGym(){
+  clearInterval(gymElapsedInterval);clearInterval(gymRestInterval);gymRestSecondsLeft=0;
+  const template=GYM_TEMPLATES[gymSession.template];
+  const exercises=template.exercises||[];
+  const doneCount=exercises.filter(ex=>gymSession.exercises[ex.id]?.done).length;
+  const totalSets=exercises.reduce((a,ex)=>a+(gymSession.exercises[ex.id]?.sets?.length||0),0);
+  const duration=Math.round((Date.now()-gymSession.startTime)/60000);
+  const isFull=doneCount===exercises.length;
+  const hasPR=exercises.some(ex=>(gymSession.exercises[ex.id]?.sets||[]).some(s=>s.weight>=(gymHistory.prs[ex.id]||Infinity)&&gymHistory.prs[ex.id]>0));
+  const orbLevel=hasPR?'purple':doneCount>0?'green':'yellow';
+
+  // Set gym orb + check on daily floor
+  const todayIdx=new Date().getDay();
+  const k=dayKey(todayIdx);
+  if(!qualityState[k])qualityState[k]={};
+  qualityState[k]['gym']=orbLevel;
+  if(!state[k])state[k]={};
+  state[k]['gym']=true;state[k]['gym_ts']=Date.now();
+  save('dr-state',state);save('dr-quality',qualityState);
+
+  // Award economy
+  const qPts={purple:5,green:3,yellow:1};
+  const qXP={purple:15,green:8,yellow:3};
+  awardPoints(qPts[orbLevel]||0,'Gym session','gym-session');
+  awardXP(qXP[orbLevel]||0,'Gym session');
+
+  // Save session to history
+  gymHistory.sessions=(gymHistory.sessions||[]);
+  gymHistory.sessions.unshift({date:todayStr(),template:gymSession.template,doneCount,totalSets,duration,isFull,hasPR});
+  if(gymHistory.sessions.length>30)gymHistory.sessions=gymHistory.sessions.slice(0,30);
+  saveLocal('dr-gym-history',gymHistory);
+
+  Object.assign(gymSession,{complete:true,doneCount,totalSets,duration,isFull,hasPR,orbLevel,templateName:template.name,totalEx:exercises.length});
+  saveLocal('dr-gym-session',gymSession);
+  renderGym();
+}
+
+function renderGymComplete(wrap){
+  const orbLabels={purple:'Purple — PR Day 🟣',green:'Green — Full Session 🟢',yellow:'Yellow — Modified 🟡'};
+  const donutLines=gymSession.isFull
+    ?['Full session. The dungeon respects this.','Every machine. Every set. Combat Ready buff active. Well done, Crawler.','Complete. All exercises logged. The audience found it inspiring. I found it adequate. Both are true.']
+    :['Modified session. Something is better than nothing. The dungeon logs the effort.','Partial completion. The machines were occupied. The dungeon understands gym etiquette.'];
+  wrap.innerHTML=`
+    <div class="gym-complete-card">
+      <div class="gym-complete-title">${gymSession.isFull?'FLOOR CLEARED: GYM':'SESSION COMPLETE: PARTIAL'}</div>
+      <div class="gym-complete-divider"></div>
+      <div class="gym-complete-stats">
+        <div class="gym-stat"><span class="gym-stat-label">SESSION</span><span class="gym-stat-val">${gymSession.templateName}</span></div>
+        <div class="gym-stat"><span class="gym-stat-label">DURATION</span><span class="gym-stat-val">${gymSession.duration} min</span></div>
+        <div class="gym-stat"><span class="gym-stat-label">SETS</span><span class="gym-stat-val">${gymSession.totalSets}</span></div>
+        <div class="gym-stat"><span class="gym-stat-label">EXERCISES</span><span class="gym-stat-val">${gymSession.doneCount}/${gymSession.totalEx}</span></div>
+      </div>
+      ${gymSession.hasPR?`<div class="gym-pr-complete">⭐ Personal Record Today!</div>`:''}
+      <div class="gym-complete-buff">BUFF APPLIED: Combat Ready</div>
+      <div class="gym-complete-orb">Gym orb set: ${orbLabels[gymSession.orbLevel]||gymSession.orbLevel}</div>
+      <div class="gym-complete-divider"></div>
+      <div class="donut-msg-wrap"><span class="donut-signature">Princess Donut:</span><p class="donut-msg">${DCC.getRandom(donutLines)}</p></div>
+      <button class="gym-done-btn" onclick="clearGymSession()">DONE</button>
+    </div>`;
+}
+
+function clearGymSession(){
+  gymSession=null;gymActiveExercise=null;
+  clearInterval(gymElapsedInterval);clearInterval(gymRestInterval);gymRestSecondsLeft=0;
+  gymInputs.weight={};gymInputs.reps={};gymInputs.effort={};
+  saveLocal('dr-gym-session',null);
+  renderGym();
+}
+
+function renderGymCardio(wrap){
+  const c=gymSession.cardio;
+  wrap.innerHTML=`
+    <div class="gym-session-header">
+      <div class="gym-session-title">CARDIO — ELLIPTICAL</div>
+      <div class="gym-session-meta"><span id="gym-elapsed">${fmtElapsed(Date.now()-gymSession.startTime)}</span> elapsed</div>
+    </div>
+    <div class="gym-cardio-form">
+      <div class="gym-input-group">
+        <div class="gym-input-label">RESISTANCE LEVEL</div>
+        <div class="gym-stepper">
+          <button onclick="gymCardioAdj('resistance',-1)">−</button>
+          <span id="gym-cr">${c.resistance||8}</span>
+          <button onclick="gymCardioAdj('resistance',1)">+</button>
+        </div>
+      </div>
+      <div class="gym-input-group" style="margin-top:16px;">
+        <div class="gym-input-label">DISTANCE (miles — from machine)</div>
+        <input type="number" step="0.1" min="0" value="${c.distance||''}" placeholder="0.0" id="gym-cd"
+          style="background:var(--surface2);border:0.5px solid rgba(251,191,36,0.2);border-radius:var(--radius-sm);padding:12px;color:var(--text);font-family:var(--font-game);font-size:16px;width:100%;text-align:center;">
+      </div>
+    </div>
+    <button class="gym-end-btn" style="margin-top:24px;" onclick="endGymCardio()">End Session</button>`;
+}
+
+function gymCardioAdj(f,d){
+  gymSession.cardio[f]=Math.max(1,(gymSession.cardio[f]||8)+d);
+  const el=document.getElementById('gym-cr');if(el)el.textContent=gymSession.cardio[f];
+  saveLocal('dr-gym-session',gymSession);
+}
+
+function endGymCardio(){
+  const distEl=document.getElementById('gym-cd');
+  gymSession.cardio.distance=distEl?parseFloat(distEl.value)||0:0;
+  clearInterval(gymElapsedInterval);clearInterval(gymRestInterval);
+  const duration=Math.round((Date.now()-gymSession.startTime)/60000);
+  const todayIdx=new Date().getDay();const k=dayKey(todayIdx);
+  if(!qualityState[k])qualityState[k]={};qualityState[k]['gym']='green';
+  if(!state[k])state[k]={};state[k]['gym']=true;state[k]['gym_ts']=Date.now();
+  save('dr-state',state);save('dr-quality',qualityState);
+  awardPoints(3,'Cardio session','gym-session');awardXP(8,'Cardio session');
+  Object.assign(gymSession,{complete:true,doneCount:1,totalSets:0,duration,isFull:true,hasPR:false,orbLevel:'green',templateName:'Cardio — Elliptical',totalEx:1});
+  saveLocal('dr-gym-session',gymSession);
+  renderGym();
+}
 /* ─── SCREEN NAV (updated) ───────────────────────────────────────────────── */
 function showScreen(name,btn){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -2831,6 +3178,8 @@ function showScreen(name,btn){
   if(name==='rewards')renderRewards();
   if(name==='profile')renderProfile();
   if(name==='coach')renderCoach();
+  if(name==='gym')renderGym();
+  
 }
 
 /* ─── INIT ──────────────────────────────────────────────────────────────── */
@@ -2853,7 +3202,7 @@ async function init(){
 
   const last=loadLocal('dr-last-screen','today');
   if(last&&last!=='today'){
-    const map={today:0,dogs:1,spin:2,rewards:3,profile:4,coach:5};
+    const map={today:0,dogs:1,spin:2,rewards:3,profile:4,coach:5,gym:6};
     const idx=map[last];
     if(idx!==undefined)showScreen(last,document.querySelectorAll('.nav-btn')[idx]);
   }
