@@ -2609,6 +2609,7 @@ async function sendDonutMessage(message){
     const text=data.content?.[0]?.text||'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference. Try again.';
     donutChat.push({role:'assistant',content:text,timestamp:Date.now(),week_number:wn});
   }catch(e){
+    console.error('Donut error:',e);
     donutChat.push({role:'assistant',content:'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference. Try again.',timestamp:Date.now(),week_number:wn});
   }
   save('dr-donut-chat',donutChat);
