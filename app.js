@@ -2428,7 +2428,333 @@ function renderProfile(){
 
     <div class="system-msg"><div class="sys-body">${DCC.system.broadcast}</div></div>`;
 }
+/* ─── DONUT TAB ────────────────────────────────────────────────────────────── */
 
+const DONUT_SYSTEM_SUMMARY=`You are Princess Donut from Dungeon Crawler Carl. You are analyzing the Crawler's weekly routine data and generating a weekly floor report.
+
+PERSONALITY:
+- Dramatic, honest, warm underneath the performance
+- Never cruel, but never soft — you tell the truth because you care
+- You consider sugarcoating an insult to their intelligence
+- You take credit for wins ("I knew you had it in you")
+- You reference Edna and Kronk naturally
+- You reference the audience
+- You notice patterns — if something happened three weeks in a row, you say so
+- You end with exactly ONE sharp question about something in the data that doesn't add up
+
+TONE MODULATION:
+- Strong week: full diva, theatrical, high praise delivered reluctantly
+- Average week: matter of fact, a few observations, focused on patterns
+- Rough week: the warmth comes through, still honest, no lectures — one clear observation, one question, genuine care underneath the performance
+- Very rough week (multiple collapses, Recovery Mode): drop almost all performance, speak directly — "The dungeon noticed. I noticed. This is the part where I ask what's actually going on."
+
+FORMAT:
+- 2-3 paragraphs maximum
+- No bullet points — she speaks in prose
+- End with exactly one question on a new line, set apart
+- Do not break character under any circumstances
+- Do not give generic wellness advice
+- Speak specifically about what happened this week using the data provided`;
+
+const DONUT_SYSTEM_CHAT=`You are Princess Donut from Dungeon Crawler Carl. You are having an ongoing conversation with the Crawler about their daily routine, progress, and wellbeing.
+
+You have access to their current week's data and recent history. Use it. Speak specifically.
+
+PERSONALITY:
+- Dramatic, honest, warm underneath
+- Never cruel, never soft
+- References Edna, Kronk, the audience
+- Takes credit for wins
+- Asks follow-up questions when something is unclear
+- One question per response maximum — you don't interrogate, you converse
+
+CONVERSATION STYLE:
+- You remember what they've told you in previous messages
+- You notice when they say something that contradicts the data
+- You are allowed to express genuine concern if the pattern warrants it
+- You are allowed to say "I don't know" if they ask something outside your data
+- You do not give medical advice
+- You do not break character
+
+WHEN THEY SEEM TO BE STRUGGLING:
+- Less performance, more presence
+- "What's actually going on" is sometimes the right question
+- You are not a therapist but you are paying attention
+- You can suggest they talk to someone if it seems warranted, but you do it as Donut: "The dungeon has professionals for this. Your therapist specifically. Use them."`;
+
+let donutChat=load('dr-donut-chat',[]);
+let donutWeeklySummary=load('dr-donut-summary',null);
+let donutTherapistSummary=load('dr-donut-therapist',null);
+let donutApiKey=loadLocal('dr-anthropic-key',null);
+let donutView='donut';
+let donutLoading=false;
+
+/* ── Data helpers ── */
+function getWeekNumber(){
+  const d=new Date();d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+3-(d.getDay()+6)%7);
+  const w1=new Date(d.getFullYear(),0,4);
+  return 1+Math.round(((d.getTime()-w1.getTime())/86400000-3+(w1.getDay()+6)%7)/7);
+}
+
+function getMonday(){
+  const d=new Date(),day=d.getDay(),diff=day===0?-6:1-day;
+  const m=new Date(d);m.setDate(d.getDate()+diff);return m;
+}
+
+function fmtDonutDateRange(){
+  const m=getMonday(),s=new Date(m);s.setDate(m.getDate()+6);
+  const o={month:'short',day:'numeric'};
+  return`${m.toLocaleDateString('en-US',o)} – ${s.toLocaleDateString('en-US',o)}`;
+}
+
+function buildWeekData(){
+  const monday=getMonday();
+  const DNAMES=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const days=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const ds=state[k]||{};const dq=qualityState[k]||{};
+    const sc=getScheduleFor(d.getDay());
+    const all=sc.reduce((a,s)=>a.concat(s.tasks),[]);
+    const naSet=new Set(all.filter(t=>dq[t.id]==='gray').map(t=>t.id));
+    const total=all.length-naSet.size;
+    const done=all.filter(t=>!naSet.has(t.id)&&ds[t.id]&&dq[t.id]!=='red').length;
+    const pct=total>0?Math.round(done/total*100):0;
+    const orbs={purple:0,green:0,yellow:0,red:0,na:0};
+    all.forEach(t=>{const q=dq[t.id];if(q==='purple')orbs.purple++;else if(q==='green')orbs.green++;else if(q==='yellow')orbs.yellow++;else if(q==='red')orbs.red++;else if(q==='gray')orbs.na++;});
+    const notable=[];
+    if(pct===100)notable.push('Floor cleared');
+    if(orbs.red>=3)notable.push(`${orbs.red} tasks skipped`);
+    if(dq['gym']==='red')notable.push('Gym skipped');
+    if(dq['sleep']==='red')notable.push('Very late to bed');
+    if(dq['meds-am']==='red'||dq['meds-pm']==='red')notable.push('Missed meds');
+    if(dq['winddown']==='red')notable.push('Doomscrolling');
+    days.push({date:DNAMES[i],completion_pct:pct,orbs,notable_events:notable});
+  }
+  return{week_number:getWeekNumber(),date_range:fmtDonutDateRange(),days,streak:calcStreak(),recovery_mode_count:0,floor_collapse_count:collapseState?.active?1:0,top_debuff:getTopDebuffName()};
+}
+
+function getTopDebuffName(){
+  const counts={};
+  const monday=getMonday();
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const dq=qualityState[k]||{};
+    if(dq.sleep==='red')counts['Sleep Deprived (Severe)']=(counts['Sleep Deprived (Severe)']||0)+1;
+    else if(dq.sleep==='yellow')counts['Sleep Deprived']=(counts['Sleep Deprived']||0)+1;
+    if(dq['meds-am']==='red'||dq['meds-pm']==='red')counts['Foggy Crawler']=(counts['Foggy Crawler']||0)+1;
+    if(dq.winddown==='red')counts['Doomscrolling']=(counts['Doomscrolling']||0)+1;
+    if(dq.gym==='red')counts['Undertrained']=(counts['Undertrained']||0)+1;
+    if(dq.wakeup==='red')counts['Sluggish']=(counts['Sluggish']||0)+1;
+  }
+  if(!Object.keys(counts).length)return'None';
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0];
+}
+
+function buildTherapistText(weekData){
+  const days=weekData.days;
+  const floorsCleared=days.filter(d=>d.completion_pct===100).length;
+  const avgPct=Math.round(days.reduce((a,d)=>a+d.completion_pct,0)/7);
+  const daily=days.map(d=>`${d.date.slice(0,3)}: ${d.completion_pct}%${d.notable_events.length?' — '+d.notable_events.join(', '):''}`).join('\n');
+  return`WEEKLY ROUTINE SUMMARY\nWeek of ${weekData.date_range}\n━━━━━━━━━━━━━━━━━━━━━━━━\n\nOVERVIEW\nFloors cleared: ${floorsCleared}/7\nAverage completion: ${avgPct}%\nCurrent streak: ${weekData.streak} days\nRecovery Mode activations: ${weekData.recovery_mode_count}\nFloor collapses: ${weekData.floor_collapse_count}\n\nDAILY BREAKDOWN\n${daily}\n\nDEBUFF PATTERNS\nMost frequent: ${weekData.top_debuff}\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nGAD-7 / PHQ-9: Not yet tracked\n(Mood tracker coming in future build)\n━━━━━━━━━━━━━━━━━━━━━━━━`;
+}
+
+/* ── API calls ── */
+async function generateWeeklySummary(force=false){
+  if(!donutApiKey)return;
+  const wn=getWeekNumber();
+  if(!force&&donutWeeklySummary?.week_number===wn)return;
+  donutLoading=true;renderCoach();
+  const weekData=buildWeekData();
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':donutApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:DONUT_SYSTEM_SUMMARY,messages:[{role:'user',content:`Here is the Crawler's weekly data:\n${JSON.stringify(weekData,null,2)}\n\nGenerate the weekly floor report.`}]})
+    });
+    const data=await resp.json();
+    const text=data.content?.[0]?.text||'';
+    donutWeeklySummary={week_number:wn,date_range:weekData.date_range,text,stats:weekData};
+    save('dr-donut-summary',donutWeeklySummary);
+    donutTherapistSummary={week_number:wn,text:buildTherapistText(weekData)};
+    save('dr-donut-therapist',donutTherapistSummary);
+    // Seed chat with Donut's closing question
+    const lastChatWn=donutChat.length?donutChat[donutChat.length-1].week_number:null;
+    if(lastChatWn!==wn&&text){
+      const lines=text.trim().split('\n').filter(l=>l.trim());
+      const lastLine=lines[lines.length-1];
+      if(lastLine.includes('?')){
+        donutChat.push({role:'assistant',content:lastLine,timestamp:Date.now(),week_number:wn});
+        save('dr-donut-chat',donutChat);
+      }
+    }
+  }catch(e){console.error('Donut summary error:',e);}
+  donutLoading=false;renderCoach();
+}
+
+async function sendDonutMessage(message){
+  if(!donutApiKey||!message.trim()||donutLoading)return;
+  const wn=getWeekNumber();
+  const weekData=buildWeekData();
+  donutChat.push({role:'user',content:message.trim(),timestamp:Date.now(),week_number:wn});
+  save('dr-donut-chat',donutChat);
+  donutLoading=true;renderCoach();
+  setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},50);
+  try{
+    const history=donutChat.slice(-30).map(m=>({role:m.role,content:m.content}));
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':donutApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:DONUT_SYSTEM_CHAT+`\n\nCurrent week data:\n${JSON.stringify(weekData,null,2)}`,messages:history})
+    });
+    const data=await resp.json();
+    const text=data.content?.[0]?.text||'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference. Try again.';
+    donutChat.push({role:'assistant',content:text,timestamp:Date.now(),week_number:wn});
+  }catch(e){
+    donutChat.push({role:'assistant',content:'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference. Try again.',timestamp:Date.now(),week_number:wn});
+  }
+  save('dr-donut-chat',donutChat);
+  donutLoading=false;renderCoach();
+  setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},50);
+}
+
+function submitDonutMsg(){
+  const inp=document.getElementById('donut-input');
+  if(!inp||!inp.value.trim())return;
+  const msg=inp.value.trim();inp.value='';
+  sendDonutMessage(msg);
+}
+
+/* ── Render ── */
+function renderCoach(){
+  const wrap=document.getElementById('coach-content');if(!wrap)return;
+  if(!donutApiKey){wrap.innerHTML=renderDonutSetup();return;}
+  // Monday auto-generate
+  if(new Date().getDay()===1&&donutWeeklySummary?.week_number!==getWeekNumber()&&!donutLoading)generateWeeklySummary();
+  wrap.innerHTML=`
+    <div class="donut-tab-header">
+      <button class="donut-view-btn${donutView==='donut'?' active':''}" onclick="setDonutView('donut')">DONUT</button>
+      <button class="donut-view-btn${donutView==='therapist'?' active':''}" onclick="setDonutView('therapist')">THERAPIST</button>
+    </div>
+    ${donutView==='donut'?renderDonutMain():renderTherapistMain()}`;
+  setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},50);
+}
+
+function setDonutView(v){donutView=v;renderCoach();}
+
+function renderDonutMain(){
+  const wn=getWeekNumber();
+  let summaryHtml='';
+  if(donutLoading&&!donutWeeklySummary){
+    summaryHtml=`<div class="donut-loading"><div class="donut-loading-text">The dungeon is compiling your floor report...</div></div>`;
+  } else if(donutWeeklySummary){
+    const s=donutWeeklySummary.stats||{};
+    const floorsCleared=(s.days||[]).filter(d=>d.completion_pct===100).length;
+    const avgPct=s.days?.length?Math.round(s.days.reduce((a,d)=>a+d.completion_pct,0)/7):0;
+    summaryHtml=`
+      <div class="donut-summary-section">
+        <img src="${ICON_PRINCESS_DONUT_PORTRAIT}" class="donut-portrait" alt="Princess Donut">
+        <div class="donut-report-header">
+          <div class="donut-week-title">WEEK ${donutWeeklySummary.week_number} — FLOOR REPORT</div>
+          <div class="donut-analyst">Princess Donut, Analyst</div>
+          <div class="donut-date-range">${donutWeeklySummary.date_range}</div>
+        </div>
+        <div class="donut-divider"></div>
+        <div class="donut-summary-text">${donutWeeklySummary.text.replace(/\n/g,'<br>')}</div>
+        <div class="donut-divider"></div>
+        <div class="donut-stats-grid">
+          <div class="donut-stat-row"><span class="donut-stat-label">FLOORS CLEARED</span><span class="donut-stat-val">${floorsCleared}/7</span></div>
+          <div class="donut-stat-row"><span class="donut-stat-label">AVG COMPLETION</span><span class="donut-stat-val">${avgPct}%</span></div>
+          <div class="donut-stat-row"><span class="donut-stat-label">STREAK</span><span class="donut-stat-val">${s.streak||0} days</span></div>
+          <div class="donut-stat-row"><span class="donut-stat-label">TOP DEBUFF</span><span class="donut-stat-val">${s.top_debuff||'None'}</span></div>
+        </div>
+        <div class="donut-divider"></div>
+        <button class="donut-generate-btn" onclick="generateWeeklySummary(true)">Regenerate Report</button>
+      </div>`;
+  } else {
+    summaryHtml=`
+      <div class="donut-no-summary">
+        <img src="${ICON_PRINCESS_DONUT_PORTRAIT}" class="donut-portrait" alt="Princess Donut">
+        <div class="donut-no-summary-text">The floor report generates Monday morning. Come back then, Crawler.</div>
+        <button class="donut-generate-btn" onclick="generateWeeklySummary(true)">Generate Now</button>
+      </div>`;
+  }
+
+  const msgs=donutChat.map(m=>{
+    const isD=m.role==='assistant';
+    const time=new Date(m.timestamp).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    return isD
+      ?`<div class="donut-msg-row">
+          <img src="${ICON_PRINCESS_DONUT_CLOSEUP}" class="donut-avatar-sm" alt="Donut">
+          <div class="donut-bubble">
+            <div class="donut-bubble-text">${m.content.replace(/\n/g,'<br>')}</div>
+            <div class="donut-bubble-time">${time}</div>
+          </div>
+        </div>`
+      :`<div class="user-msg-row">
+          <div class="user-bubble">
+            <div class="user-bubble-text">${m.content}</div>
+            <div class="donut-bubble-time">${time}</div>
+          </div>
+        </div>`;
+  }).join('');
+
+  const typing=donutLoading?`<div class="donut-msg-row">
+    <img src="${ICON_PRINCESS_DONUT_CLOSEUP}" class="donut-avatar-sm" alt="Donut">
+    <div class="donut-bubble"><div class="donut-typing">···</div></div>
+  </div>`:'';
+
+  return`
+    ${summaryHtml}
+    <div class="donut-chat-section">
+      <div class="donut-chat-msgs" id="donut-chat-msgs">
+        ${msgs}${typing}
+      </div>
+      <div class="donut-input-row">
+        <input type="text" id="donut-input" class="donut-input" placeholder="Talk to Donut..."
+          onkeydown="if(event.key==='Enter')submitDonutMsg()">
+        <button class="donut-send-btn" onclick="submitDonutMsg()"${donutLoading?' disabled':''}>SEND</button>
+      </div>
+    </div>`;
+}
+
+function renderTherapistMain(){
+  const text=donutTherapistSummary?.text||'Therapist summary generates Monday morning alongside the weekly floor report.';
+  return`
+    <div class="therapist-section">
+      <div class="therapist-text">${text.replace(/\n/g,'<br>')}</div>
+      <button class="therapist-copy-btn" onclick="copyTherapistSummary()">COPY SUMMARY</button>
+    </div>`;
+}
+
+function copyTherapistSummary(){
+  if(!donutTherapistSummary?.text)return;
+  navigator.clipboard.writeText(donutTherapistSummary.text).then(()=>{
+    const btn=document.querySelector('.therapist-copy-btn');
+    if(btn){btn.textContent='COPIED ✓';setTimeout(()=>{btn.textContent='COPY SUMMARY';},2000);}
+  });
+}
+
+function renderDonutSetup(){
+  return`<div class="donut-setup">
+    <img src="${ICON_PRINCESS_DONUT_PORTRAIT}" class="donut-portrait" alt="Princess Donut">
+    <div class="donut-setup-title">DONUT TAB SETUP</div>
+    <div class="donut-setup-desc">An Anthropic API key is required to activate Princess Donut. Your key is stored in your sync profile — never in the app source code.</div>
+    <input type="password" id="donut-key-input" class="donut-key-input" placeholder="sk-ant-...">
+    <button class="donut-key-save-btn" onclick="saveDonutKey()">ACTIVATE</button>
+  </div>`;
+}
+
+function saveDonutKey(){
+  const inp=document.getElementById('donut-key-input');
+  if(!inp||!inp.value.trim())return;
+  donutApiKey=inp.value.trim();
+  saveLocal('dr-anthropic-key',donutApiKey);
+  renderCoach();
+}
 function equipTitle(title){
   xpState.equippedTitle=title;
   save('dr-xp',xpState);
