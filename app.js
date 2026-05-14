@@ -583,22 +583,9 @@ function renderBar(pct, type='hp', opts={}){
   const fill = Math.max(0, Math.min(100, pct));
   const dim  = fill <= 20;
   const mw   = opts.maxWidth || '100%';
-
-  let housingImg, fillImg;
-  switch(type){
-    case 'xp':
-    case 'wide':
-      housingImg = BAR_GOLD_HOUSING;
-      fillImg    = BAR_HERO_FILL_XP;
-      break;
-    case 'hp':
-    default:
-      housingImg = BAR_SKULL_HOUSING;
-      fillImg    = BAR_HERO_FILL_HP;
-  }
-
+  const fillImg = type==='xp'||type==='wide' ? ICON_BAR_FILL_TEAL : ICON_BAR_FILL_RED;
   return `<div class="hero-bar-wrap" style="max-width:${mw};">
-    <img class="hero-bar-housing" src="${housingImg}" alt="">
+    <img class="hero-bar-housing" src="${BAR_GOLD_HOUSING}" alt="">
     <img class="hero-bar-fill${dim?' dim':''}" src="${fillImg}"
          style="--fill:${fill}%;" alt="">
   </div>`;
@@ -2264,10 +2251,10 @@ function renderProfile(){
         Found during a hurricane. Short. Brown. Absolutely unhinged about balcony security. Barks at leaves, shadows, the concept of wind, and anything within a 40-foot radius that dares to exist. Has appointed herself dungeon perimeter guard. Has never successfully identified an actual threat. Loyalty: unquestionable. Judgment: chaotic.
       </div>
       <div class="stat-bars">
-        ${renderStatBar(loyalty, BAR_STAT_LOYALTY, 'Loyalty', 'stat-label-loyalty')}
-        ${renderStatBar(ednaFloof, BAR_STAT_FLOOF, 'Floof Level', 'stat-label-floof')}
-        ${renderStatBar(Math.min(100,morale+20), BAR_STAT_CHAOS, 'Chaos Energy', 'stat-label-chaos')}
-        ${renderStatBar(morale, BAR_STAT_MORALE, 'Morale', 'stat-label-morale')}
+        ${renderStatBar(loyalty, ICON_BAR_FILL_GOLD, 'Loyalty', 'stat-label-loyalty')}
+        ${renderStatBar(ednaFloof, ICON_BAR_FILL_PURPLE, 'Floof Level', 'stat-label-floof')}
+        ${renderStatBar(Math.min(100,morale+20), ICON_BAR_FILL_ORANGE_RED, 'Chaos Energy', 'stat-label-chaos')}
+        ${renderStatBar(morale, ICON_BAR_FILL_TEAL, 'Morale', 'stat-label-morale')}
       </div>
       <div style="margin-top:10px;font-size:10px;color:var(--hint);">
         <span style="color:var(--fire);">ORIGIN:</span> Hurricane rescue · 
@@ -2295,10 +2282,10 @@ function renderProfile(){
         Picked up by animal control. Arrived a few months ago. Classic lab energy — boundless enthusiasm, maximum affection, zero impulse control around anything edible or vaguely edible. Will absolutely eat something he shouldn't. Has already eaten something he shouldn't. Will do it again. Heart: enormous. Brain: fully committed to chaos. New to the dungeon but already essential.
       </div>
       <div class="stat-bars">
-        ${renderStatBar(loyalty, BAR_STAT_LOYALTY, 'Loyalty', 'stat-label-loyalty')}
-        ${renderStatBar(Math.min(100,Math.round((cxp.kronk||0)/50)), BAR_STAT_CHAOS, 'Chaos Energy', 'stat-label-chaos')}
-        ${renderStatBar(kronkZoomies, BAR_STAT_MORALE, 'Zoomies', 'stat-label-zoomies')}
-        ${renderStatBar(morale, BAR_STAT_MORALE, 'Morale', 'stat-label-morale')}
+        ${renderStatBar(loyalty, ICON_BAR_FILL_GOLD, 'Loyalty', 'stat-label-loyalty')}
+        ${renderStatBar(Math.min(100,Math.round((cxp.kronk||0)/50)), ICON_BAR_FILL_ORANGE_RED, 'Chaos Energy', 'stat-label-chaos')}
+        ${renderStatBar(kronkZoomies, ICON_BAR_FILL_GREEN, 'Zoomies', 'stat-label-zoomies')}
+        ${renderStatBar(morale, ICON_BAR_FILL_TEAL, 'Morale', 'stat-label-morale')}
       </div>
       <div style="margin-top:10px;font-size:10px;color:var(--hint);">
         <span style="color:var(--fire);">ORIGIN:</span> Animal control rescue · 
