@@ -970,7 +970,7 @@ body { font-family: var(--font-body); }
   object-fit: fill;
   image-rendering: pixelated;
   transition: clip-path 0.8s cubic-bezier(0.4,0,0.2,1);
-  mix-blend-mode: screen;
+  mix-blend-mode: normal;
 }
 .stat-label-loyalty { color: rgba(251,191,36,0.85); }
 .stat-label-chaos   { color: rgba(255,107,53,0.85); }
