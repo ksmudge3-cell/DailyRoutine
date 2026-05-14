@@ -256,7 +256,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -317,6 +317,9 @@ async function loadFromSupabase(){
       if(d.shopItems)shopItems=d.shopItems;
       if(d.qualityState)qualityState={...qualityState,...d.qualityState};
       if(d.customRewards)customRewards=d.customRewards;
+      if(d.donutChat)donutChat=d.donutChat;
+      if(d.donutWeeklySummary)donutWeeklySummary=d.donutWeeklySummary;
+      if(d.donutTherapistSummary)donutTherapistSummary=d.donutTherapistSummary;
       if(d.archived){archived=d.archived;if(!archived.tasks)archived.tasks=[];}
       ['state','schedule','dogTasks','dogState','groomState','prevState','notifs','wheel','wheelDone','wheelSkips','wheelPinned','inbox','shopItems','archived'].forEach(k=>saveLocal('dr-'+k.replace(/([A-Z])/g,'-$1').toLowerCase(),eval(k)));
       saveLocal('dr-rewards',rewardsState);
@@ -367,6 +370,11 @@ let gymRestSecondsLeft=0;
 let gymActiveExercise=null;
 let gymElapsedInterval=null;
 const gymInputs={weight:{},reps:{},effort:{}};
+let donutChat=load('dr-donut-chat',[]);
+let donutWeeklySummary=load('dr-donut-summary',null);
+let donutTherapistSummary=load('dr-donut-therapist',null);
+let donutApiKey=loadLocal('dr-anthropic-key',null);
+let donutView='donut',donutLoading=false;
 let currentSpinTask=null, reSpinsLeft=3;
 
 // Edit overlay state
@@ -1801,59 +1809,7 @@ let _coachSummary='', _coachFullCtx='';
 function copyCoachSummary(btn){copyCb(btn,_coachSummary);}
 function copyCoachFullCtx(btn){copyCb(btn,_coachFullCtx);}
 
-function renderCoach(){
-  const{ti,done,pending,dogDone,pct,streak,bonusCount}=getCoachCtx();
-  const doneHtml=done.length?done.map(t=>`<span class="ctx-done">✓ ${t}</span>`).join('<br>'):'<span style="color:var(--hint)">Nothing yet</span>';
-  const pendingHtml=pending.slice(0,4).map(t=>`<span class="ctx-pending">○ ${t}</span>`).join('<br>')+(pending.length>4?`<br><span style="color:var(--hint)">+${pending.length-4} more</span>`:'');
 
-  // Store in module-level vars — never embedded in HTML strings
-  _coachSummary=`Daily check-in — ${DAYS[ti]} — ${pct}% complete — ${streak} day streak\nDone: ${done.join(', ')||'nothing yet'}\nPending: ${pending.join(', ')||'all done'}\nDog care: ${dogDone.join(', ')||'none yet'}\nBonus tasks: ${bonusCount}`;
-  _coachFullCtx=getFullCtxText();
-
-  let wt=0,wd=0;
-  for(let i=0;i<7;i++){
-    const s=getScheduleFor(i),ids=s.reduce((a,sec)=>a.concat(sec.tasks.map(t=>t.id)),[]),idSet=new Set(ids);
-    wt+=ids.length;wd+=Object.entries(state[dayKey(i)]||{}).filter(([k,v])=>v&&idSet.has(k)).length;
-  }
-  const wp=wt?Math.round(wd/wt*100):0;
-  const bars=SHORT.map((d,i)=>{const p=dayPct(i),isT=i===ti;return`<div class="week-bar-wrap${isT?' today':''}"><div class="week-bar-bg"><div class="week-bar-fill" style="height:${Math.max(p,2)}%"></div></div><div class="week-bar-label">${d}</div></div>`;}).join('');
-
-  // Build quick-prompt URLs safely
-  const qpLinks=[
-    ['○ Daily check-in','checkin'],
-    ['○ Morning motivation push','morning'],
-    ['○ I\'m struggling to stay consistent','stuck'],
-    ['○ Evening reflection + tomorrow prep','evening'],
-    ['○ Which habit should I focus on first?','habit'],
-  ].map(([label,type])=>`<a class="qp-btn" href="${buildUrl(getPrompt(type))}" target="_blank">${label}</a>`).join('');
-
-  try{document.getElementById('coach-content').innerHTML=`
-    <div class="stats-grid" style="margin-bottom:16px;">
-      <div class="stat-card"><div class="s-label">Today</div><div class="s-val">${pct}<span class="s-unit">%</span></div></div>
-      <div class="stat-card"><div class="s-label">This week</div><div class="s-val">${wp}<span class="s-unit">%</span></div></div>
-      <div class="stat-card"><div class="s-label">Streak</div><div class="s-val">${streak}<span class="s-unit"> days</span></div></div>
-      <div class="stat-card"><div class="s-label">Best streak</div><div class="s-val">${calcBestStreak()}<span class="s-unit"> days</span></div></div>
-      <div class="stat-card full"><div class="s-label">Week overview</div><div class="week-bars">${bars}</div></div>
-    </div>
-    <div class="coach-card">
-      <h2>Check in</h2>
-      <div class="context-box">
-        <div class="ctx-label">${DAYS[ti]} — ${pct}% — ${streak} day streak</div>
-        ${doneHtml}<br>${pendingHtml}
-        ${dogDone.length?`<br><span class="ctx-done">🐾 ${dogDone.join(', ')}</span>`:''}
-        ${bonusCount?`<br><span style="color:var(--amber);">✨ ${bonusCount} bonus tasks done</span>`:''}
-      </div>
-      <p>Copy your check-in and paste it into this Claude project.</p>
-      <button class="coach-btn" onclick="copyCoachSummary(this)">Copy check-in summary</button>
-      <button class="coach-btn-ghost" onclick="copyCoachFullCtx(this)">Copy full app context</button>
-      <a class="coach-btn-ghost" href="https://claude.ai" target="_blank">Open Claude project ↗</a>
-    </div>
-    <div class="coach-card">
-      <h2>Quick prompts</h2>
-      <p>Open Claude with your context pre-loaded.</p>
-      <div class="quick-prompts">${qpLinks}</div>
-    </div>`;}catch(e){document.getElementById('coach-content').innerHTML=`<div style="padding:20px;color:var(--red);font-size:12px;">Coach error: ${e.message}<br><pre style="font-size:10px;margin-top:8px;white-space:pre-wrap;">${e.stack||''}</pre></div>`;console.error('renderCoach error',e);}
-}
 
 function copyCb(btn,text){
   navigator.clipboard.writeText(text).then(()=>{const o=btn.textContent;btn.textContent='Copied!';setTimeout(()=>btn.textContent=o,2000);}).catch(()=>prompt('Copy:',text));
@@ -3244,6 +3200,7 @@ async function init(){
     else if(cur==='coach')renderCoach();
     else if(cur==='coach')renderCoach();
     else if(cur==='gym')renderGym();
+    else if(cur==='coach')renderCoach();
   }
 
   if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
