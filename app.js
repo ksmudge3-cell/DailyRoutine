@@ -3189,6 +3189,9 @@ async function init(){
   const clb=document.getElementById('claim-loot-btn');
   if(clb)clb.innerHTML=pixelIcon(ICON_POTION,14)+' Claim loot ✓';
 
+  const nig=document.getElementById('nav-icon-gym');
+  if(nig)nig.src=ICON_BARBELL_BENCH;
+
   migrateDogTasks();
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkFloorCollapse();renderCollapseEvent();}});
   migrateGymIntoSchedule();
@@ -3239,6 +3242,8 @@ async function init(){
     else if(cur==='rewards')renderRewards();
     else if(cur==='profile')renderProfile();
     else if(cur==='coach')renderCoach();
+    else if(cur==='coach')renderCoach();
+    else if(cur==='gym')renderGym();
   }
 
   if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
