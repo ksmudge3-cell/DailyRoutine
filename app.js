@@ -341,6 +341,7 @@ let state=load('dr-state',{});
 let schedule=load('dr-schedule',DEFAULT_SCHEDULE);
 let dogTasks=load('dr-dog-tasks',DEFAULT_DOG_TASKS);
 let dogState=load('dr-dog-state',{});
+let groomState=load('dr-groom-state',{});
 let prevState=load('dr-prev-state',{});
 let notifs=load('dr-notifs',[]);
 let wheel=load('dr-wheel',DEFAULT_WHEEL);
