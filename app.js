@@ -3549,11 +3549,11 @@ function showRoom(name){
   stopEdnaPatrol();
   if(name==='map'){showMap();return;}
   if(!ROOMS[name])return;
-  // Add exiting class to current screen
   const prev=document.getElementById('screen-'+currentRoom);
   if(prev)prev.classList.add('room-exiting');
   setTimeout(()=>{
     if(prev)prev.classList.remove('room-exiting');
+    document.body.classList.remove('map-active');  // ← add here
     currentRoom=name;
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     const scr=document.getElementById('screen-'+name);
@@ -3583,6 +3583,7 @@ function showMap(){
     if(ms){ms.classList.add('active','map-entering');setTimeout(()=>ms.classList.remove('map-entering'),350);}
     const border=document.getElementById('room-border');
     if(border)border.innerHTML='';
+    document.body.classList.add('map-active');  // ← add this
     renderMap();
   },150);
 }

@@ -2648,29 +2648,28 @@ body { font-family: var(--font-body); }
   .map-entering { animation: none; }
 }
 
-.map-screen {
+#screen-map {
   min-height: 100dvh;
   background: #0a0a0c;
-  padding: 0 !important;      /* override .screen padding */
+  padding: 0 !important;
   overflow: visible !important;
 }
 
-/* When map is active, kill body bottom padding */
-body.map-active {
-  padding-bottom: 0;
-}
+/* Map active — full screen, no chrome */
+body.map-active #room-border       { display: none; }
+body.map-active .page-header       { display: none; }
+body.map-active .bottom-nav        { display: none; }
+body.map-active                    { padding-bottom: 0; }
 
-/* Map layout fills full screen height when in map state */
-.map-screen .map-layout {
+/* Map layout fills full viewport */
+#screen-map .map-layout {
   aspect-ratio: unset;
   width: 100%;
   height: 100dvh;
   max-height: 100dvh;
 }
 
-.room-border.hidden {
-  display: none;
-}
+
 
 #system-greeting {
   height: 72px;
