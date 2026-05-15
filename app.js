@@ -3581,7 +3581,7 @@ function renderRoomBorder(name){
   border.innerHTML=`<div class="room-border-inner">
     <div class="room-exits">${exits}</div>
     <button class="room-map-btn" onclick="showMap()">
-      <span class="room-map-icon">🗺</span>
+      <img src="${ENV_DUNGEON_MAP}" width="24" height="24" alt="Map" style="image-rendering:pixelated;">
       <span class="room-map-label">MAP</span>
     </button>
   </div>`;
