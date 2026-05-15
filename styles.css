@@ -2651,6 +2651,21 @@ body { font-family: var(--font-body); }
 .map-screen {
   min-height: 100dvh;
   background: #0a0a0c;
+  padding: 0 !important;      /* override .screen padding */
+  overflow: visible !important;
+}
+
+/* When map is active, kill body bottom padding */
+body.map-active {
+  padding-bottom: 0;
+}
+
+/* Map layout fills full screen height when in map state */
+.map-screen .map-layout {
+  aspect-ratio: unset;
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
 }
 
 .room-border.hidden {
