@@ -3584,6 +3584,22 @@ const nodes=Object.entries(ROOMS).map(([id,room])=>{
     <img src="${CHAR_KRONK_IDLE}" width="34" height="34" alt="Kronk" style="image-rendering:pixelated;">
   </div>`;
 
+const decorHtml=`
+    <img class="map-decor map-env-torch-1" src="${ENV_TORCH_1}" alt="">
+    <img class="map-decor map-env-torch-2" src="${ENV_TORCH_2}" alt="">
+    <img class="map-decor map-env-torch-3" src="${ENV_TORCH_3}" alt="">
+    <img class="map-decor map-env-torch-4" src="${ENV_TORCH_4}" alt="">
+    <img class="map-decor map-env-spiderweb-l" src="${ENV_SPIDERWEB_CORNER}" alt="">
+    <img class="map-decor map-env-spiderweb-r" src="${ENV_SPIDERWEB_CORNER}" alt="">
+    <img class="map-decor map-env-bones" src="${ENV_BONES}" alt="">
+    <img class="map-decor map-env-chest" src="${ENV_CHEST}" alt="">
+    <img class="map-decor map-env-barrel" src="${ENV_BARREL}" alt="">
+    <img class="map-decor map-env-skull" src="${ENV_SKULL}" alt="">
+    <img class="map-decor map-env-puddle" src="${ENV_PUDDLE}" alt="">
+    <img class="map-decor map-env-crack-1" src="${ENV_CRACKED_GROUND}" alt="">
+    <img class="map-decor map-env-crack-2" src="${ENV_CRACKED_GROUND}" alt="">
+    <img class="map-decor map-env-crack-3" src="${ENV_CRACKED_GROUND}" alt="">`;
+
   const streak=calcStreak();
   const pts=getPoints();
 
