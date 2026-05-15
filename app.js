@@ -3493,31 +3493,42 @@ let currentRoom=loadLocal('dr-last-screen','today')||'today';
 function showRoom(name){
   if(name==='map'){showMap();return;}
   if(!ROOMS[name])return;
-  currentRoom=name;
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  const scr=document.getElementById('screen-'+name);
-  if(scr)scr.classList.add('active');
-  saveLocal('dr-last-screen',name);
-  renderRoomBorder(name);
-  // Trigger room content renders
-  if(name==='today')renderToday();
-  else if(name==='dogs')renderDogs();
-  else if(name==='spin'){updateProjectDropdown();refreshWheel();renderAvoidance();renderTaskManager();}
-  else if(name==='inbox'){renderInbox();setTimeout(()=>{const i=document.getElementById('inbox-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addInboxItem();};},50);}
-  else if(name==='shop'){renderShop();setTimeout(()=>{const i=document.getElementById('shop-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addShopItem();};},50);}
-  else if(name==='rewards')renderRewards();
-  else if(name==='profile')renderProfile();
-  else if(name==='coach')renderCoach();
-  else if(name==='gym')renderGym();
+  // Add exiting class to current screen
+  const prev=document.getElementById('screen-'+currentRoom);
+  if(prev)prev.classList.add('room-exiting');
+  setTimeout(()=>{
+    if(prev)prev.classList.remove('room-exiting');
+    currentRoom=name;
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    const scr=document.getElementById('screen-'+name);
+    if(scr){scr.classList.add('active','room-entering');setTimeout(()=>scr.classList.remove('room-entering'),350);}
+    saveLocal('dr-last-screen',name);
+    renderRoomBorder(name);
+    if(name==='today')renderToday();
+    else if(name==='dogs')renderDogs();
+    else if(name==='spin'){updateProjectDropdown();refreshWheel();renderAvoidance();renderTaskManager();}
+    else if(name==='inbox'){renderInbox();setTimeout(()=>{const i=document.getElementById('inbox-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addInboxItem();};},50);}
+    else if(name==='shop'){renderShop();setTimeout(()=>{const i=document.getElementById('shop-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addShopItem();};},50);}
+    else if(name==='rewards')renderRewards();
+    else if(name==='profile')renderProfile();
+    else if(name==='coach')renderCoach();
+    else if(name==='gym')renderGym();
+  },150);
 }
 
 function showMap(){
-  currentRoom='map';
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  const ms=document.getElementById('screen-map');if(ms)ms.classList.add('active');
-  const border=document.getElementById('room-border');
-  if(border)border.innerHTML='';
-  renderMap();
+  const prev=document.getElementById('screen-'+currentRoom);
+  if(prev)prev.classList.add('room-exiting');
+  setTimeout(()=>{
+    if(prev)prev.classList.remove('room-exiting');
+    currentRoom='map';
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    const ms=document.getElementById('screen-map');
+    if(ms){ms.classList.add('active','map-entering');setTimeout(()=>ms.classList.remove('map-entering'),350);}
+    const border=document.getElementById('room-border');
+    if(border)border.innerHTML='';
+    renderMap();
+  },150);
 }
 
 function renderMap(){
@@ -3530,18 +3541,44 @@ function renderMap(){
   }).join('');
 
   // Room nodes
-  const nodes=Object.entries(ROOMS).map(([id,room])=>{
-    const p=MAP_POS[id];
-    const isActive=id===currentRoom;
-    return`<div class="map-room-node${isActive?' map-room-active':''}" style="left:${p.x}%;top:${p.y}%;" onclick="showRoom('${id}')">
-      <img src="${room.door()}" class="map-door-img" width="58" height="58" alt="${room.name}">
-      <div class="map-room-label">${room.label}</div>
-    </div>`;
-  }).join('');
+const nodes=Object.entries(ROOMS).map(([id,room])=>{
+  const p=MAP_POS[id];
+  const isActive=id===currentRoom;
+  
+  // State classes
+  const pct=id==='today'?dayPct(new Date().getDay()):0;
+  const isBoss=id==='spin'&&typeof bossActive!=='undefined'&&bossActive;
+  const isComplete=id==='today'&&pct===100;
+  const isRecovery=id==='today'&&isRecoveryMode();
+  const isCollapsed=id==='today'&&collapseState?.active?.applyDate===todayStr();
+  
+  let stateClass='';
+  if(isActive)stateClass+=' map-room-active';
+  if(isComplete)stateClass+=' map-room-complete';
+  if(isBoss)stateClass+=' map-room-boss';
+  if(isRecovery)stateClass+=' map-room-recovery';
+  if(isCollapsed)stateClass+=' map-room-collapsed';
+  
+  // Attention icons
+  let attention='';
+  if(id==='spin'&&isBoss)attention=`<span class="map-attention-icon">💀</span>`;
+  else if(id==='rewards'&&getPoints()>0)attention=`<span class="map-attention-icon">🪙</span>`;
+  else if(id==='dogs'&&typeof dogPct!=='undefined'&&dogPct<100)attention=`<span class="map-attention-icon">🐾</span>`;
+  else if(id==='inbox'&&inbox.length>0)attention=`<span class="map-attention-icon">📨</span>`;
+  else if(id==='today'&&countDebuffs()>=3)attention=`<span class="map-attention-icon">⚠️</span>`;
+  else if(id==='coach'&&donutWeeklySummary?.week_number===getWeekNumber())attention=`<span class="map-attention-icon">👑</span>`;
+  
+  return`<div class="map-room-node${stateClass}" style="left:${p.x}%;top:${p.y}%;" onclick="showRoom('${id}')">
+    ${attention}
+    <img src="${room.door()}" class="map-door-img" width="58" height="58" alt="${room.name}">
+    <div class="map-room-label">${room.label}</div>
+  </div>`;
+}).join('');
 
   // Companion sprites — Edna between Kennels and Floor, Kronk between Floor and War Room
-  const ednaSprite=`<div class="map-sprite map-sprite-edna" onclick="showRoom('dogs')" title="Edna">
-    <img src="${CHAR_EDNA_PATROL}" width="28" height="28" alt="Edna" style="image-rendering:pixelated;">
+  const ednaX=typeof dogPct!=='undefined'&&dogPct<100?10:22;
+  const ednaSprite=`<div class="map-sprite map-sprite-edna" style="left:${ednaX}%;top:37%;" onclick="showRoom('dogs')" title="Edna">
+  <img src="${typeof dogPct!=='undefined'&&dogPct<100?CHAR_EDNA_GUARD:CHAR_EDNA_PATROL}" width="28" height="28" alt="Edna" style="image-rendering:pixelated;">
   </div>`;
   const kronkSprite=`<div class="map-sprite map-sprite-kronk" onclick="showRoom('dogs')" title="Kronk">
     <img src="${CHAR_KRONK_IDLE}" width="34" height="34" alt="Kronk" style="image-rendering:pixelated;">
@@ -3559,6 +3596,7 @@ function renderMap(){
       <svg class="map-svg" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
         ${lines}
       </svg>
+      ${decorHtml}
       ${nodes}
       ${ednaSprite}
       ${kronkSprite}

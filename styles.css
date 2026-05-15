@@ -1782,6 +1782,13 @@ body { font-family: var(--font-body); }
 ═══════════════════════════════════════════════════════════ */
 
 
+/* ═══════════════════════════════════════════════════════════
+   DCC MAP NAVIGATION SYSTEM
+   Full spec implementation — map state, room borders,
+   room headers, states, transitions, decorations
+═══════════════════════════════════════════════════════════ */
+
+
 /* ─────────────────────────────────────────────────────────
    MAP STATE
 ───────────────────────────────────────────────────────── */
@@ -2045,6 +2052,17 @@ body { font-family: var(--font-body); }
   image-rendering: pixelated;
   pointer-events: none;
   z-index: 5;
+}
+
+.map-decor {
+  position: absolute;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+@keyframes puddle-shimmer {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.8; }
 }
 
 /* Wall torches — flicker animation */
