@@ -2335,7 +2335,7 @@ body { font-family: var(--font-body); }
   /* Stone wall texture — seamless repeat */
   background-image: var(--tex-stone-wall, none);
   background-repeat: repeat;
-  background-size: 256px auto;
+  background-size: 128px auto;
   background-color: #0d0d0f; /* fallback if texture not loaded */
   border-top: 2px solid rgba(212,154,0,0.3);
   /* Subtle inner shadow to deepen the stone feel */
