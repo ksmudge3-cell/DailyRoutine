@@ -3333,7 +3333,7 @@ function confirmEndGym(){
   const exercises=template.exercises||[];
   const doneCount=exercises.filter(ex=>gymSession.exercises[ex.id]?.done).length;
   const totalSets=exercises.reduce((a,ex)=>a+(gymSession.exercises[ex.id]?.sets?.length||0),0);
-  const duration=Math.round((Date.now()-gymSession.startTime)/60000);
+  const duration=Math.min(180,Math.round((Date.now()-gymSession.startTime)/60000));
   const isFull=doneCount===exercises.length;
   const hasPR=exercises.some(ex=>(gymSession.exercises[ex.id]?.sets||[]).some(s=>s.weight>=(gymHistory.prs[ex.id]||Infinity)&&gymHistory.prs[ex.id]>0));
   const orbLevel=hasPR?'purple':doneCount>0?'green':'yellow';
@@ -3376,12 +3376,12 @@ function renderGymComplete(wrap){
       <div class="gym-complete-stats">
         <div class="gym-stat"><span class="gym-stat-label">SESSION</span><span class="gym-stat-val">${gymSession.templateName}</span></div>
         <div class="gym-stat"><span class="gym-stat-label">DURATION</span><span class="gym-stat-val">${gymSession.duration} min</span></div>
-        <div class="gym-stat"><span class="gym-stat-label">SETS</span><span class="gym-stat-val">${gymSession.totalSets}</span></div>
+        <div class="gym-stat"><span class="gym-stat-label">EXERCISES</span><span class="gym-stat-val">${gymSession.doneCount}/${gymSession.totalEx} · ${gymSession.totalSets} sets</span></div>
         <div class="gym-stat"><span class="gym-stat-label">EXERCISES</span><span class="gym-stat-val">${gymSession.doneCount}/${gymSession.totalEx}</span></div>
       </div>
       ${gymSession.hasPR?`<div class="gym-pr-complete">⭐ Personal Record Today!</div>`:''}
-      <div class="gym-complete-buff">BUFF APPLIED: Combat Ready</div>
-      <div class="gym-complete-orb">Gym orb set: ${orbLabels[gymSession.orbLevel]||gymSession.orbLevel}</div>
+      <div class="gym-complete-buff"><span class="gym-stat-label">BUFF</span><span class="gym-stat-val">Combat Ready</span></div>
+      <div class="gym-complete-orb"><span class="gym-stat-label">GYM ORB</span><span class="gym-stat-val">${orbLabels[gymSession.orbLevel]||gymSession.orbLevel}</span></div>
       <div class="gym-complete-divider"></div>
       <div class="donut-msg-wrap"><span class="donut-signature">Princess Donut:</span><p class="donut-msg">${DCC.getRandom(donutLines)}</p></div>
       <button class="gym-done-btn" onclick="clearGymSession()">DONE</button>
@@ -3580,7 +3580,7 @@ const nodes=Object.entries(ROOMS).map(([id,room])=>{
   const ednaSprite=`<div class="map-sprite map-sprite-edna" style="left:${ednaX}%;top:37%;" onclick="showRoom('dogs')" title="Edna">
   <img src="${typeof dogPct!=='undefined'&&dogPct<100?CHAR_EDNA_GUARD:CHAR_EDNA_PATROL}" width="28" height="28" alt="Edna" style="image-rendering:pixelated;">
   </div>`;
-  const kronkSprite=`<div class="map-sprite map-sprite-kronk" onclick="showRoom('dogs')" title="Kronk">
+  const kronkSprite=`<div class="map-sprite map-sprite-kronk" style="left:30%;top:52%;" onclick="showRoom('dogs')" title="Kronk">
     <img src="${CHAR_KRONK_IDLE}" width="34" height="34" alt="Kronk" style="image-rendering:pixelated;">
   </div>`;
 
