@@ -3365,7 +3365,6 @@ function confirmEndGym(){
 }
 
 function renderGymComplete(wrap){
-  const orbLabels={purple:'Purple — PR Day 🟣',green:'Green — Full Session 🟢',yellow:'Yellow — Modified 🟡'};
   const donutLines=gymSession.isFull
     ?['Full session. The dungeon respects this.','Every machine. Every set. Combat Ready buff active. Well done, Crawler.','Complete. All exercises logged. The audience found it inspiring. I found it adequate. Both are true.']
     :['Modified session. Something is better than nothing. The dungeon logs the effort.','Partial completion. The machines were occupied. The dungeon understands gym etiquette.'];
@@ -3374,14 +3373,28 @@ function renderGymComplete(wrap){
       <div class="gym-complete-title">${gymSession.isFull?'FLOOR CLEARED: GYM':'SESSION COMPLETE: PARTIAL'}</div>
       <div class="gym-complete-divider"></div>
       <div class="gym-complete-stats">
-        <div class="gym-stat"><span class="gym-stat-label">SESSION</span><span class="gym-stat-val">${gymSession.templateName}</span></div>
-        <div class="gym-stat"><span class="gym-stat-label">DURATION</span><span class="gym-stat-val">${gymSession.duration} min</span></div>
-        <div class="gym-stat"><span class="gym-stat-label">EXERCISES</span><span class="gym-stat-val">${gymSession.doneCount}/${gymSession.totalEx} · ${gymSession.totalSets} sets</span></div>
-        <div class="gym-stat"><span class="gym-stat-label">EXERCISES</span><span class="gym-stat-val">${gymSession.doneCount}/${gymSession.totalEx}</span></div>
+        <div class="gym-stat">
+          <div class="gym-stat-label">Session</div>
+          <div class="gym-stat-val">${gymSession.templateName}</div>
+        </div>
+        <div class="gym-stat">
+          <div class="gym-stat-label">Duration</div>
+          <div class="gym-stat-val">${gymSession.duration} min</div>
+        </div>
+        <div class="gym-stat">
+          <div class="gym-stat-label">Exercises</div>
+          <div class="gym-stat-val">${gymSession.doneCount}/${gymSession.totalEx}</div>
+        </div>
+        <div class="gym-stat">
+          <div class="gym-stat-label">Sets</div>
+          <div class="gym-stat-val">${gymSession.totalSets}</div>
+        </div>
       </div>
       ${gymSession.hasPR?`<div class="gym-pr-complete">⭐ Personal Record Today!</div>`:''}
-      <div class="gym-complete-buff"><span class="gym-stat-label">BUFF</span><span class="gym-stat-val">Combat Ready</span></div>
-      <div class="gym-complete-orb"><span class="gym-stat-label">GYM ORB</span><span class="gym-stat-val">${orbLabels[gymSession.orbLevel]||gymSession.orbLevel}</span></div>
+      <div class="gym-complete-buff">
+        <div class="gym-complete-orb gym-orb-${gymSession.orbLevel}"></div>
+        Combat Ready
+      </div>
       <div class="gym-complete-divider"></div>
       <div class="donut-msg-wrap"><span class="donut-signature">Princess Donut:</span><p class="donut-msg">${DCC.getRandom(donutLines)}</p></div>
       <button class="gym-done-btn" onclick="clearGymSession()">DONE</button>
@@ -3431,7 +3444,7 @@ function endGymCardio(){
   const distEl=document.getElementById('gym-cd');
   gymSession.cardio.distance=distEl?parseFloat(distEl.value)||0:0;
   clearInterval(gymElapsedInterval);clearInterval(gymRestInterval);
-  const duration=Math.round((Date.now()-gymSession.startTime)/60000);
+  const duration=Math.min(180,Math.round((Date.now()-gymSession.startTime)/60000));
   const todayIdx=new Date().getDay();const k=dayKey(todayIdx);
   if(!qualityState[k])qualityState[k]={};qualityState[k]['gym']='green';
   if(!state[k])state[k]={};state[k]['gym']=true;state[k]['gym_ts']=Date.now();
