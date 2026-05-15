@@ -1,5 +1,5 @@
 :root {
-  --bg: #111113; --surface: #18181e; --surface2: #1a1a22;
+  --bg: #0a0a0c; --surface: #18181e; --surface2: #1a1a22;
   --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
   --text: #e8e4dc; --muted: #807c74; --hint: #4a4644;
 --teal:   #007A7A;  --teal-dim:   rgba(0,122,122,0.12);
@@ -1855,12 +1855,17 @@ body { font-family: var(--font-body); }
   display: block;
   width: 88px;
   height: auto;
+  mask-image: radial-gradient(ellipse 78% 78% at 50% 50%, black 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 78% 78% at 50% 50%, black 40%, transparent 100%);
 }
 
-/* Donut's Chamber — grand, slightly larger */
 .map-room-donut .map-door-img {
   width: 108px;
+  mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, black 35%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, black 35%, transparent 100%);
 }
+/* Donut's Chamber — grand, slightly larger */
+
 
 .map-room-label {
   font-family: var(--font-title);
@@ -1984,6 +1989,12 @@ body { font-family: var(--font-body); }
 }
 .map-sprite:active { opacity: 0.85; }
 
+.map-sprite-edna {
+  width: 80px;
+}
+.map-sprite-kronk {
+  width: 90px;
+}
 /* Edna — patrols Kennels ↔ Floor corridor */
 .map-sprite-edna {
   left: 23%;
