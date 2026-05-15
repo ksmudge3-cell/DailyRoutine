@@ -3694,7 +3694,7 @@ function renderMap(){
       style="image-rendering:pixelated;">
   </div>`;
 
-  wrap.innerHTML=`
+ wrap.innerHTML=`
     <div class="map-header">
       <div class="map-title">⚔ DUNGEON CRAWLER</div>
       <div class="map-subtitle">DAILY ROUTINE</div>
@@ -3709,10 +3709,9 @@ function renderMap(){
     <div class="map-footer">
       <span class="map-footer-text">FLOOR ${level} · STREAK ${streak} DAYS · 🪙 ${pts}</span>
     </div>`;
+
+  if(!ednaAtDoor) startEdnaPatrol();
 }
-
-if(!ednaAtDoor) startEdnaPatrol();
-
 // Backward compat — anything still calling showScreen() just routes to showRoom()
 function showScreen(name,btn){showRoom(name);}
 
