@@ -3564,7 +3564,7 @@ const nodes=Object.entries(ROOMS).map(([id,room])=>{
   if(id==='spin'&&isBoss)attention=`<span class="map-attention-icon">${pixelIcon(ICON_SKULL,14)}</span>`;
 else if(id==='rewards'&&getPoints()>0)attention=`<span class="map-attention-icon">${pixelIcon(ICON_COINS_STACK,14)}</span>`;
 else if(id==='dogs'&&typeof dogPct!=='undefined'&&dogPct<100)attention=`<span class="map-attention-icon">${pixelIcon(ICON_PAW,14)}</span>`;
-  else if(id==='inbox'&&inbox.length>0)attention=`<span class="map-attention-icon">📨</span>`;
+  else if(id==='inbox'&&inbox.length>0)attention=`<span class="map-attention-icon">${pixelIcon(COMM_BRACELET_PX,14)}</span>`;
   else if(id==='today'&&countDebuffs()>=3)attention=`<span class="map-attention-icon">${pixelIcon(ICON_WARNING,14)}</span>`;
 else if(id==='coach'&&donutWeeklySummary?.week_number===getWeekNumber())attention=`<span class="map-attention-icon">${pixelIcon(ICON_CROWN,14)}</span>`;
   
