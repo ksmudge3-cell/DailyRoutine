@@ -1990,10 +1990,10 @@ body { font-family: var(--font-body); }
 .map-sprite:active { opacity: 0.85; }
 
 .map-sprite-edna {
-  width: 80px;
+  width: 100px;
 }
 .map-sprite-kronk {
-  width: 90px;
+  width: 110px;
 }
 /* Edna — patrols Kennels ↔ Floor corridor */
 .map-sprite-edna {
