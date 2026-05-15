@@ -3499,6 +3499,9 @@ const SEALED_ROOMS=[
   {id:'mess-hall',       label:'The Mess Hall',       x:78, y:18},
 ];
 
+let ednaPatrolInterval=null;
+let ednaPatrolLeft=57;
+let ednaPatrolDir=-1; // -1 = toward Floor, 1 = toward Kennels
 let currentRoom=loadLocal('dr-last-screen','today')||'today';
 
 function showSealedRoom(){
@@ -3533,6 +3536,7 @@ function showSealedRoom(){
 }
 
 function showRoom(name){
+  stopEdnaPatrol();
   if(name==='map'){showMap();return;}
   if(!ROOMS[name])return;
   // Add exiting class to current screen
@@ -3604,6 +3608,30 @@ function renderRoomBorder(name){
       <span class="room-map-label">MAP</span>
     </button>
   </div>`;
+}
+
+function stopEdnaPatrol(){
+  if(ednaPatrolInterval){clearInterval(ednaPatrolInterval);ednaPatrolInterval=null;}
+}
+
+function startEdnaPatrol(){
+  stopEdnaPatrol();
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const MIN=MAP_POS.today.x; // 42
+  const MAX=MAP_POS.dogs.x;  // 72
+  const SPEED=(MAX-MIN)/80;  // ~8s round trip at 50ms ticks
+  ednaPatrolLeft=57;
+  ednaPatrolDir=-1;
+
+  ednaPatrolInterval=setInterval(()=>{
+    const el=document.querySelector('.map-sprite-edna');
+    if(!el){stopEdnaPatrol();return;}
+    ednaPatrolLeft+=ednaPatrolDir*SPEED;
+    if(ednaPatrolLeft<=MIN){ednaPatrolLeft=MIN;ednaPatrolDir=1;}
+    else if(ednaPatrolLeft>=MAX){ednaPatrolLeft=MAX;ednaPatrolDir=-1;}
+    el.style.left=ednaPatrolLeft+'%';
+    el.style.transform=`translate(-50%, -50%) rotate(${ednaPatrolDir===1?90:-90}deg)`;
+  },50);
 }
 
 function renderMap(){
@@ -3683,6 +3711,7 @@ function renderMap(){
     </div>`;
 }
 
+if(!ednaAtDoor) startEdnaPatrol();
 
 // Backward compat — anything still calling showScreen() just routes to showRoom()
 function showScreen(name,btn){showRoom(name);}

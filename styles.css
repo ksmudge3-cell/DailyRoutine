@@ -2043,31 +2043,10 @@ body { font-family: var(--font-body); }
 }
 
 
-/* Edna patrol animation */
-@keyframes edna-patrol {
-  0%   { left: 23%; }
-  45%  { left: 23%; }
-  50%  { left: 23%; }  /* pause at Floor */
-  55%  { left: 23%; }
-  100% { left: 23%; }  /* JS drives position changes; CSS handles sway */
-}
 
-/* Subtle sway while moving */
-@keyframes sprite-sway {
-  0%, 100% { transform: translate(-50%, -50%) rotate(-1deg); }
-  50%       { transform: translate(-50%, -50%) rotate(1deg); }
-}
-.map-sprite-edna {
-  animation: sprite-sway 1.2s ease-in-out infinite;
-}
-.map-sprite-kronk {
-  animation: sprite-sway 1.8s ease-in-out infinite;
-}
+/* JS owns all movement and rotation.
+   CSS only provides base centering — JS always prepends translate(-50%,-50%) to any rotation it sets. */
 
-@media (prefers-reduced-motion: reduce) {
-  .map-sprite-edna,
-  .map-sprite-kronk { animation: none; }
-}
 
 
 /* ─────────────────────────────────────────────────────────
@@ -2260,18 +2239,8 @@ body { font-family: var(--font-body); }
 }
 
 /* Edna patrol — slow 8s loop translation */
-@keyframes edna-patrol-move {
-  0%   { left: 23%; transform: translate(-50%, -50%) rotate(90deg); }
-  40%  { left: 32%; transform: translate(-50%, -50%) rotate(90deg); }
-  50%  { left: 32%; transform: translate(-50%, -50%) rotate(90deg); }
-  51%  { left: 32%; transform: translate(-50%, -50%) rotate(270deg); }
-  90%  { left: 23%; transform: translate(-50%, -50%) rotate(270deg); }
-  99%  { left: 23%; transform: translate(-50%, -50%) rotate(270deg); }
-  100% { left: 23%; transform: translate(-50%, -50%) rotate(90deg); }
-}
-.map-sprite-patrol {
-  animation: edna-patrol-move 8s ease-in-out infinite;
-}
+
+
 
 /* Room state classes on tap zones */
 
@@ -2340,7 +2309,6 @@ body { font-family: var(--font-body); }
 
 @media (prefers-reduced-motion: reduce) {
   .map-attn-pulse      { animation: none; }
-  .map-sprite-patrol   { animation: none; }
   .map-room-active     { animation: none; box-shadow: 0 0 0 2px rgba(212,154,0,0.5); }
   .map-room-boss       { animation: none; box-shadow: 0 0 0 2px rgba(161,13,13,0.6); }
   .room-exit-attn-dot  { animation: none; }
@@ -2367,7 +2335,7 @@ body { font-family: var(--font-body); }
   /* Stone wall texture — seamless repeat */
   background-image: var(--tex-stone-wall, none);
   background-repeat: repeat;
-  background-size: 128px auto;
+  background-size: 256px auto;
   background-color: #0d0d0f; /* fallback if texture not loaded */
   border-top: 2px solid rgba(212,154,0,0.3);
   /* Subtle inner shadow to deepen the stone feel */
