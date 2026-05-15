@@ -2446,11 +2446,13 @@ body { font-family: var(--font-body); }
 }
 .room-map-btn:active { opacity: 0.65; }
 .room-map-icon {
-  font-size: 42px;
-  line-height: 1;
+  width: 52px;
+  height: auto;
+  image-rendering: pixelated;
+  display: block;
   position: relative;
-  top: -14px;
-  margin-bottom: -14px;
+  top: -20px;
+  margin-bottom: -20px;
 }
 .room-map-label {
   font-family: var(--font-hotdog);
@@ -2644,4 +2646,13 @@ body { font-family: var(--font-body); }
   .room-entering,
   .room-exiting,
   .map-entering { animation: none; }
+}
+
+.map-screen {
+  min-height: 100dvh;
+  background: #0a0a0c;
+}
+
+.room-border.hidden {
+  display: none;
 }
