@@ -2276,8 +2276,8 @@ function renderProfile(){
   const dogPct=allDT.length?Math.round(allDT.filter(t=>dogData[t.id]).length/allDT.length*100):0;
   const ednaM=dogPct===100?'Edna has secured the perimeter. All threats neutralized. Probably.':dogPct>=50?'Edna is monitoring the balcony situation. It is ongoing.':'Edna has filed a noise complaint with the dungeon.';
   const kronkM=dogPct===100?'Kronk is vibrating with excitement and has not eaten anything suspicious today.':dogPct>=50?'Kronk has installed himself on your feet. He is helping.':'Kronk is staring at you with his whole face. His tail is still wagging.';
-  const ednaFace=dogPct===100?CHAR_EDNA_HAPPY:dogPct>=50?CHAR_EDNA_GUARD:CHAR_EDNA_SIDE_EYE;
-  const kronkFace=dogPct===100?CHAR_KRONK_EXCITED:dogPct>=50?CHAR_KRONK_HAPPY:CHAR_KRONK_FOOD;
+  const ednaFace=dogPct===100?CHAR_FACE_EDNA_HAPPY:dogPct>=50?CHAR_FACE_EDNA_GUARD:CHAR_FACE_EDNA_SIDE_EYE;
+  const kronkFace=dogPct===100?CHAR_FACE_KRONK_EXCITED:dogPct>=50?CHAR_CAFE_KRONK_HAPPY:CHAR_FACE_KRONK_FOOD;
 
   // Stat bars: Loyalty tracks streak, Chaos/Morale track dog care, Zoomies tracks weekend activity
   const loyalty=Math.min(100,streak*10);
