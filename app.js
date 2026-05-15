@@ -2510,7 +2510,8 @@ function buildWeekData(){
   const monday=getMonday();
   const DNAMES=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   const days=[];
-  for(let i=0;i<7;i++){
+  const todayDowOffset=(new Date().getDay()+6)%7;
+  for(let i=0;i<=todayDowOffset;i++){
     const d=new Date(monday);d.setDate(monday.getDate()+i);
     const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     const ds=state[k]||{};const dq=qualityState[k]||{};
