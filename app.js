@@ -1580,9 +1580,9 @@ function openPhotoModal(companion){
   document.getElementById('photo-modal-title').textContent=name+' — Choose Portrait';
   document.getElementById('sprite-modal-type').textContent=name+' — Choose Portrait';
   const sprites=companion==='edna'
-    ?[{src:CHAR_EDNA_HAPPY,label:'Happy'},{src:CHAR_EDNA_GUARD,label:'Guard Mode'},{src:CHAR_EDNA_CHAOS,label:'Chaos Mode'},{src:CHAR_EDNA_SIDE_EYE,label:'Side Eye'},{src:CHAR_EDNA_SLEEPY,label:'Sleepy'},{src:CHAR_EDNA_ZOOMIES,label:'Zoomies'},
+    ?[{src:CHAR_FACE_EDNA_HAPPY,label:'Happy'},{src:CHAR_FACE_EDNA_GUARD,label:'Guard Mode'},{src:CHAR_FACE_EDNA_CHAOS,label:'Chaos Mode'},{src:CHAR_FACE_EDNA_SIDE_EYE,label:'Side Eye'},{src:CHAR_FACE_EDNA_SLEEPY,label:'Sleepy'},{src:CHAR_FACE_EDNA_ZOOMIES,label:'Zoomies'},
       {src:CHAR_EDNA_BARK,label:'Bark'},{src:CHAR_EDNA_IDLE2,label:'Idle'},{src:CHAR_EDNA_PATROL,label:'Patrol'},{src:CHAR_EDNA_SHIELD,label:'Shield Up'},{src:CHAR_EDNA_SIT,label:'Sit'},{src:CHAR_EDNA_ZOOMIES2,label:'Zoomies 2'}]
-    :[{src:CHAR_KRONK_HAPPY,label:'Happy'},{src:CHAR_KRONK_EXCITED,label:'Excited'},{src:CHAR_KRONK_CHAOS,label:'Chaos Mode'},{src:CHAR_KRONK_FOOD,label:'Food Detected'},{src:CHAR_KRONK_GUILTY,label:'Guilty'},{src:CHAR_KRONK_SLEEPY,label:'Sleepy'},
+    :[{src:CHAR_FACE_KRONK_HAPPY,label:'Happy'},{src:CHAR_FACE_KRONK_EXCITED,label:'Excited'},{src:CHAR_FACE_KRONK_CHAOS,label:'Chaos Mode'},{src:CHAR_FACE_KRONK_FOOD,label:'Food Detected'},{src:CHAR_FACE_KRONK_GUILTY,label:'Guilty'},{src:CHAR_FACE_KRONK_SLEEPY,label:'Sleepy'},
       {src:CHAR_KRONK_BEG,label:'Beg'},{src:CHAR_KRONK_CARRY,label:'Carry All'},{src:CHAR_KRONK_IDLE2,label:'Idle'},{src:CHAR_KRONK_PLAY_BOW,label:'Play Bow'},{src:CHAR_KRONK_SNIFF,label:'Snoot Sniff'},{src:CHAR_KRONK_WIGGLE,label:'Wiggle'}];
   const current=companionPhotos[companion]||'';
   document.getElementById('sprite-grid').innerHTML=sprites.map(s=>`
