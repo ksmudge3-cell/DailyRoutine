@@ -2329,10 +2329,10 @@ body { font-family: var(--font-body); }
   bottom: 0;
   left: 0;
   right: 0;
-  height: 80px;
+  height: 56px;
   z-index: 100;
   padding-bottom: env(safe-area-inset-bottom);
-  overflow: visible; /* doors arch above the border */
+  overflow: visible;
   background-image: var(--tex-stone-wall, none);
   background-repeat: repeat;
   background-size: 64px auto;
@@ -2379,7 +2379,7 @@ body { font-family: var(--font-body); }
 .room-exit-btn:active { opacity: 0.6; transform: scale(0.95); }
 .room-exit-btn:hover { background: rgba(212,154,0,0.05); }
 
-/* Door thumbnail — lifts 24px above the border top */
+/* Door thumbnail — 1/3 of door height above the border */
 .room-exit-door {
   width: 56px;
   height: auto;
@@ -2388,8 +2388,8 @@ body { font-family: var(--font-body); }
   filter: saturate(0.65);
   transition: opacity 0.15s, filter 0.15s;
   position: relative;
-  top: -24px;
-  margin-bottom: -24px; /* pull label back up so gap isn't huge */
+  top: -18px;
+  margin-bottom: -18px;
 }
 .room-exit-btn:hover .room-exit-door,
 .room-exit-btn:focus .room-exit-door {
