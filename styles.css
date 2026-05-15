@@ -1862,6 +1862,17 @@ body { font-family: var(--font-body); }
    ROOM NODES
 ───────────────────────────────────────────────────────── */
 
+.map-room-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.15s;
+  z-index: 10;
+}
+
 .map-room-node .map-attention-icon {
   position: absolute;
   top: -10px;
