@@ -2196,7 +2196,162 @@ body { font-family: var(--font-body); }
 
 
 /* ─────────────────────────────────────────────────────────
+   MAP — IMAGE, TAP ZONES, STATES, PATROL
+───────────────────────────────────────────────────────── */
+
+/* Full-bleed map image inside .map-layout */
+.map-bg-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Tap zone — invisible, ~60×60px, centered on left/top */
+.map-tap-zone {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  border-radius: 8px;
+  -webkit-tap-highlight-color: transparent;
+  /* Debug: uncomment to visualise zones */
+  /* background: rgba(255,0,0,0.2); */
+}
+.map-tap-zone:active {
+  background: rgba(212,154,0,0.08);
+}
+
+/* Sealed tap zone — no active state, cursor default */
+.map-tap-sealed {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  border-radius: 8px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Attention icon floating above tap zone */
+.map-attn-icon {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 16px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 20;
+  filter: drop-shadow(0 0 4px rgba(0,0,0,0.9));
+}
+
+/* Attention pulse animation */
+@keyframes map-attn-pulse {
+  0%, 100% { opacity: 1;   transform: translateX(-50%) scale(1); }
+  50%       { opacity: 0.6; transform: translateX(-50%) scale(0.85); }
+}
+.map-attn-pulse {
+  animation: map-attn-pulse 1.8s ease-in-out infinite;
+}
+
+/* Edna patrol — slow 8s loop translation */
+@keyframes edna-patrol-move {
+  0%   { left: 23%; }
+  40%  { left: 32%; }
+  50%  { left: 32%; } /* pause at Floor */
+  90%  { left: 23%; }
+  100% { left: 23%; } /* pause at Kennels */
+}
+.map-sprite-patrol {
+  animation: edna-patrol-move 8s ease-in-out infinite;
+}
+
+/* Room state classes on tap zones */
+
+/* Active — gold ring pulse */
+@keyframes tap-zone-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(212,154,0,0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(212,154,0,0.15); }
+}
+.map-room-active {
+  animation: tap-zone-pulse 2.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* Complete — subtle green tint */
+.map-room-complete {
+  background: rgba(184,217,38,0.06);
+}
+
+/* Boss — red tint pulse */
+@keyframes tap-zone-boss {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(161,13,13,0.6); }
+  50%       { box-shadow: 0 0 0 6px rgba(161,13,13,0.15); }
+}
+.map-room-boss {
+  animation: tap-zone-boss 1.6s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* Recovery — blue tint */
+.map-room-recovery {
+  background: rgba(0,77,181,0.1);
+  box-shadow: 0 0 0 2px rgba(0,77,181,0.3);
+}
+
+/* Collapsed — red tint, no pulse */
+.map-room-collapsed {
+  background: rgba(161,13,13,0.12);
+  box-shadow: 0 0 0 2px rgba(161,13,13,0.4);
+}
+
+/* ── Nav border exit thumb wrapper ───────────────────────── */
+.room-exit-thumb-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Attention dot on nav border exit */
+@keyframes exit-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.8); }
+}
+.room-exit-attn-dot {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber);
+  border: 1.5px solid #0d0d0f;
+  pointer-events: none;
+  animation: exit-dot-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-attn-pulse      { animation: none; }
+  .map-sprite-patrol   { animation: none; }
+  .map-room-active     { animation: none; box-shadow: 0 0 0 2px rgba(212,154,0,0.5); }
+  .map-room-boss       { animation: none; box-shadow: 0 0 0 2px rgba(161,13,13,0.6); }
+  .room-exit-attn-dot  { animation: none; }
+}
+
+
+/* ─────────────────────────────────────────────────────────
    BOTTOM NAVIGATION BORDER (in-room)
+───────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────
+   STONE NAVIGATION BORDER
+   Replaces tab bar. Never shown on map state.
 ───────────────────────────────────────────────────────── */
 
 .room-border {
@@ -2204,75 +2359,104 @@ body { font-family: var(--font-body); }
   bottom: 0;
   left: 0;
   right: 0;
-  background: var(--surface2);
-  border-top: 1.5px solid rgba(212,154,0,0.3);
+  height: 80px;
   z-index: 100;
   padding-bottom: env(safe-area-inset-bottom);
+  /* Stone wall texture — seamless repeat */
+  background-image: var(--tex-stone-wall, none);
+  background-repeat: repeat;
+  background-size: auto;
+  background-color: #0d0d0f; /* fallback if texture not loaded */
+  border-top: 2px solid rgba(212,154,0,0.3);
+  /* Subtle inner shadow to deepen the stone feel */
+  box-shadow: inset 0 4px 12px rgba(0,0,0,0.6), 0 -1px 0 rgba(212,154,0,0.08);
 }
+
+/* JS sets --tex-stone-wall on :root when asset loads:
+   document.documentElement.style.setProperty('--tex-stone-wall', `url(${TEX_STONE_WALL})`); */
+
 .room-border-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
-  gap: 8px;
+  padding: 6px 16px 4px;
+  height: 100%;
+  gap: 4px;
 }
 
-/* Room exit buttons */
+/* ── Room exit buttons ───────────────────────────────────── */
 .room-exits {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
   flex: 1;
 }
+
 .room-exit-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 4px 6px;
   transition: opacity 0.15s;
   position: relative;
+  /* Stone alcove effect */
+  border-radius: 4px;
 }
-.room-exit-btn:active { opacity: 0.65; }
+.room-exit-btn:active { opacity: 0.6; transform: scale(0.95); }
+.room-exit-btn:hover { background: rgba(212,154,0,0.05); }
 
-/* Exit door thumbnail */
+/* Door thumbnail */
 .room-exit-door {
   width: 48px;
   height: auto;
   image-rendering: pixelated;
-  opacity: 0.72;
+  opacity: 0.7;
+  filter: saturate(0.6);
   transition: opacity 0.15s, filter 0.15s;
 }
 .room-exit-btn:hover .room-exit-door,
-.room-exit-btn:focus .room-exit-door { opacity: 1; }
+.room-exit-btn:focus .room-exit-door {
+  opacity: 1;
+  filter: saturate(1);
+}
 
+/* Room name label */
 .room-exit-label {
   font-family: var(--font-hotdog);
   font-size: 5px;
-  color: var(--muted);
+  color: rgba(0,122,122,0.6); /* teal #007A7A at 60% */
   letter-spacing: 0.08em;
   text-transform: uppercase;
   text-align: center;
   white-space: nowrap;
+  max-width: 56px;
+  overflow: hidden;
+  text-overflow: clip;
 }
 
-/* Attention dot on exit thumbnail */
+/* ── Attention dot ───────────────────────────────────────── */
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(0.85); }
+}
 .room-exit-dot {
   position: absolute;
   top: 2px;
-  right: 2px;
+  right: 4px;
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--red);
-  border: 1.5px solid var(--bg);
+  background: var(--amber);
+  border: 1.5px solid #0d0d0f;
   pointer-events: none;
+  animation: dot-pulse 1.6s ease-in-out infinite;
 }
 
-/* MAP button */
+/* ── MAP button ──────────────────────────────────────────── */
 .room-map-btn {
   display: flex;
   flex-direction: column;
@@ -2281,18 +2465,123 @@ body { font-family: var(--font-body); }
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--amber);
   padding: 4px 8px;
   transition: opacity 0.15s;
   flex-shrink: 0;
+  border-left: 0.5px solid rgba(212,154,0,0.15);
+  margin-left: 4px;
 }
 .room-map-btn:active { opacity: 0.65; }
-.room-map-icon { font-size: 20px; line-height: 1; }
+.room-map-icon { font-size: 22px; line-height: 1; }
 .room-map-label {
   font-family: var(--font-hotdog);
   font-size: 5px;
-  letter-spacing: 0.08em;
+  color: var(--gold);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+/* ── Sealed room modal ───────────────────────────────────── */
+.sealed-room-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(4px);
+}
+.sealed-room-card {
+  background: var(--surface);
+  border: 0.5px solid rgba(212,154,0,0.2);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 360px;
+  position: relative;
+  text-align: center;
+}
+.sealed-room-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  z-index: 2;
+  border-radius: inherit;
+  background:
+    linear-gradient(rgba(212,154,0,0.4),rgba(212,154,0,0.4)) top    left  / 10px 1.5px no-repeat,
+    linear-gradient(rgba(212,154,0,0.4),rgba(212,154,0,0.4)) top    left  / 1.5px 10px no-repeat,
+    linear-gradient(rgba(212,154,0,0.4),rgba(212,154,0,0.4)) top    right / 10px 1.5px no-repeat,
+    linear-gradient(rgba(212,154,0,0.4),rgba(212,154,0,0.4)) top    right / 1.5px 10px no-repeat,
+    linear-gradient(rgba(212,154,0,0.4),rgba(212,154,0,0.4)) bottom left  / 10px 1.5px no-repeat,
+    linear-gradient(rgba(212,154,0,0.4),rgba(212,154,0,0.4)) bottom left  / 1.5px 10px no-repeat,
+    linear-gradient(rgba(212,154,0,0.4),rgba(212,154,0,0.4)) bottom right / 10px 1.5px no-repeat,
+    linear-gradient(rgba(212,154,0,0.4),rgba(212,154,0,0.4)) bottom right / 1.5px 10px no-repeat;
+}
+.sealed-room-title {
+  font-family: var(--font-hotdog);
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: var(--red);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.sealed-room-divider {
+  height: 0.5px;
+  background: rgba(212,154,0,0.15);
+  margin: 12px 0;
+}
+.sealed-room-body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.sealed-room-quote {
+  background: rgba(101,17,168,0.08);
+  border-left: 2px solid var(--purple);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+.sealed-room-quote-sig {
+  font-family: var(--font-hotdog);
+  font-size: 6px;
+  color: rgba(101,17,168,0.5);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.sealed-room-quote-text {
+  font-family: var(--font-title);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--purple);
+  line-height: 1.65;
+}
+.sealed-room-close {
+  width: 100%;
+  padding: 11px;
+  background: none;
+  border: 0.5px solid rgba(212,154,0,0.3);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-title);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sealed-room-close:hover { background: rgba(212,154,0,0.06); }
+
+@media (prefers-reduced-motion: reduce) {
+  .room-exit-dot { animation: none; }
 }
 
 

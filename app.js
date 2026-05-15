@@ -3459,50 +3459,79 @@ function endGymCardio(){
 /* ─── DUNGEON MAP NAVIGATION ─────────────────────────────────────────────── */
 
 const ROOMS={
-  today:  {name:'The Floor',       label:'FLOOR',    door:()=>ICON_FLOOR_DOOR,  header:'THE FLOOR',       color:'var(--amber)'},
-  dogs:   {name:'The Kennels',     label:'KENNELS',  door:()=>ICON_KENNEL_DOOR, header:'THE KENNELS',     color:'var(--amber)'},
-  spin:   {name:'The Arena',       label:'ARENA',    door:()=>ICON_ARENA_DOOR,  header:'THE ARENA',       color:'var(--red)'},
-  gym:    {name:'The Gym',         label:'GYM',      door:()=>ICON_GYM_DOOR,    header:'THE GYM',         color:'var(--teal)'},
-  inbox:  {name:'Comm Tower',      label:'COMMS',    door:()=>ICON_COMM_DOOR,   header:'COMM TOWER',      color:'var(--blue)'},
-  rewards:{name:'The Vault',       label:'VAULT',    door:()=>ICON_VAULT_DOOR,  header:'THE VAULT',       color:'var(--amber)'},
-  profile:{name:'The War Room',    label:'WAR ROOM', door:()=>ICON_WAR_DOOR,    header:'THE WAR ROOM',    color:'var(--teal)'},
-  coach:  {name:"Donut's Chamber", label:'DONUT',    door:()=>ICON_DONUT_DOOR,  header:"DONUT'S CHAMBER", color:'var(--purple)'},
+  today:  {name:'The Floor',       label:'FLOOR',    door:()=>ENV_DOOR_GOLD_OPEN,  header:'THE FLOOR',       color:'var(--amber)'},
+  dogs:   {name:'The Kennels',     label:'KENNELS',  door:()=>ENV_DOOR_DAMAGED,    header:'THE KENNELS',     color:'var(--amber)'},
+  spin:   {name:'The Arena',       label:'ARENA',    door:()=>ENV_DOOR_DANGER,     header:'THE ARENA',       color:'var(--red)'},
+  gym:    {name:'The Gym',         label:'GYM',      door:()=>ENV_DOOR_TEAL_LOCKED,header:'THE GYM',         color:'var(--teal)'},
+  inbox:  {name:'The Comm Tower',  label:'COMMS',    door:()=>ENV_DOOR_BLUE_MAGIC, header:'THE COMM TOWER',  color:'var(--blue)'},
+  rewards:{name:'The Vault',       label:'VAULT',    door:()=>ENV_DOOR_GOLD_CLOSED,header:'THE VAULT',       color:'var(--amber)'},
+  profile:{name:'The War Room',    label:'WAR ROOM', door:()=>ENV_DOOR_TEAL_CROSS, header:'THE WAR ROOM',    color:'var(--teal)'},
+  coach:  {name:"Donut's Chamber", label:'DONUT',    door:()=>ENV_DOOR_ROYAL,      header:"DONUT'S CHAMBER", color:'var(--purple)'},
 };
 
 const ROOM_ADJ={
-  today:  ['dogs','spin','profile'],
+  today:  ['dogs','gym'],
   dogs:   ['today','coach'],
   spin:   ['today','gym'],
-  gym:    ['spin'],
+  gym:    ['today','spin','profile'],
   inbox:  ['profile'],
-  rewards:['spin','profile'],
-  profile:['rewards','today','inbox'],
+  rewards:['profile'],
+  profile:['gym','rewards','inbox'],
   coach:  ['dogs','today'],
 };
 
 // Map node centers (% of layout container)
 const MAP_POS={
-  coach:  {x:50, y:7},
-  dogs:   {x:10, y:37},
-  today:  {x:35, y:37},
-  spin:   {x:62, y:37},
-  gym:    {x:87, y:37},
-  rewards:{x:10, y:67},
-  profile:{x:35, y:67},
-  inbox:  {x:62, y:67},
+  coach:  {x:50, y:12},
+  today:  {x:42, y:35},
+  dogs:   {x:72, y:35},
+  spin:   {x:72, y:52},
+  gym:    {x:42, y:52},
+  profile:{x:42, y:68},
+  rewards:{x:72, y:68},
+  inbox:  {x:42, y:80},
 };
 
-const MAP_CORRIDORS=[
-  ['coach','today'],
-  ['dogs','today'],
-  ['today','spin'],
-  ['spin','gym'],
-  ['today','profile'],
-  ['rewards','profile'],
-  ['profile','inbox'],
+const SEALED_ROOMS=[
+  {id:'archive',         label:'The Archive',        x:20, y:92},
+  {id:'shrine',          label:'The Shrine',          x:42, y:92},
+  {id:'counting-house',  label:'The Counting House',  x:72, y:92},
+  {id:'apothecary',      label:'The Apothecary',      x:12, y:12},
+  {id:'mess-hall',       label:'The Mess Hall',       x:78, y:18},
 ];
 
 let currentRoom=loadLocal('dr-last-screen','today')||'today';
+
+function showSealedRoom(){
+  // Remove any existing instance
+  const existing=document.getElementById('sealed-room-modal');
+  if(existing)existing.remove();
+
+  const modal=document.createElement('div');
+  modal.id='sealed-room-modal';
+  modal.className='sealed-room-modal';
+  modal.innerHTML=`
+    <div class="sealed-room-card">
+      <div class="sealed-room-title">AREA LOCKED</div>
+      <div class="sealed-room-body">
+        This section of the dungeon is not yet accessible.<br><br>
+        The dungeon is still being constructed.<br>
+        Check back later, Crawler.
+      </div>
+      <div class="sealed-room-quote">
+        "I would let you in but even I don't have clearance for this one yet."
+        <span>— Princess Donut</span>
+      </div>
+      <button class="sealed-room-close" onclick="document.getElementById('sealed-room-modal').remove()">CLOSE</button>
+    </div>`;
+
+  // Close on backdrop tap
+  modal.addEventListener('click', e=>{
+    if(e.target===modal)modal.remove();
+  });
+
+  document.body.appendChild(modal);
+}
 
 function showRoom(name){
   if(name==='map'){showMap();return;}
@@ -3545,107 +3574,30 @@ function showMap(){
   },150);
 }
 
-function renderMap(){
-  const wrap=document.getElementById('map-content');if(!wrap)return;
-
-  // SVG corridor lines
-  const lines=MAP_CORRIDORS.map(([a,b])=>{
-    const pa=MAP_POS[a],pb=MAP_POS[b];
-    return`<line x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}" stroke="rgba(212,154,0,0.35)" stroke-width="0.6" stroke-dasharray="1.5,1.5"/>`;
-  }).join('');
-
-  // Room nodes
-const nodes=Object.entries(ROOMS).map(([id,room])=>{
-  const p=MAP_POS[id];
-  const isActive=id===currentRoom;
-  
-  // State classes
-  const pct=id==='today'?dayPct(new Date().getDay()):0;
-  const isBoss=id==='spin'&&typeof bossActive!=='undefined'&&bossActive;
-  const isComplete=id==='today'&&pct===100;
-  const isRecovery=id==='today'&&isRecoveryMode();
-  const isCollapsed=id==='today'&&collapseState?.active?.applyDate===todayStr();
-  
-  let stateClass='';
-  if(isActive)stateClass+=' map-room-active';
-  if(isComplete)stateClass+=' map-room-complete';
-  if(isBoss)stateClass+=' map-room-boss';
-  if(isRecovery)stateClass+=' map-room-recovery';
-  if(isCollapsed)stateClass+=' map-room-collapsed';
-  
-  // Attention icons
-  let attention='';
-  if(id==='spin'&&isBoss)attention=`<span class="map-attention-icon">${pixelIcon(ICON_SKULL,14)}</span>`;
-else if(id==='rewards'&&getPoints()>0)attention=`<span class="map-attention-icon">${pixelIcon(ICON_COINS_STACK,14)}</span>`;
-else if(id==='dogs'&&typeof dogPct!=='undefined'&&dogPct<100)attention=`<span class="map-attention-icon">${pixelIcon(ICON_PAW,14)}</span>`;
-  else if(id==='inbox'&&inbox.length>0)attention=`<span class="map-attention-icon">${pixelIcon(COMM_BRACELET_PX,14)}</span>`;
-  else if(id==='today'&&countDebuffs()>=3)attention=`<span class="map-attention-icon">${pixelIcon(ICON_WARNING,14)}</span>`;
-else if(id==='coach'&&donutWeeklySummary?.week_number===getWeekNumber())attention=`<span class="map-attention-icon">${pixelIcon(ICON_CROWN,14)}</span>`;
-  
-  return`<div class="map-room-node${stateClass}" style="left:${p.x}%;top:${p.y}%;" onclick="showRoom('${id}')">
-    ${attention}
-    <img src="${room.door()}" class="map-door-img" width="58" height="58" alt="${room.name}">
-    <div class="map-room-label">${room.label}</div>
-  </div>`;
-}).join('');
-
-  // Companion sprites — Edna between Kennels and Floor, Kronk between Floor and War Room
-  const ednaX=typeof dogPct!=='undefined'&&dogPct<100?10:22;
-  const ednaSprite=`<div class="map-sprite map-sprite-edna" style="left:${ednaX}%;top:37%;" onclick="showRoom('dogs')" title="Edna">
-  <img src="${typeof dogPct!=='undefined'&&dogPct<100?CHAR_EDNA_GUARD:CHAR_EDNA_PATROL}" width="28" height="28" alt="Edna" style="image-rendering:pixelated;">
-  </div>`;
-  const kronkSprite=`<div class="map-sprite map-sprite-kronk" style="left:30%;top:52%;" onclick="showRoom('dogs')" title="Kronk">
-    <img src="${CHAR_KRONK_IDLE}" width="34" height="34" alt="Kronk" style="image-rendering:pixelated;">
-  </div>`;
-
-const decorHtml=`
-    <img class="map-decor map-env-torch-1" src="${ENV_TORCH_1}" alt="">
-    <img class="map-decor map-env-torch-2" src="${ENV_TORCH_2}" alt="">
-    <img class="map-decor map-env-torch-3" src="${ENV_TORCH_3}" alt="">
-    <img class="map-decor map-env-torch-4" src="${ENV_TORCH_4}" alt="">
-    <img class="map-decor map-env-spiderweb-l" src="${ENV_SPIDERWEB_CORNER}" alt="">
-    <img class="map-decor map-env-spiderweb-r" src="${ENV_SPIDERWEB_CORNER}" alt="">
-    <img class="map-decor map-env-bones" src="${ENV_BONES}" alt="">
-    <img class="map-decor map-env-chest" src="${ENV_CHEST}" alt="">
-    <img class="map-decor map-env-barrel" src="${ENV_BARREL}" alt="">
-    <img class="map-decor map-env-skull" src="${ENV_SKULL}" alt="">
-    <img class="map-decor map-env-puddle" src="${ENV_PUDDLE}" alt="">
-    <img class="map-decor map-env-crack-1" src="${ENV_CRACKED_GROUND}" alt="">
-    <img class="map-decor map-env-crack-2" src="${ENV_CRACKED_GROUND}" alt="">
-    <img class="map-decor map-env-crack-3" src="${ENV_CRACKED_GROUND}" alt="">`;
-
-  const streak=calcStreak();
-  const pts=getPoints();
-
-  wrap.innerHTML=`
-    <div class="map-header">
-      <div class="map-title">⚔ DUNGEON CRAWLER</div>
-      <div class="map-subtitle">DAILY ROUTINE</div>
-    </div>
-    <div class="map-layout">
-      <svg class="map-svg" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
-        ${lines}
-      </svg>
-      ${decorHtml}
-      ${nodes}
-      ${ednaSprite}
-      ${kronkSprite}
-    </div>
-    <div class="map-footer">
-      <span class="map-footer-text">STREAK ${streak} DAYS · ${pts} COINS</span>
-    </div>`;
-}
-
 function renderRoomBorder(name){
   const border=document.getElementById('room-border');if(!border)return;
   const adj=ROOM_ADJ[name]||[];
+
   const exits=adj.map(id=>{
     const room=ROOMS[id];if(!room)return'';
+    const isBoss=id==='spin'&&typeof bossActive!=='undefined'&&bossActive;
+    const hasAttn=(
+      (id==='today'&&countDebuffs()>=3)||
+      (id==='dogs'&&typeof dogPct!=='undefined'&&dogPct<100)||
+      (id==='inbox'&&inbox.length>0)||
+      (id==='rewards'&&getPoints()>0)||
+      isBoss||
+      (id==='coach'&&donutWeeklySummary?.week_number===getWeekNumber())
+    );
     return`<button class="room-exit-btn" onclick="showRoom('${id}')">
-      <img src="${room.door()}" class="room-exit-door" width="36" height="36" alt="${room.name}">
+      <div class="room-exit-thumb-wrap">
+        <img src="${room.door()}" class="room-exit-door" width="48" height="48" alt="${room.name}">
+        ${hasAttn?`<span class="room-exit-attn-dot"></span>`:''}
+      </div>
       <span class="room-exit-label">${room.label}</span>
     </button>`;
   }).join('');
+
   border.innerHTML=`<div class="room-border-inner">
     <div class="room-exits">${exits}</div>
     <button class="room-map-btn" onclick="showMap()">
@@ -3654,6 +3606,84 @@ function renderRoomBorder(name){
     </button>
   </div>`;
 }
+
+function renderMap(){
+  const wrap=document.getElementById('map-content');if(!wrap)return;
+
+  const streak=calcStreak();
+  const pts=getPoints();
+  const level=xpState&&xpState.level?xpState.level:1;
+
+  // Active room tap zones
+  const roomTaps=Object.entries(ROOMS).map(([id,room])=>{
+    const p=MAP_POS[id];if(!p)return'';
+
+    const pct=id==='today'?dayPct(new Date().getDay()):0;
+    const isBoss=id==='spin'&&typeof bossActive!=='undefined'&&bossActive;
+
+    let stateClass='';
+    if(id===currentRoom)stateClass+=' map-room-active';
+    if(id==='today'&&pct===100)stateClass+=' map-room-complete';
+    if(isBoss)stateClass+=' map-room-boss';
+    if(id==='today'&&isRecoveryMode())stateClass+=' map-room-recovery';
+    if(id==='today'&&collapseState?.active?.applyDate===todayStr())stateClass+=' map-room-collapsed';
+
+    let attention='';
+    if(id==='today'&&countDebuffs()>=3)
+      attention=`<span class="map-attn-icon map-attn-pulse">⚠️</span>`;
+    else if(id==='dogs'&&typeof dogPct!=='undefined'&&dogPct<100)
+      attention=`<span class="map-attn-icon map-attn-pulse">🐾</span>`;
+    else if(id==='inbox'&&inbox.length>0)
+      attention=`<span class="map-attn-icon map-attn-pulse">📨</span>`;
+    else if(id==='rewards'&&getPoints()>0)
+      attention=`<span class="map-attn-icon map-attn-pulse">🪙</span>`;
+    else if(isBoss)
+      attention=`<span class="map-attn-icon map-attn-pulse">💀</span>`;
+    else if(id==='coach'&&donutWeeklySummary?.week_number===getWeekNumber())
+      attention=`<span class="map-attn-icon map-attn-pulse">👑</span>`;
+
+    return`<div class="map-tap-zone${stateClass}" style="left:${p.x}%;top:${p.y}%;"
+      onclick="showRoom('${id}')" title="${room.name}">${attention}</div>`;
+  }).join('');
+
+  // Sealed room taps
+  const sealedTaps=SEALED_ROOMS.map(r=>
+    `<div class="map-tap-zone map-tap-sealed" style="left:${r.x}%;top:${r.y}%;"
+      onclick="showSealedRoom()" title="${r.label}"></div>`
+  ).join('');
+
+  // Companions — Edna patrols Floor↔Kennels corridor, Kronk in Floor↔Gym corridor
+  const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
+  const ednaX=ednaAtDoor?MAP_POS.dogs.x:57;
+  const ednaSprite=`<div class="map-sprite map-sprite-edna${ednaAtDoor?'':' map-sprite-patrol'}"
+    style="left:${ednaX}%;top:${MAP_POS.dogs.y}%;" onclick="showRoom('dogs')" title="Edna">
+    <img src="${ednaAtDoor?CHAR_EDNA_FRONT:CHAR_EDNA_APPROACH}" width="30" height="30" alt="Edna"
+      style="image-rendering:pixelated;">
+  </div>`;
+
+  const kronkSprite=`<div class="map-sprite map-sprite-kronk"
+    style="left:42%;top:43%;" onclick="showRoom('dogs')" title="Kronk">
+    <img src="${CHAR_KRONK_FRONT}" width="34" height="34" alt="Kronk"
+      style="image-rendering:pixelated;">
+  </div>`;
+
+  wrap.innerHTML=`
+    <div class="map-header">
+      <div class="map-title">⚔ DUNGEON CRAWLER</div>
+      <div class="map-subtitle">DAILY ROUTINE</div>
+    </div>
+    <div class="map-layout">
+      <img src="${ENV_DUNGEON_LAYOUT}" class="map-bg-image" alt="Dungeon Map">
+      ${roomTaps}
+      ${sealedTaps}
+      ${ednaSprite}
+      ${kronkSprite}
+    </div>
+    <div class="map-footer">
+      <span class="map-footer-text">FLOOR ${level} · STREAK ${streak} DAYS · 🪙 ${pts}</span>
+    </div>`;
+}
+
 
 // Backward compat — anything still calling showScreen() just routes to showRoom()
 function showScreen(name,btn){showRoom(name);}
@@ -3673,6 +3703,7 @@ async function init(){
   migrateDogTasks();
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkFloorCollapse();renderCollapseEvent();}});
   migrateGymIntoSchedule();
+  document.documentElement.style.setProperty('--tex-stone-wall', `url(${TEX_STONE_WALL})`);
   renderToday();renderInbox();updateProjectDropdown();refreshWheel();renderTaskManager();
 
   // Update floor countdown every minute
