@@ -963,7 +963,7 @@ function renderToday(){
     const lbl=document.createElement('div');lbl.className='section-label';lbl.textContent='Dog Care';list.appendChild(lbl);
     const div=document.createElement('div');div.className='task'+(dogDone===dogTotal&&dogTotal>0?' done':'');
     div.innerHTML=`<div class="check"><span class="check-mark">✓</span></div><div style="flex:1;"><div class="task-name">Edna & Kronk — ${dogDone}/${dogTotal} tasks done</div><div class="task-time">Tap Dogs tab to manage</div></div>`;
-    div.onclick=()=>{const nb=document.querySelectorAll('.nav-btn')[1];showScreen('dogs',nb);};
+    div.onclick=()=>showRoom('dogs');
     list.appendChild(div);
   }
 
@@ -1559,7 +1559,7 @@ function handleEncounterAction(actionId){
     return;
   }
   const cb=actionId==='done'||actionId==='accept'?activeEncounter.onSuccess:actionId==='fail'||actionId==='flee'?activeEncounter.onFail:null;
-  if(actionId==='shop'){closeEncounterOverlay();const nb=document.querySelectorAll('.nav-btn')[4];showScreen('rewards',nb);return;}
+  if(actionId==='shop'){closeEncounterOverlay();showRoom('rewards');return;}
   closeEncounterOverlay();if(cb)cb();
 }
 
@@ -3441,23 +3441,153 @@ function endGymCardio(){
   renderGym();
 }
 /* ─── SCREEN NAV (updated) ───────────────────────────────────────────────── */
-function showScreen(name,btn){
+/* ─── DUNGEON MAP NAVIGATION ─────────────────────────────────────────────── */
+
+const ROOMS={
+  today:  {name:'The Floor',       label:'FLOOR',    door:()=>ICON_FLOOR_DOOR,  header:'THE FLOOR',       color:'var(--amber)'},
+  dogs:   {name:'The Kennels',     label:'KENNELS',  door:()=>ICON_KENNEL_DOOR, header:'THE KENNELS',     color:'var(--amber)'},
+  spin:   {name:'The Arena',       label:'ARENA',    door:()=>ICON_ARENA_DOOR,  header:'THE ARENA',       color:'var(--red)'},
+  gym:    {name:'The Gym',         label:'GYM',      door:()=>ICON_GYM_DOOR,    header:'THE GYM',         color:'var(--teal)'},
+  inbox:  {name:'Comm Tower',      label:'COMMS',    door:()=>ICON_COMM_DOOR,   header:'COMM TOWER',      color:'var(--blue)'},
+  rewards:{name:'The Vault',       label:'VAULT',    door:()=>ICON_VAULT_DOOR,  header:'THE VAULT',       color:'var(--amber)'},
+  profile:{name:'The War Room',    label:'WAR ROOM', door:()=>ICON_WAR_DOOR,    header:'THE WAR ROOM',    color:'var(--teal)'},
+  coach:  {name:"Donut's Chamber", label:'DONUT',    door:()=>ICON_DONUT_DOOR,  header:"DONUT'S CHAMBER", color:'var(--purple)'},
+};
+
+const ROOM_ADJ={
+  today:  ['dogs','spin','profile'],
+  dogs:   ['today','coach'],
+  spin:   ['today','gym'],
+  gym:    ['spin'],
+  inbox:  ['profile'],
+  rewards:['spin','profile'],
+  profile:['rewards','today','inbox'],
+  coach:  ['dogs','today'],
+};
+
+// Map node centers (% of layout container)
+const MAP_POS={
+  coach:  {x:50, y:7},
+  dogs:   {x:10, y:37},
+  today:  {x:35, y:37},
+  spin:   {x:62, y:37},
+  gym:    {x:87, y:37},
+  rewards:{x:10, y:67},
+  profile:{x:35, y:67},
+  inbox:  {x:62, y:67},
+};
+
+const MAP_CORRIDORS=[
+  ['coach','today'],
+  ['dogs','today'],
+  ['today','spin'],
+  ['spin','gym'],
+  ['today','profile'],
+  ['rewards','profile'],
+  ['profile','inbox'],
+];
+
+let currentRoom=loadLocal('dr-last-screen','today')||'today';
+
+function showRoom(name){
+  if(name==='map'){showMap();return;}
+  if(!ROOMS[name])return;
+  currentRoom=name;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-'+name).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+  const scr=document.getElementById('screen-'+name);
+  if(scr)scr.classList.add('active');
   saveLocal('dr-last-screen',name);
+  renderRoomBorder(name);
+  // Trigger room content renders
   if(name==='today')renderToday();
-  if(name==='dogs')renderDogs();
-  if(name==='spin'){updateProjectDropdown();refreshWheel();renderAvoidance();renderTaskManager();}
-  if(name==='inbox'){renderInbox();setTimeout(()=>{const i=document.getElementById('inbox-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addInboxItem();};},50);}
-  if(name==='shop'){renderShop();setTimeout(()=>{const i=document.getElementById('shop-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addShopItem();};},50);}
-  if(name==='rewards')renderRewards();
-  if(name==='profile')renderProfile();
-  if(name==='coach')renderCoach();
-  if(name==='gym')renderGym();
-  
+  else if(name==='dogs')renderDogs();
+  else if(name==='spin'){updateProjectDropdown();refreshWheel();renderAvoidance();renderTaskManager();}
+  else if(name==='inbox'){renderInbox();setTimeout(()=>{const i=document.getElementById('inbox-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addInboxItem();};},50);}
+  else if(name==='shop'){renderShop();setTimeout(()=>{const i=document.getElementById('shop-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addShopItem();};},50);}
+  else if(name==='rewards')renderRewards();
+  else if(name==='profile')renderProfile();
+  else if(name==='coach')renderCoach();
+  else if(name==='gym')renderGym();
 }
+
+function showMap(){
+  currentRoom='map';
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const ms=document.getElementById('screen-map');if(ms)ms.classList.add('active');
+  const border=document.getElementById('room-border');
+  if(border)border.innerHTML='';
+  renderMap();
+}
+
+function renderMap(){
+  const wrap=document.getElementById('map-content');if(!wrap)return;
+
+  // SVG corridor lines
+  const lines=MAP_CORRIDORS.map(([a,b])=>{
+    const pa=MAP_POS[a],pb=MAP_POS[b];
+    return`<line x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}" stroke="rgba(212,154,0,0.35)" stroke-width="0.6" stroke-dasharray="1.5,1.5"/>`;
+  }).join('');
+
+  // Room nodes
+  const nodes=Object.entries(ROOMS).map(([id,room])=>{
+    const p=MAP_POS[id];
+    const isActive=id===currentRoom;
+    return`<div class="map-room-node${isActive?' map-room-active':''}" style="left:${p.x}%;top:${p.y}%;" onclick="showRoom('${id}')">
+      <img src="${room.door()}" class="map-door-img" width="58" height="58" alt="${room.name}">
+      <div class="map-room-label">${room.label}</div>
+    </div>`;
+  }).join('');
+
+  // Companion sprites — Edna between Kennels and Floor, Kronk between Floor and War Room
+  const ednaSprite=`<div class="map-sprite map-sprite-edna" onclick="showRoom('dogs')" title="Edna">
+    <img src="${CHAR_EDNA_PATROL}" width="28" height="28" alt="Edna" style="image-rendering:pixelated;">
+  </div>`;
+  const kronkSprite=`<div class="map-sprite map-sprite-kronk" onclick="showRoom('dogs')" title="Kronk">
+    <img src="${CHAR_KRONK_IDLE}" width="34" height="34" alt="Kronk" style="image-rendering:pixelated;">
+  </div>`;
+
+  const streak=calcStreak();
+  const pts=getPoints();
+
+  wrap.innerHTML=`
+    <div class="map-header">
+      <div class="map-title">⚔ DUNGEON CRAWLER</div>
+      <div class="map-subtitle">DAILY ROUTINE</div>
+    </div>
+    <div class="map-layout">
+      <svg class="map-svg" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+        ${lines}
+      </svg>
+      ${nodes}
+      ${ednaSprite}
+      ${kronkSprite}
+    </div>
+    <div class="map-footer">
+      <span class="map-footer-text">STREAK ${streak} DAYS · ${pts} COINS</span>
+    </div>`;
+}
+
+function renderRoomBorder(name){
+  const border=document.getElementById('room-border');if(!border)return;
+  const adj=ROOM_ADJ[name]||[];
+  const exits=adj.map(id=>{
+    const room=ROOMS[id];if(!room)return'';
+    return`<button class="room-exit-btn" onclick="showRoom('${id}')">
+      <img src="${room.door()}" class="room-exit-door" width="36" height="36" alt="${room.name}">
+      <span class="room-exit-label">${room.label}</span>
+    </button>`;
+  }).join('');
+  border.innerHTML=`<div class="room-border-inner">
+    <div class="room-exits">${exits}</div>
+    <button class="room-map-btn" onclick="showMap()">
+      <span class="room-map-icon">🗺</span>
+      <span class="room-map-label">MAP</span>
+    </button>
+  </div>`;
+}
+
+// Backward compat — anything still calling showScreen() just routes to showRoom()
+function showScreen(name,btn){showRoom(name);}
 
 /* ─── INIT ──────────────────────────────────────────────────────────────── */
 async function init(){
@@ -3469,8 +3599,7 @@ async function init(){
   const clb=document.getElementById('claim-loot-btn');
   if(clb)clb.innerHTML=pixelIcon(ICON_POTION,14)+' Claim loot ✓';
 
-  const nig=document.getElementById('nav-icon-gym');
-  if(nig)nig.src=ICON_BARBELL_BENCH;
+
 
   migrateDogTasks();
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkFloorCollapse();renderCollapseEvent();}});
@@ -3480,12 +3609,8 @@ async function init(){
   // Update floor countdown every minute
   setInterval(renderFloorCountdown, 60000);
 
-  const last=loadLocal('dr-last-screen','today');
-  if(last&&last!=='today'){
-    const map={today:0,dogs:1,spin:2,rewards:3,profile:4,coach:5,gym:6};
-    const idx=map[last];
-    if(idx!==undefined)showScreen(last,document.querySelectorAll('.nav-btn')[idx]);
-  }
+  showRoom(loadLocal('dr-last-screen','today')||'today');
+
 
   const synced=await loadFromSupabase();
   if(synced){
@@ -3513,18 +3638,7 @@ async function init(){
     if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;saveLocal('dr-floor-condition',null);}
     migrateDogTasks();
     migrateGymIntoSchedule();
-    const cur=loadLocal('dr-last-screen','today');
-    if(cur==='today')renderToday();
-    else if(cur==='dogs')renderDogs();
-    else if(cur==='spin'){refreshWheel();renderTaskManager();renderAvoidance();}
-    else if(cur==='inbox')renderInbox();
-    else if(cur==='shop')renderShop();
-    else if(cur==='rewards')renderRewards();
-    else if(cur==='profile')renderProfile();
-    else if(cur==='coach')renderCoach();
-    else if(cur==='coach')renderCoach();
-    else if(cur==='gym')renderGym();
-    else if(cur==='coach')renderCoach();
+    showRoom(loadLocal('dr-last-screen','today')||'today');
   }
 
   if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
