@@ -3619,18 +3619,21 @@ function startEdnaPatrol(){
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const MIN=MAP_POS.today.x; // 42
   const MAX=MAP_POS.dogs.x;  // 72
-  const SPEED=(MAX-MIN)/80;  // ~8s round trip at 50ms ticks
+  const RANGE=MAX-MIN;       // 30
+  const DURATION=8000;       // 8s full loop
+  const STEP=RANGE/(DURATION/50); // percent per tick at 50ms
   ednaPatrolLeft=57;
   ednaPatrolDir=-1;
 
   ednaPatrolInterval=setInterval(()=>{
     const el=document.querySelector('.map-sprite-edna');
     if(!el){stopEdnaPatrol();return;}
-    ednaPatrolLeft+=ednaPatrolDir*SPEED;
+    ednaPatrolLeft+=ednaPatrolDir*STEP;
     if(ednaPatrolLeft<=MIN){ednaPatrolLeft=MIN;ednaPatrolDir=1;}
     else if(ednaPatrolLeft>=MAX){ednaPatrolLeft=MAX;ednaPatrolDir=-1;}
     el.style.left=ednaPatrolLeft+'%';
-    el.style.transform=`translate(-50%, -50%) rotate(${ednaPatrolDir===1?90:-90}deg)`;
+    // dir 1 = moving right toward Floor = -90deg, dir -1 = moving left toward Kennels = 90deg
+    el.style.transform=`translate(-50%, -50%) rotate(${ednaPatrolDir===1?-90:90}deg)`;
   },50);
 }
 
