@@ -1766,3 +1766,183 @@ body { font-family: var(--font-body); }
   transition: opacity 0.15s;
 }
 .donut-key-save-btn:active { opacity: 0.85; }
+
+
+/* ═══════════════════════════════════════════════════════════
+   DUNGEON MAP
+═══════════════════════════════════════════════════════════ */
+
+/* ── Map layout (aspect ratio trick) ────────────────────── */
+.map-layout {
+  position: relative;
+  width: 100%;
+  padding-bottom: 85%;
+  overflow: hidden;
+}
+
+.map-svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ── Room nodes ──────────────────────────────────────────── */
+.map-room-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.map-room-node:active { transform: translate(-50%, -50%) scale(0.92); }
+
+.map-door-img {
+  image-rendering: pixelated;
+  display: block;
+}
+
+.map-room-label {
+  font-family: var(--font-hotdog);
+  font-size: 6px;
+  color: var(--muted);
+  margin-top: 4px;
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: 0.06em;
+}
+
+/* ── Active room glow ────────────────────────────────────── */
+.map-room-active .map-door-img {
+  filter: drop-shadow(0 0 6px rgba(212,154,0,0.8));
+}
+.map-room-active .map-room-label {
+  color: var(--gold);
+}
+
+/* ── Map sprites ─────────────────────────────────────────── */
+.map-sprite {
+  position: absolute;
+  cursor: pointer;
+  image-rendering: pixelated;
+  transition: transform 0.15s;
+}
+.map-sprite:active { transform: translate(-50%, -50%) scale(0.9); }
+
+.map-sprite-edna {
+  left: 21%;
+  top: 37%;
+  transform: translate(-50%, -50%);
+}
+.map-sprite-kronk {
+  left: 35%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+}
+
+/* ── Map header ──────────────────────────────────────────── */
+.map-header {
+  text-align: center;
+  padding: 16px 0 8px;
+}
+.map-title {
+  font-family: var(--font-dramatic);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.map-subtitle {
+  font-family: var(--font-hotdog);
+  font-size: 7px;
+  color: var(--muted);
+  margin-top: 6px;
+  letter-spacing: 0.1em;
+}
+
+/* ── Map footer ──────────────────────────────────────────── */
+.map-footer {
+  text-align: center;
+  padding: 12px;
+  border-top: 1px solid rgba(212,154,0,0.15);
+}
+.map-footer-text {
+  font-family: var(--font-game);
+  font-size: 10px;
+  color: var(--teal);
+  letter-spacing: 0.06em;
+}
+
+/* ── Room border nav (fixed bottom bar) ──────────────────── */
+.room-border {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface2);
+  border-top: 1.5px solid rgba(212,154,0,0.3);
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.room-border-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+}
+
+/* ── Room exits ──────────────────────────────────────────── */
+.room-exits {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.room-exit-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  transition: opacity 0.15s;
+}
+.room-exit-btn:active { opacity: 0.7; }
+.room-exit-door {
+  image-rendering: pixelated;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+.room-exit-btn:hover .room-exit-door { opacity: 1; }
+.room-exit-label {
+  font-family: var(--font-hotdog);
+  font-size: 5px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Map button (center of nav bar) ─────────────────────── */
+.room-map-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--amber);
+  transition: opacity 0.15s;
+  padding: 4px;
+}
+.room-map-btn:active { opacity: 0.7; }
+.room-map-icon { font-size: 20px; line-height: 1; }
+.room-map-label {
+  font-family: var(--font-hotdog);
+  font-size: 5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
