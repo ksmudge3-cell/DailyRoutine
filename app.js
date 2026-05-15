@@ -1063,7 +1063,7 @@ function renderDogs(){
 
   document.getElementById('dog-content').innerHTML=`
     <div class="dog-section">
-      <div class="dog-header" style="align-items:center;gap:10px;"><div style="display:flex;gap:4px;"><img src="${CHAR_EDNA_HAPPY}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(180,100,220,0.5);"><img src="${CHAR_KRONK_HAPPY}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(80,180,220,0.5);"></div><div><div class="dog-name">Edna & Kronk</div><div class="dog-streak">Morning + evening care</div></div></div>
+      <div class="dog-header" style="align-items:center;gap:10px;"><div style="display:flex;gap:4px;"><img src="${CHAR_FACE_EDNA_HAPPY}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(180,100,220,0.5);"><img src="${CHAR_FACE_KRONK_HAPPY}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(80,180,220,0.5);"></div><div><div class="dog-name">Edna & Kronk</div><div class="dog-streak">Morning + evening care</div></div></div>
       <div class="section-label" style="margin-top:0;margin-bottom:8px;">Morning</div>${dogTaskHtml(dt.morning||[])}
       <div class="section-label" style="margin-bottom:8px;">Evening</div>${dogTaskHtml(dt.evening||[])}
     </div>
