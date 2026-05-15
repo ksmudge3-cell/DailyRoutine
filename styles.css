@@ -1809,7 +1809,7 @@ body { font-family: var(--font-body); }
 .map-layout {
   position: relative;
   width: 100%;
-  padding-bottom: 85%;
+  aspect-ratio: 1 / 0.85;
   overflow: hidden;
   background: var(--bg);
 }
@@ -2366,4 +2366,3 @@ body { font-family: var(--font-body); }
   .room-exiting,
   .map-entering { animation: none; }
 }
-
