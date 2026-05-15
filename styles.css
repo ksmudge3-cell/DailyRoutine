@@ -2261,11 +2261,13 @@ body { font-family: var(--font-body); }
 
 /* Edna patrol — slow 8s loop translation */
 @keyframes edna-patrol-move {
-  0%   { left: 23%; }
-  40%  { left: 32%; }
-  50%  { left: 32%; } /* pause at Floor */
-  90%  { left: 23%; }
-  100% { left: 23%; } /* pause at Kennels */
+  0%   { left: 23%; transform: translate(-50%, -50%) rotate(90deg); }
+  40%  { left: 32%; transform: translate(-50%, -50%) rotate(90deg); }
+  50%  { left: 32%; transform: translate(-50%, -50%) rotate(90deg); }
+  51%  { left: 32%; transform: translate(-50%, -50%) rotate(270deg); }
+  90%  { left: 23%; transform: translate(-50%, -50%) rotate(270deg); }
+  99%  { left: 23%; transform: translate(-50%, -50%) rotate(270deg); }
+  100% { left: 23%; transform: translate(-50%, -50%) rotate(90deg); }
 }
 .map-sprite-patrol {
   animation: edna-patrol-move 8s ease-in-out infinite;
@@ -2365,7 +2367,7 @@ body { font-family: var(--font-body); }
   /* Stone wall texture — seamless repeat */
   background-image: var(--tex-stone-wall, none);
   background-repeat: repeat;
-  background-size: 64px auto;
+  background-size: 128px auto;
   background-color: #0d0d0f; /* fallback if texture not loaded */
   border-top: 2px solid rgba(212,154,0,0.3);
   /* Subtle inner shadow to deepen the stone feel */
