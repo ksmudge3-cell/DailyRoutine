@@ -2656,3 +2656,25 @@ body { font-family: var(--font-body); }
 .room-border.hidden {
   display: none;
 }
+
+#system-greeting {
+  height: 72px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+#system-greeting::-webkit-scrollbar { display: none; }
+
+#recovery-mode-banner,
+#collapse-event-banner,
+#floor-condition-banner {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 250ms ease;
+}
+
+/* Recovery can show title + body + Donut quote — needs room */
+#recovery-mode-banner.active  { max-height: 160px; }
+
+/* Collapse and floor condition are shorter system messages */
+#collapse-event-banner.active  { max-height: 80px; }
+#floor-condition-banner.active { max-height: 80px; }

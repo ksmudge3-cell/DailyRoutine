@@ -2107,7 +2107,10 @@ function renderSystemGreeting(){
 
 /* ─── CRAWLER PROFILE RENDERER ───────────────────────────────────────────── */
 function renderFloorCountdown(){
-  const el=document.getElementById('floor-countdown');if(!el)return;
+  const el=document.getElementById('floor-condition-banner');if(!el)return;
+  const active=!!(floorCondition);
+  el.classList.toggle('active', active);
+  if(!active){el.innerHTML='';return;}
   const sc=getScheduleFor(selectedDay);
   const data=getDayData(selectedDay);
   const allT=sc.reduce((a,s)=>a.concat(s.tasks),[]);
@@ -2132,6 +2135,9 @@ function renderFloorCountdown(){
 
 function renderRecoveryMode(){
   const el=document.getElementById('recovery-mode-banner');if(!el)return;
+  const active=isRecoveryMode();
+  el.classList.toggle('active', active);
+  if(!active){el.innerHTML='';return;}
   const dc=countDebuffs();
   if(dc>=4){
     el.innerHTML=`<div class="recovery-banner">
@@ -2223,7 +2229,11 @@ function renderFloorConditionBanner(){
 }
 
 function renderCollapseEvent(){
+  function renderCollapseEvent(){
   const el=document.getElementById('collapse-event-banner');if(!el)return;
+  const active=!!(collapseState?.active);
+  el.classList.toggle('active', active);
+  if(!active){el.innerHTML='';return;}
   const c=collapseState.active;
   if(!c||c.applyDate!==todayStr()){el.innerHTML='';return;}
   const done=Object.entries(state[todayStr()]||{}).filter(([k,v])=>v&&!k.endsWith('_ts')).length;
