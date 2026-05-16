@@ -1922,7 +1922,7 @@ function executeCommAction(id){
       const p=action.params||{};
       const taskId='ct_'+Date.now();
       const newTask={id:taskId,name:p.name||action.summary,time:p.time||''};
-      const day=p.day||'weekday';
+      const day=p.day||(isWeekend(new Date().getDay())?'weekend':'weekday');
       const section=p.section||'Evening';
       const sc=day==='weekend'?schedule.weekend:schedule.weekday;
       const target=sc.find(s=>s.section===section)||sc[sc.length-1];
