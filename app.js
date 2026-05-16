@@ -3491,22 +3491,22 @@ const ROOM_ADJ={
 
 // Map node centers (% of layout container)
 const MAP_POS={
-  coach:  {x:46, y:10},  // Donut's Chamber
-  today:  {x:43, y:32},  // The Floor
-  dogs:   {x:63, y:28},  // The Kennels
-  gym:    {x:18, y:48},  // The Gym
-  spin:   {x:46, y:47},  // The Arena
-  profile:{x:18, y:63},  // The War Room
-  rewards:{x:43, y:63},  // The Vault
-  inbox:  {x:43, y:74},  // The Comm Tower
+  coach:  {x:46, y:7},   // Donut's Chamber
+  today:  {x:38, y:27},  // The Floor
+  dogs:   {x:60, y:22},  // The Kennels
+  gym:    {x:13, y:43},  // The Gym
+  spin:   {x:42, y:42},  // The Arena
+  profile:{x:13, y:57},  // The War Room
+  rewards:{x:38, y:60},  // The Vault
+  inbox:  {x:38, y:70},  // The Comm Tower
 };
 
 const SEALED_ROOMS=[
-  {id:'apothecary',      label:'The Apothecary',     x:8,  y:20},
-  {id:'mess-hall',       label:'The Mess Hall',       x:76, y:20},
-  {id:'archive',         label:'The Archive',         x:8,  y:87},
-  {id:'shrine',          label:'The Shrine',          x:43, y:90},
-  {id:'counting-house',  label:'The Counting House',  x:76, y:87},
+  {id:'apothecary',      label:'The Apothecary',     x:5,  y:16},
+  {id:'mess-hall',       label:'The Mess Hall',       x:72, y:16},
+  {id:'archive',         label:'The Archive',         x:5,  y:82},
+  {id:'shrine',          label:'The Shrine',          x:38, y:86},
+  {id:'counting-house',  label:'The Counting House',  x:72, y:82},
 ];
 
 let ednaPatrolInterval=null;
