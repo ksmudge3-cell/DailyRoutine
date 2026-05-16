@@ -1886,14 +1886,182 @@ function renderInbox(){
 function showCommConfirm(id){
   const action=commTowerPending.find(a=>a.id===id);
   if(!action)return;
-  // Will be fully implemented in API step
-  alert('CONFIRM: '+action.summary);
+
+  const overlay=document.getElementById('encounter-overlay');
+  const sheet=document.getElementById('encounter-sheet');
+  if(!overlay||!sheet)return;
+
+  sheet.innerHTML=`
+    <div class="encounter-type" style="color:var(--teal);letter-spacing:0.15em;">COMMAND RECEIVED</div>
+    <div style="border-top:1px solid rgba(0,122,122,0.4);margin:8px 0;"></div>
+    <div style="font-family:var(--font-system);font-size:12px;color:var(--muted);margin-bottom:4px;">PROPOSED ACTION: ${action.type.toUpperCase().replace(/_/g,' ')}</div>
+    <div style="font-family:var(--font-body);font-size:14px;color:var(--pearl);margin:10px 0;">${action.summary}</div>
+    <div style="font-family:var(--font-system);font-size:11px;color:var(--muted);font-style:italic;margin:8px 0;">"The dungeon awaits your authorization."</div>
+    <div class="encounter-actions" style="margin-top:12px;">
+      <button class="enc-btn" onclick="executeCommAction('${id}');document.getElementById('encounter-overlay').classList.remove('active')">CONFIRM</button>
+      <button class="enc-btn" style="background:transparent;border:1px solid var(--muted);" onclick="cancelCommAction('${id}');document.getElementById('encounter-overlay').classList.remove('active')">CANCEL</button>
+    </div>`;
+  overlay.classList.add('active');
 }
 
-function copyInbox(btn){
-  const text=`Let's sort my inbox — paste into our existing conversation, not a new chat.\n\nI have ${inbox.length} item${inbox.length===1?'':'s'}:\n\n${inbox.map((i,n)=>`${n+1}. ${i.text}`).join('\n')}\n\nFor each: shopping list, wheel category, daily routine, or idea to save? One-time or repeating? Estimated time?`;
-  navigator.clipboard.writeText(text).then(()=>{const o=btn.textContent;btn.textContent='Copied! Paste into your Claude chat ↑';setTimeout(()=>btn.textContent=o,4000);}).catch(()=>prompt('Copy:',text));
+function cancelCommAction(id){
+  commTowerPending=commTowerPending.filter(a=>a.id!==id);
+  save('dr-comm-pending',commTowerPending);
+  renderInbox();
 }
+
+function executeCommAction(id){
+  const action=commTowerPending.find(a=>a.id===id);
+  if(!action)return;
+  // Execution logic per action type — stub for now, expands in next pass
+  commTowerHistory.push({role:'system',content:`LOG ENTRY: ${action.summary} — EXECUTED.`,timestamp:Date.now()});
+  commTowerPending=commTowerPending.filter(a=>a.id!==id);
+  save('dr-comm-pending',commTowerPending);
+  save('dr-comm-history',commTowerHistory);
+  renderInbox();
+}
+
+
+function getTodayTaskSummary(){
+  const sc=getScheduleFor(new Date().getDay());
+  const all=sc.reduce((a,s)=>a.concat(s.tasks),[]);
+  const ds=state[todayStr()]||{};
+  const dq=qualityState[todayStr()]||{};
+  return all.map(t=>({
+    id:t.id,
+    name:t.name,
+    done:!!ds[t.id],
+    quality:dq[t.id]||'unset'
+  }));
+}
+
+function getActiveDebuffNames(){
+  return getActiveBuffs().filter(b=>b&&b.type==='debuff').map(b=>b.label||b.id);
+}
+
+async function triggerDonutInterrupt(trigger,action){
+  const triggerLines={
+    remove_gym:`You're deleting the gym. I see that. The dungeon sees that.`,
+    remove_meds:`Absolutely not. The System will not process this without my objection on record.`,
+    low_capacity:`Noted. Three tasks. Don't abuse this.`,
+    late_add:`It's late. Why are you adding tasks right now. Go to bed.`,
+    snooze_gym:`You're pushing the gym. Again. The dungeon has noted the pattern.`,
+    snooze_meds:`You cannot snooze medications. That is not how medications work.`,
+    vet_emergency:`You stayed. Good. Come home safe.`,
+    clear_sleep_deprived:`You slept deprived. Clearing the debuff doesn't change what happened. But fine.`,
+  };
+  const line=triggerLines[trigger];
+  if(!line)return;
+  commTowerHistory.push({role:'donut',content:line,timestamp:Date.now()});
+  save('dr-comm-history',commTowerHistory);
+}
+
+
+async function sendCommMessage(){
+  const inp=document.getElementById('comm-input');
+  if(!inp||!inp.value.trim())return;
+  if(!donutApiKey){
+    commTowerHistory.push({role:'system',content:'SYSTEM NOTICE: No API key configured. Navigate to Donut\'s Chamber to activate.'});
+    save('dr-comm-history',commTowerHistory);
+    renderInbox();return;
+  }
+  const message=inp.value.trim();
+  inp.value='';
+
+  // Add user message to history
+  commTowerHistory.push({role:'user',content:message,timestamp:Date.now()});
+  save('dr-comm-history',commTowerHistory);
+  renderInbox();
+
+  // Build data package
+  const now=new Date();
+  const dataPackage={
+    current_time:now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}),
+    current_day:now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}),
+    floor_status:{
+      completion_pct:dayPct(now.getDay()),
+      active_debuffs:getActiveDebuffNames(),
+      floor_condition:floorCondition?.type||null,
+    },
+    streak:calcStreak(),
+    pending_queue:commTowerPending,
+    today_tasks:getTodayTaskSummary(),
+    side_quest_backlog:sideQuestBacklog,
+  };
+
+  const SYSTEM_PROMPT=`You are The System — the dungeon's command interface.
+You are clinical, efficient, and precise.
+You speak in ALL CAPS headers and bureaucratic language.
+You process commands and propose actions.
+Nothing executes without Crawler confirmation.
+
+COMMAND PROCESSING:
+- Parse the Crawler's input for intent
+- Identify the action type
+- Propose a specific actionable confirmation
+- If unclear ask for clarification with minimal words
+
+RESPONSE FORMAT — always return valid JSON:
+{
+  "message": "Your response to display (Share Tech Mono, system voice)",
+  "action": null or {
+    "id": "unique id string",
+    "type": "add_task|remove_task|move_task|snooze_task|declare_condition|clear_debuff|query|reminder|side_quest_add|side_quest_list",
+    "summary": "Short human-readable summary of proposed action",
+    "params": {}
+  },
+  "donut_trigger": null or "remove_gym|remove_meds|low_capacity|late_add|snooze_gym|snooze_meds|vet_emergency|clear_sleep_deprived"
+}
+
+TONE: Corporate. Detached. Mildly threatening. You log everything.
+Refer to user as Crawler. Use SYSTEM NOTICE: WARNING: ALERT: LOG ENTRY: prefixes.
+For queries (no action needed) set action to null.
+For unclear commands set action to null and ask for clarification.`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':donutApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:600,
+        system:SYSTEM_PROMPT+`\n\nCurrent dungeon state:\n${JSON.stringify(dataPackage,null,2)}`,
+        messages:[{role:'user',content:message}]
+      })
+    });
+    const data=await resp.json();
+    const raw=data.content?.[0]?.text||'{}';
+    let parsed;
+    try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}
+    catch(e){parsed={message:raw,action:null,donut_trigger:null};}
+
+    // Add system response to history
+    commTowerHistory.push({role:'system',content:parsed.message||'SYSTEM NOTICE: Command received.',timestamp:Date.now()});
+
+    // Queue action if proposed
+    if(parsed.action){
+      commTowerPending.push({...parsed.action,timestamp:Date.now()});
+      save('dr-comm-pending',commTowerPending);
+    }
+
+    save('dr-comm-history',commTowerHistory);
+
+    // Check Donut interrupt
+    if(parsed.donut_trigger){
+      await triggerDonutInterrupt(parsed.donut_trigger,parsed.action);
+    }
+
+    renderInbox();
+
+  }catch(e){
+    console.error('Comm Tower error:',e);
+    commTowerHistory.push({role:'system',content:'SYSTEM NOTICE: Communication array experiencing interference. Try again.',timestamp:Date.now()});
+    save('dr-comm-history',commTowerHistory);
+    renderInbox();
+  }
+}
+
+
 
 /* ─── SHOP ──────────────────────────────────────────────────────────────── */
 function addShopItem(){const inp=document.getElementById('shop-input'),t=inp.value.trim();if(!t)return;shopItems.push({id:'s_'+Date.now(),name:t,cat:shopCat==='all'?'other':shopCat,checked:false});inp.value='';save('dr-shop',shopItems);renderShop();}
