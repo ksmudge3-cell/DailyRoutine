@@ -3782,7 +3782,7 @@ async function init(){
     showRoom(loadLocal('dr-last-screen','today')||'today');
   }
 
-  if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
+if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
     (notifs||[]).filter(n=>n.on).forEach(n=>{
       const[h,m]=(n.time||'00:00').split(':').map(Number);
       const now=new Date(),next=new Date();
@@ -3790,6 +3790,8 @@ async function init(){
       setTimeout(()=>new Notification('Daily Routine',{body:n.label}),next-now);
     });
   }
-}
+}        // ← this closes init()
+
 
 init();
+}
