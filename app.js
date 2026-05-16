@@ -3491,22 +3491,22 @@ const ROOM_ADJ={
 
 // Map node centers (% of layout container)
 const MAP_POS={
-  coach:  {x:48, y:11},  // nudge down slightly
-  today:  {x:43, y:36},  // nudge left
-  dogs:   {x:68, y:36},  // nudge left
-  gym:    {x:17, y:52},  // good
-  spin:   {x:62, y:52},  // nudge left
-  profile:{x:17, y:68},  // nudge down
-  rewards:{x:62, y:66},  // nudge left
-  inbox:  {x:43, y:80},  // good
+  coach:  {x:48, y:12},  // nudge down
+  today:  {x:43, y:38},  // nudge down
+  dogs:   {x:65, y:37},  // nudge left, up slightly
+  gym:    {x:17, y:53},  // good
+  spin:   {x:60, y:53},  // nudge left, down
+  profile:{x:17, y:70},  // nudge down
+  rewards:{x:60, y:68},  // nudge left, down
+  inbox:  {x:43, y:79},  // nudge up
 };
 
 const SEALED_ROOMS=[
-  {id:'apothecary',      label:'The Apothecary',     x:12, y:17},
-  {id:'mess-hall',       label:'The Mess Hall',       x:80, y:17},
-  {id:'archive',         label:'The Archive',         x:13, y:90},
-  {id:'shrine',          label:'The Shrine',          x:43, y:90},
-  {id:'counting-house',  label:'The Counting House',  x:74, y:90},
+  {id:'apothecary',      label:'The Apothecary',     x:11, y:18},
+  {id:'mess-hall',       label:'The Mess Hall',       x:79, y:18},
+  {id:'archive',         label:'The Archive',         x:11, y:92},
+  {id:'shrine',          label:'The Shrine',          x:43, y:91},
+  {id:'counting-house',  label:'The Counting House',  x:74, y:92},
 ];
 
 let ednaPatrolInterval=null;
@@ -3629,23 +3629,25 @@ function stopEdnaPatrol(){
 function startEdnaPatrol(){
   stopEdnaPatrol();
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  const MIN=33;
-  const MAX=39;
+const MIN=62;
+const MAX=74;
+ednaPatrolLeft=68;
   const DURATION=8000;
   const STEP=(MAX-MIN)/(DURATION/50);
   ednaPatrolLeft=58;
   ednaPatrolDir=-1;
 
-  ednaPatrolInterval=setInterval(()=>{
-    const el=document.querySelector('.map-sprite-edna');
-    if(!el){stopEdnaPatrol();return;}
-    ednaPatrolLeft+=ednaPatrolDir*STEP;
-    if(ednaPatrolLeft<=MIN){ednaPatrolLeft=MIN;ednaPatrolDir=1;}
-    else if(ednaPatrolLeft>=MAX){ednaPatrolLeft=MAX;ednaPatrolDir=-1;}
-    el.style.left=ednaPatrolLeft+'%';
-    el.style.transform='translate(-50%, -50%)';
-    el.querySelector('img').style.transform=ednaPatrolDir===1?'rotate(-90deg)':'rotate(90deg)';
-  },50);
+ednaPatrolInterval=setInterval(()=>{
+  const el=document.querySelector('.map-sprite-edna');
+  if(!el){stopEdnaPatrol();return;}
+  ednaPatrolLeft+=ednaPatrolDir*STEP;
+  if(ednaPatrolLeft<=MIN){ednaPatrolLeft=MIN;ednaPatrolDir=1;}
+  else if(ednaPatrolLeft>=MAX){ednaPatrolLeft=MAX;ednaPatrolDir=-1;}
+  el.style.left=ednaPatrolLeft+'%';
+  el.style.top=ednaPatrolTop+'%';
+  el.style.transform='translate(-50%, -50%)';
+  el.querySelector('img').style.transform=ednaPatrolDir===1?'rotate(-90deg)':'rotate(90deg)';
+},50);
 }
 
 function renderMap(){
@@ -3692,7 +3694,7 @@ function renderMap(){
 
 
 const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
-const ednaX=ednaAtDoor?MAP_POS.dogs.x:58;
+const ednaX=ednaAtDoor?MAP_POS.dogs.x:68;
 const ednaPatrolY=ednaPatrolTop||33;
 const ednaSprite=`<div class="map-sprite map-sprite-edna${ednaAtDoor?'':' map-sprite-patrol'}"
   style="left:${ednaX}%;top:${ednaPatrolY}%;" onclick="showRoom('dogs')" title="Edna">
