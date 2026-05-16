@@ -3488,25 +3488,27 @@ const ROOM_ADJ={
   coach:  ['dogs','today'],
 };
 
+
 // Map node centers (% of layout container)
 const MAP_POS={
-  coach:  {x:50, y:12},
-  today:  {x:42, y:35},
-  dogs:   {x:72, y:35},
-  spin:   {x:72, y:52},
-  gym:    {x:42, y:52},
-  profile:{x:42, y:68},
-  rewards:{x:72, y:68},
-  inbox:  {x:42, y:80},
+  coach:  {x:55, y:8},   // Donut's Chamber
+  today:  {x:55, y:28},  // The Floor
+  dogs:   {x:85, y:28},  // The Kennels
+  gym:    {x:20, y:45},  // The Gym
+  spin:   {x:80, y:45},  // The Arena
+  profile:{x:22, y:62},  // The War Room
+  rewards:{x:78, y:60},  // The Vault
+  inbox:  {x:52, y:75},  // The Comm Tower
 };
 
 const SEALED_ROOMS=[
-  {id:'archive',         label:'The Archive',        x:20, y:92},
-  {id:'shrine',          label:'The Shrine',          x:42, y:92},
-  {id:'counting-house',  label:'The Counting House',  x:72, y:92},
-  {id:'apothecary',      label:'The Apothecary',      x:12, y:12},
-  {id:'mess-hall',       label:'The Mess Hall',       x:78, y:18},
+  {id:'apothecary',      label:'The Apothecary',     x:15, y:12},
+  {id:'mess-hall',       label:'The Mess Hall',       x:88, y:14},
+  {id:'archive',         label:'The Archive',         x:18, y:90},
+  {id:'shrine',          label:'The Shrine',          x:52, y:92},
+  {id:'counting-house',  label:'The Counting House',  x:82, y:90},
 ];
+
 
 let ednaPatrolInterval=null;
 let ednaPatrolLeft=57;
@@ -3627,8 +3629,8 @@ function stopEdnaPatrol(){
 function startEdnaPatrol(){
   stopEdnaPatrol();
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  const MIN=MAP_POS.today.x; // 42
-  const MAX=MAP_POS.dogs.x;  // 72
+  const MIN=MAP_POS.today.x; // 55
+  const MAX=MAP_POS.dogs.x;  // 85
   const RANGE=MAX-MIN;       // 30
   const DURATION=8000;       // 8s full loop
   const STEP=RANGE/(DURATION/50); // percent per tick at 50ms
@@ -3702,7 +3704,8 @@ function renderMap(){
   </div>`;
 
   const kronkSprite=`<div class="map-sprite map-sprite-kronk"
-    style="left:42%;top:43%;" onclick="showRoom('dogs')" title="Kronk">
+    // Kronk midpoint between Floor and Gym
+    style="left:37%;top:36%;" onclick="showRoom('dogs')" title="Kronk">
     <img src="${CHAR_KRONK_FRONT}" width="34" height="34" alt="Kronk"
       style="image-rendering:pixelated;">
   </div>`;
