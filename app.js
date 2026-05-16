@@ -3629,12 +3629,11 @@ function stopEdnaPatrol(){
 function startEdnaPatrol(){
   stopEdnaPatrol();
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  const MIN=62; // left edge of corridor
-  const MAX=74; // right edge of corridor
-  const RANGE=MAX-MIN;       // 30
-  const DURATION=8000;       // 8s full loop
-  const STEP=RANGE/(DURATION/50); // percent per tick at 50ms
-  ednaPatrolLeft=57;
+  const MIN=62;
+  const MAX=74;
+  const DURATION=8000;
+  const STEP=(MAX-MIN)/(DURATION/50);
+  ednaPatrolLeft=68;
   ednaPatrolDir=-1;
 
   ednaPatrolInterval=setInterval(()=>{
@@ -3644,8 +3643,7 @@ function startEdnaPatrol(){
     if(ednaPatrolLeft<=MIN){ednaPatrolLeft=MIN;ednaPatrolDir=1;}
     else if(ednaPatrolLeft>=MAX){ednaPatrolLeft=MAX;ednaPatrolDir=-1;}
     el.style.left=ednaPatrolLeft+'%';
-    // dir 1 = moving right toward Floor = -90deg, dir -1 = moving left toward Kennels = 90deg
-    el.style.transform=`translate(-50%, -50%) rotate(${ednaPatrolDir===1?-90:90}deg)`;
+    el.style.transform='translate(-50%, -50%)';
   },50);
 }
 
