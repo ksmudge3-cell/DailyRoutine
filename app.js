@@ -3491,26 +3491,26 @@ const ROOM_ADJ={
 
 // Map node centers (% of layout container)
 const MAP_POS={
-  coach:  {x:48, y:13},  // Donut's Chamber
-  today:  {x:43, y:42},  // The Floor
-  dogs:   {x:63, y:42},  // The Kennels
-  gym:    {x:18, y:58},  // The Gym
-  spin:   {x:60, y:55},  // The Arena
-  profile:{x:18, y:72},  // The War Room
-  rewards:{x:58, y:70},  // The Vault
-  inbox:  {x:43, y:83},  // The Comm Tower
+  coach:  {x:46, y:13},  // Donut's Chamber
+  today:  {x:43, y:37},  // The Floor
+  dogs:   {x:68, y:35},  // The Kennels
+  gym:    {x:18, y:52},  // The Gym
+  spin:   {x:55, y:50},  // The Arena
+  profile:{x:18, y:67},  // The War Room
+  rewards:{x:50, y:65},  // The Vault
+  inbox:  {x:43, y:80},  // The Comm Tower
 };
 
 const SEALED_ROOMS=[
-  {id:'apothecary',      label:'The Apothecary',     x:10, y:20},
-  {id:'mess-hall',       label:'The Mess Hall',       x:78, y:20},
-  {id:'archive',         label:'The Archive',         x:10, y:97},
-  {id:'shrine',          label:'The Shrine',          x:43, y:96},
-  {id:'counting-house',  label:'The Counting House',  x:73, y:97},
+  {id:'apothecary',      label:'The Apothecary',     x:10, y:22},
+  {id:'mess-hall',       label:'The Mess Hall',       x:78, y:22},
+  {id:'archive',         label:'The Archive',         x:10, y:90},
+  {id:'shrine',          label:'The Shrine',          x:43, y:93},
+  {id:'counting-house',  label:'The Counting House',  x:73, y:90},
 ];
 
 let ednaPatrolInterval=null;
-let ednaPatrolLeft=53;
+let ednaPatrolLeft=30;
 let ednaPatrolTop=36;
 let ednaPatrolDir=-1;
 let currentRoom=loadLocal('dr-last-screen','today')||'today';
@@ -3632,7 +3632,7 @@ function startEdnaPatrol(){
   const MAX=74;
   const DURATION=8000;
   const STEP=(MAX-MIN)/(DURATION/50);
-  ednaPatrolLeft=53;
+  ednaPatrolLeft=30;
   ednaPatrolDir=-1;
 
   ednaPatrolInterval=setInterval(()=>{
@@ -3708,7 +3708,7 @@ const svgTaps=`<svg class="map-tap-svg" viewBox="0 0 100 100" preserveAspectRati
 
   // Companions
   const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
-  const ednaX=ednaAtDoor?MAP_POS.dogs.x:53;
+  const ednaX=ednaAtDoor?MAP_POS.dogs.x:30;
   const ednaPatrolY=ednaPatrolTop||36;
   const ednaSprite=`<div class="map-sprite map-sprite-edna${ednaAtDoor?'':' map-sprite-patrol'}"
     style="position:absolute;left:${ednaX}%;top:${ednaPatrolY}%;" onclick="showRoom('dogs')" title="Edna">
