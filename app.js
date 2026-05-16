@@ -1913,11 +1913,96 @@ function cancelCommAction(id){
 function executeCommAction(id){
   const action=commTowerPending.find(a=>a.id===id);
   if(!action)return;
-  // Execution logic per action type — stub for now, expands in next pass
-  commTowerHistory.push({role:'system',content:`LOG ENTRY: ${action.summary} — EXECUTED.`,timestamp:Date.now()});
+
+  let resultMsg='LOG ENTRY: Action executed.';
+
+  switch(action.type){
+
+    case 'add_task':{
+      const p=action.params||{};
+      const taskId='ct_'+Date.now();
+      const newTask={id:taskId,name:p.name||action.summary,time:p.time||''};
+      const day=p.day||'weekday';
+      const section=p.section||'Evening';
+      const sc=day==='weekend'?schedule.weekend:schedule.weekday;
+      const target=sc.find(s=>s.section===section)||sc[sc.length-1];
+      if(target){target.tasks.push(newTask);save('dr-schedule',schedule);}
+      resultMsg=`LOG ENTRY: Task added — "${newTask.name}" → ${section}. Schedule updated.`;
+      break;
+    }
+
+    case 'remove_task':{
+      const p=action.params||{};
+      const tid=p.task_id||p.id;
+      ['weekday','weekend'].forEach(dayType=>{
+        (schedule[dayType]||[]).forEach(s=>{
+          s.tasks=s.tasks.filter(t=>t.id!==tid&&t.name!==p.name);
+        });
+      });
+      save('dr-schedule',schedule);
+      resultMsg=`LOG ENTRY: Task removed — "${p.name||tid}". Schedule updated.`;
+      break;
+    }
+
+    case 'snooze_task':{
+      const p=action.params||{};
+      // Mark today's task as N/A, it'll reappear tomorrow naturally
+      const tq=qualityState[todayStr()]||{};
+      if(p.task_id)tq[p.task_id]='gray';
+      qualityState[todayStr()]=tq;
+      save('dr-quality',qualityState);
+      resultMsg=`LOG ENTRY: Task snoozed — "${p.name||p.task_id}". Marked N/A today. Reappears tomorrow.`;
+      break;
+    }
+
+    case 'declare_condition':{
+      const p=action.params||{};
+      floorCondition={type:p.condition||p.type,date:todayStr(),declared:Date.now()};
+      saveLocal('dr-floor-condition',floorCondition);
+      declareFloorCondition(floorCondition.type);
+      resultMsg=`FLOOR CONDITION DECLARED: ${floorCondition.type}. Affected tasks set to Recovering. Expires midnight.`;
+      break;
+    }
+
+    case 'clear_debuff':{
+      const p=action.params||{};
+      clearSlot(p.category||p.slot);
+      resultMsg=`LOG ENTRY: Debuff cleared — "${p.label||p.category}". The dungeon notes the cause has been addressed.`;
+      break;
+    }
+
+    case 'side_quest_add':{
+      const p=action.params||{};
+      const quest={id:'sq_'+Date.now(),name:p.name||action.summary,added:Date.now()};
+      sideQuestBacklog.push(quest);
+      save('dr-side-quests',sideQuestBacklog);
+      resultMsg=`LOG ENTRY: Side quest added — "${quest.name}". Added to backlog. The Arena awaits.`;
+      break;
+    }
+
+    case 'reminder':{
+      const p=action.params||{};
+      notifs.push({id:'n_'+Date.now(),label:p.label||action.summary,time:p.time||'09:00',on:true});
+      save('dr-notifs',notifs);
+      resultMsg=`LOG ENTRY: Reminder set — "${p.label||action.summary}" at ${p.time||'09:00'}.`;
+      break;
+    }
+
+    case 'query':
+    default:
+      resultMsg=`LOG ENTRY: ${action.summary} — EXECUTED.`;
+      break;
+  }
+
+  commTowerHistory.push({role:'system',content:resultMsg,timestamp:Date.now()});
   commTowerPending=commTowerPending.filter(a=>a.id!==id);
   save('dr-comm-pending',commTowerPending);
   save('dr-comm-history',commTowerHistory);
+
+  // Re-render affected screens
+  if(['add_task','remove_task','snooze_task'].includes(action.type))renderToday();
+  if(action.type==='declare_condition'){renderToday();renderCollapseEvent();}
+
   renderInbox();
 }
 
