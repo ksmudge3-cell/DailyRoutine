@@ -3491,27 +3491,27 @@ const ROOM_ADJ={
 
 // Map node centers (% of layout container)
 const MAP_POS={
-  coach:  {x:48, y:9},   // good X, nudge down slightly
-  today:  {x:45, y:32},  // nudge left, down
-  dogs:   {x:75, y:33},  // nudge left, down
-  gym:    {x:17, y:48},  // good, tiny nudge left
-  spin:   {x:68, y:46},  // nudge left
-  profile:{x:17, y:64},  // good
-  rewards:{x:68, y:61},  // nudge left
-  inbox:  {x:45, y:75},  // nudge left
+  coach:  {x:48, y:10},  // nudge down
+  today:  {x:45, y:34},  // nudge down
+  dogs:   {x:72, y:34},  // nudge left, down
+  gym:    {x:17, y:50},  // nudge down
+  spin:   {x:65, y:50},  // nudge left, down
+  profile:{x:17, y:67},  // nudge down
+  rewards:{x:65, y:64},  // nudge left, down
+  inbox:  {x:45, y:78},  // nudge down
 };
 
 const SEALED_ROOMS=[
-  {id:'apothecary',      label:'The Apothecary',     x:12, y:15},
-  {id:'mess-hall',       label:'The Mess Hall',       x:80, y:15},
-  {id:'archive',         label:'The Archive',         x:13, y:92},
-  {id:'shrine',          label:'The Shrine',          x:45, y:95},
-  {id:'counting-house',  label:'The Counting House',  x:76, y:92},
+  {id:'apothecary',      label:'The Apothecary',     x:12, y:16},
+  {id:'mess-hall',       label:'The Mess Hall',       x:80, y:16},
+  {id:'archive',         label:'The Archive',         x:13, y:88},
+  {id:'shrine',          label:'The Shrine',          x:45, y:88},
+  {id:'counting-house',  label:'The Counting House',  x:76, y:88},
 ];
 
-
 let ednaPatrolInterval=null;
-ednaPatrolLeft=60; // midpoint between 45 and 75
+ednaPatrolLeft=58;
+const ednaX=ednaAtDoor?MAP_POS.dogs.x:58;
 const ednaX=ednaAtDoor?MAP_POS.dogs.x:60;
 let ednaPatrolDir=-1; // -1 = toward Floor, 1 = toward Kennels
 let currentRoom=loadLocal('dr-last-screen','today')||'today';
