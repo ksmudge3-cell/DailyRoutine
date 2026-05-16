@@ -3510,9 +3510,9 @@ const SEALED_ROOMS=[
 ];
 
 let ednaPatrolInterval=null;
-ednaPatrolLeft=58;
-const ednaX=ednaAtDoor?MAP_POS.dogs.x:58;
-let ednaPatrolDir=-1; // -1 = toward Floor, 1 = toward Kennels
+let ednaPatrolLeft=58;
+let ednaPatrolTop=33;
+let ednaPatrolDir=-1;
 let currentRoom=loadLocal('dr-last-screen','today')||'today';
 
 function showSealedRoom(){
@@ -3633,7 +3633,7 @@ function startEdnaPatrol(){
   const MAX=74;
   const DURATION=8000;
   const STEP=(MAX-MIN)/(DURATION/50);
-  ednaPatrolLeft=68;
+  ednaPatrolLeft=58;
   ednaPatrolDir=-1;
 
   ednaPatrolInterval=setInterval(()=>{
@@ -3691,8 +3691,8 @@ function renderMap(){
   ).join('');
 
   const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
-  const ednaX=ednaAtDoor?MAP_POS.dogs.x:63; // center of corridor
-  const ednaPatrolY=33;
+  const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
+  const ednaX=ednaAtDoor?MAP_POS.dogs.x:58;
   const ednaSprite=`<div class="map-sprite map-sprite-edna${ednaAtDoor?'':' map-sprite-patrol'}"
     style="left:${ednaX}%;top:${ednaPatrolY}%;" onclick="showRoom('dogs')" title="Edna">
     <img src="${ednaAtDoor?CHAR_EDNA_FRONT:CHAR_EDNA_APPROACH}" width="30" height="30" alt="Edna"
