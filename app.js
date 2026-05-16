@@ -3616,7 +3616,7 @@ function renderRoomBorder(name){
   border.innerHTML=`<div class="room-border-inner">
     <div class="room-exits">${exits}</div>
     <button class="room-map-btn" onclick="showMap()">
-      <img src="${ENV_DUNGEON_MAP}" width="24" height="24" alt="Map" style="image-rendering:pixelated;">
+      <img src="${ENV_DUNGEON_COMPASS}" width="24" height="24" alt="Map" style="image-rendering:pixelated;">
       <span class="room-map-label">MAP</span>
     </button>
   </div>`;
@@ -3656,10 +3656,8 @@ function renderMap(){
   const pts=getPoints();
   const level=xpState&&xpState.level?xpState.level:1;
 
-  // Active room tap zones
   const roomTaps=Object.entries(ROOMS).map(([id,room])=>{
     const p=MAP_POS[id];if(!p)return'';
-
     const pct=id==='today'?dayPct(new Date().getDay()):0;
     const isBoss=id==='spin'&&typeof bossActive!=='undefined'&&bossActive;
 
@@ -3672,45 +3670,43 @@ function renderMap(){
 
     let attention='';
     if(id==='today'&&countDebuffs()>=3)
-      attention=`<span class="map-attn-icon map-attn-pulse">⚠️</span>`;
+      attention=`<span class="map-attn-icon map-attn-pulse">${pixelIcon(ICON_WARNING,16)}</span>`;
     else if(id==='dogs'&&typeof dogPct!=='undefined'&&dogPct<100)
-      attention=`<span class="map-attn-icon map-attn-pulse">🐾</span>`;
+      attention=`<span class="map-attn-icon map-attn-pulse">${pixelIcon(ICON_PAW,16)}</span>`;
     else if(id==='inbox'&&inbox.length>0)
-      attention=`<span class="map-attn-icon map-attn-pulse">📨</span>`;
+      attention=`<span class="map-attn-icon map-attn-pulse">${pixelIcon(COMM_BRACELET_PX,16)}</span>`;
     else if(id==='rewards'&&getPoints()>0)
-      attention=`<span class="map-attn-icon map-attn-pulse">🪙</span>`;
+      attention=`<span class="map-attn-icon map-attn-pulse">${pixelIcon(ICON_COINS_STACK,16)}</span>`;
     else if(isBoss)
-      attention=`<span class="map-attn-icon map-attn-pulse">💀</span>`;
+      attention=`<span class="map-attn-icon map-attn-pulse">${pixelIcon(ICON_SKULL,16)}</span>`;
     else if(id==='coach'&&donutWeeklySummary?.week_number===getWeekNumber())
-      attention=`<span class="map-attn-icon map-attn-pulse">👑</span>`;
+      attention=`<span class="map-attn-icon map-attn-pulse">${pixelIcon(ICON_CROWN,16)}</span>`;
 
     return`<div class="map-tap-zone${stateClass}" style="left:${p.x}%;top:${p.y}%;"
       onclick="showRoom('${id}')" title="${room.name}">${attention}</div>`;
   }).join('');
 
-  // Sealed room taps
   const sealedTaps=SEALED_ROOMS.map(r=>
     `<div class="map-tap-zone map-tap-sealed" style="left:${r.x}%;top:${r.y}%;"
       onclick="showSealedRoom()" title="${r.label}"></div>`
   ).join('');
 
-  // Companions — Edna patrols Floor↔Kennels corridor, Kronk in Floor↔Gym corridor
   const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
-  const ednaX=ednaAtDoor?MAP_POS.dogs.x:57;
+  const ednaX=ednaAtDoor?MAP_POS.dogs.x:70;
+  const ednaPatrolY=33;
   const ednaSprite=`<div class="map-sprite map-sprite-edna${ednaAtDoor?'':' map-sprite-patrol'}"
-    style="left:${ednaX}%;top:${MAP_POS.dogs.y}%;" onclick="showRoom('dogs')" title="Edna">
+    style="left:${ednaX}%;top:${ednaPatrolY}%;" onclick="showRoom('dogs')" title="Edna">
     <img src="${ednaAtDoor?CHAR_EDNA_FRONT:CHAR_EDNA_APPROACH}" width="30" height="30" alt="Edna"
       style="image-rendering:pixelated;">
   </div>`;
 
   const kronkSprite=`<div class="map-sprite map-sprite-kronk"
-    // Kronk midpoint between Floor and Gym
     style="left:37%;top:36%;" onclick="showRoom('dogs')" title="Kronk">
     <img src="${CHAR_KRONK_FRONT}" width="34" height="34" alt="Kronk"
       style="image-rendering:pixelated;">
   </div>`;
 
- wrap.innerHTML=`
+  wrap.innerHTML=`
     <div class="map-header">
       <div class="map-title">⚔ DUNGEON CRAWLER</div>
       <div class="map-subtitle">DAILY ROUTINE</div>
@@ -3723,7 +3719,7 @@ function renderMap(){
       ${kronkSprite}
     </div>
     <div class="map-footer">
-      <span class="map-footer-text">FLOOR ${level} · STREAK ${streak} DAYS · 🪙 ${pts}</span>
+      <span class="map-footer-text">FLOOR ${level} · STREAK ${streak} DAYS · ${pixelIcon(ICON_COINS_STACK,14)} ${pts}</span>
     </div>`;
 
   if(!ednaAtDoor) startEdnaPatrol();
