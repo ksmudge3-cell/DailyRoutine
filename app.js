@@ -3629,8 +3629,8 @@ function stopEdnaPatrol(){
 function startEdnaPatrol(){
   stopEdnaPatrol();
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  const MIN=MAP_POS.today.x; // 55
-  const MAX=MAP_POS.dogs.x;  // 85
+  const MIN=62; // left edge of corridor
+  const MAX=74; // right edge of corridor
   const RANGE=MAX-MIN;       // 30
   const DURATION=8000;       // 8s full loop
   const STEP=RANGE/(DURATION/50); // percent per tick at 50ms
@@ -3692,7 +3692,7 @@ function renderMap(){
   ).join('');
 
   const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
-  const ednaX=ednaAtDoor?MAP_POS.dogs.x:70;
+  const ednaX=ednaAtDoor?MAP_POS.dogs.x:68; // center of corridor
   const ednaPatrolY=33;
   const ednaSprite=`<div class="map-sprite map-sprite-edna${ednaAtDoor?'':' map-sprite-patrol'}"
     style="left:${ednaX}%;top:${ednaPatrolY}%;" onclick="showRoom('dogs')" title="Edna">
