@@ -3491,27 +3491,27 @@ const ROOM_ADJ={
 
 // Map node centers (% of layout container)
 const MAP_POS={
-  coach:  {x:48, y:10},  // nudge down
-  today:  {x:45, y:34},  // nudge down
-  dogs:   {x:72, y:34},  // nudge left, down
-  gym:    {x:17, y:50},  // nudge down
-  spin:   {x:65, y:50},  // nudge left, down
-  profile:{x:17, y:67},  // nudge down
-  rewards:{x:65, y:64},  // nudge left, down
-  inbox:  {x:45, y:78},  // nudge down
+  coach:  {x:48, y:11},  // nudge down slightly
+  today:  {x:43, y:36},  // nudge left
+  dogs:   {x:68, y:36},  // nudge left
+  gym:    {x:17, y:52},  // good
+  spin:   {x:62, y:52},  // nudge left
+  profile:{x:17, y:68},  // nudge down
+  rewards:{x:62, y:66},  // nudge left
+  inbox:  {x:43, y:80},  // good
 };
 
 const SEALED_ROOMS=[
-  {id:'apothecary',      label:'The Apothecary',     x:12, y:16},
-  {id:'mess-hall',       label:'The Mess Hall',       x:80, y:16},
-  {id:'archive',         label:'The Archive',         x:13, y:88},
-  {id:'shrine',          label:'The Shrine',          x:45, y:88},
-  {id:'counting-house',  label:'The Counting House',  x:76, y:88},
+  {id:'apothecary',      label:'The Apothecary',     x:12, y:17},
+  {id:'mess-hall',       label:'The Mess Hall',       x:80, y:17},
+  {id:'archive',         label:'The Archive',         x:13, y:90},
+  {id:'shrine',          label:'The Shrine',          x:43, y:90},
+  {id:'counting-house',  label:'The Counting House',  x:74, y:90},
 ];
 
 let ednaPatrolInterval=null;
 let ednaPatrolLeft=58;
-let ednaPatrolTop=33;
+let ednaPatrolTop=36;
 let ednaPatrolDir=-1;
 let currentRoom=loadLocal('dr-last-screen','today')||'today';
 
@@ -3629,8 +3629,8 @@ function stopEdnaPatrol(){
 function startEdnaPatrol(){
   stopEdnaPatrol();
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  const MIN=62;
-  const MAX=74;
+  const MIN=33;
+  const MAX=39;
   const DURATION=8000;
   const STEP=(MAX-MIN)/(DURATION/50);
   ednaPatrolLeft=58;
@@ -3690,7 +3690,7 @@ function renderMap(){
       onclick="showSealedRoom()" title="${r.label}"></div>`
   ).join('');
 
-  
+
 const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
 const ednaX=ednaAtDoor?MAP_POS.dogs.x:58;
 const ednaPatrolY=ednaPatrolTop||33;
