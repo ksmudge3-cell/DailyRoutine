@@ -3644,6 +3644,7 @@ function startEdnaPatrol(){
     else if(ednaPatrolLeft>=MAX){ednaPatrolLeft=MAX;ednaPatrolDir=-1;}
     el.style.left=ednaPatrolLeft+'%';
     el.style.transform='translate(-50%, -50%)';
+    el.querySelector('img').style.transform=ednaPatrolDir===1?'rotate(-90deg)':'rotate(90deg)';
   },50);
 }
 
