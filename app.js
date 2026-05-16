@@ -3690,7 +3690,7 @@ function renderMap(){
       onclick="showSealedRoom()" title="${r.label}"></div>`
   ).join('');
 
-  const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
+
   const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
   const ednaX=ednaAtDoor?MAP_POS.dogs.x:58;
   const ednaSprite=`<div class="map-sprite map-sprite-edna${ednaAtDoor?'':' map-sprite-patrol'}"
