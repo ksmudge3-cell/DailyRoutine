@@ -3656,21 +3656,6 @@ function renderMap(){
   const level=xpState&&xpState.level?xpState.level:1;
   const todayPct=dayPct(new Date().getDay());
 
-  // Visual state nodes — door images with state classes for Style Chat animations
-  const roomNodes=Object.entries(ROOMS).map(([id,room])=>{
-    const p=MAP_POS[id];if(!p)return'';
-    const isBoss=id==='spin'&&typeof bossActive!=='undefined'&&bossActive;
-    let cls='map-room-node';
-    if(id===currentRoom)cls+=' map-room-active';
-    if(id==='today'&&todayPct===100)cls+=' map-room-complete';
-    if(isBoss)cls+=' map-room-boss';
-    if(id==='today'&&isRecoveryMode())cls+=' map-room-recovery';
-    if(id==='today'&&collapseState?.active?.applyDate===todayStr())cls+=' map-room-collapsed';
-    return`<div class="${cls}" style="position:absolute;left:${p.x}%;top:${p.y}%;transform:translate(-50%,-50%);pointer-events:none;">
-      <img src="${room.door()}" width="32" height="32" style="image-rendering:pixelated;opacity:0.7;">
-    </div>`;
-  }).join('');
-
   // Attention icon overlays
   const attentionIcons=Object.entries(ROOMS).map(([id,room])=>{
     const p=MAP_POS[id];if(!p)return'';
@@ -3692,8 +3677,8 @@ function renderMap(){
     return`<div class="map-attn-wrap map-attn-pulse" style="position:absolute;left:${p.x}%;top:${p.y}%;transform:translate(-50%,-170%);pointer-events:none;">${attention}</div>`;
   }).join('');
 
-  // SVG tap targets — hit detection only, no visuals
-const svgTaps=`<svg class="map-tap-svg" viewBox="0 0 100 100" preserveAspectRatio="none"
+  // SVG tap targets — hit detection only
+  const svgTaps=`<svg class="map-tap-svg" viewBox="0 0 100 100" preserveAspectRatio="none"
     style="position:absolute;inset:0;width:100%;height:100%;">
     ${Object.entries(ROOMS).map(([id,room])=>{
       const p=MAP_POS[id];if(!p)return'';
@@ -3729,7 +3714,6 @@ const svgTaps=`<svg class="map-tap-svg" viewBox="0 0 100 100" preserveAspectRati
     </div>
     <div class="map-layout">
       <img src="${ENV_DUNGEON_LAYOUT}" class="map-bg-image" alt="Dungeon Map">
-      ${roomNodes}
       ${svgTaps}
       ${attentionIcons}
       ${ednaSprite}
