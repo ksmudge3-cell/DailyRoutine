@@ -1837,24 +1837,57 @@ function deleteInboxItem(id){inbox=inbox.filter(i=>i.id!==id);save('dr-inbox',in
 function clearAllInbox(){if(!inbox.length)return;if(!confirm('Clear all inbox items?'))return;inbox=[];save('dr-inbox',inbox);renderInbox();}
 
 function renderInbox(){
-  const list=document.getElementById('inbox-list'),sortBtn=document.getElementById('inbox-sort-btn'),clearBtn=document.getElementById('inbox-clear-btn'),navBtn=document.getElementById('inbox-nav-btn');
-  if(!list)return;
-  if(!inbox.length){
-    list.innerHTML='<div class="inbox-empty">Nothing here yet.<br>Add anything on your mind.</div>';
-    if(sortBtn)sortBtn.style.display='none';
-    if(clearBtn)clearBtn.style.display='none';
-    navBtn.querySelector('.nav-icon').innerHTML='&#9632;';
-    return;
-  }
-  list.innerHTML=inbox.map(item=>`
-    <div class="inbox-item">
-      <div style="flex:1"><div class="inbox-item-text">${item.text}</div>
-      <div class="inbox-item-time">${new Date(item.added).toLocaleDateString('en-US',{month:'short',day:'numeric'})}, ${new Date(item.added).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div></div>
-      <button class="inbox-del" onclick="deleteInboxItem('${item.id}')">×</button>
-    </div>`).join('');
-  if(sortBtn)sortBtn.style.display='flex';
-  if(clearBtn)clearBtn.style.display='block';
-  navBtn.querySelector('.nav-icon').innerHTML='&#9632;<span class="inbox-count">'+inbox.length+'</span>';
+  const wrap=document.getElementById('comm-tower-content');if(!wrap)return;
+
+  // Pending queue
+  const pendingHtml=commTowerPending.length?`
+    <div class="comm-pending-queue">
+      <div class="comm-section-label">PENDING ACTIONS</div>
+      ${commTowerPending.map(a=>`
+        <div class="comm-pending-item" id="pending-${a.id}">
+          <span class="comm-pending-icon">⏳</span>
+          <span class="comm-pending-text">${a.summary}</span>
+          <button class="comm-pending-review" onclick="showCommConfirm('${a.id}')">REVIEW</button>
+        </div>`).join('')}
+    </div>`:'';
+
+  // Conversation history
+  const historyHtml=commTowerHistory.map(m=>{
+    if(m.role==='user') return`<div class="comm-msg comm-msg-user"><div class="comm-msg-text">${m.content}</div></div>`;
+    if(m.role==='donut') return`<div class="comm-msg comm-msg-donut">
+      <img src="${ICON_PRINCESS_DONUT_CLOSEUP}" width="24" height="24" style="border-radius:50%;flex-shrink:0;">
+      <div class="comm-msg-text"><span class="comm-donut-label">PRINCESS DONUT</span>${m.content}</div>
+    </div>`;
+    return`<div class="comm-msg comm-msg-system"><div class="comm-msg-text">${m.content}</div></div>`;
+  }).join('');
+
+  wrap.innerHTML=`
+    <div class="comm-tower-header">
+      <div class="comm-tower-title">THE COMM TOWER</div>
+      <div class="comm-tower-subtitle">System Interface</div>
+    </div>
+    <div class="comm-divider"></div>
+    ${pendingHtml}
+    <div class="comm-history" id="comm-history">${historyHtml||'<div class="comm-empty">THE SYSTEM IS ONLINE. AWAITING INPUT.</div>'}</div>
+    <div class="comm-input-row">
+      <input class="comm-input" id="comm-input" type="text" placeholder="Send a command...">
+      <button class="comm-send-btn" onclick="sendCommMessage()">SEND</button>
+    </div>`;
+
+  // Scroll to bottom
+  setTimeout(()=>{const h=document.getElementById('comm-history');if(h)h.scrollTop=h.scrollHeight;},50);
+
+  // Wire enter key
+  setTimeout(()=>{
+    const inp=document.getElementById('comm-input');
+    if(inp)inp.onkeydown=e=>{if(e.key==='Enter')sendCommMessage();};
+  },50);
+}
+function showCommConfirm(id){
+  const action=commTowerPending.find(a=>a.id===id);
+  if(!action)return;
+  // Will be fully implemented in API step
+  alert('CONFIRM: '+action.summary);
 }
 
 function copyInbox(btn){
