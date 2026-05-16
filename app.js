@@ -300,7 +300,14 @@ async function loadFromSupabase(){
         if(!hasCombined||(dogTasks.prevention||[]).length>2)dogTasks.prevention=DEFAULT_DOG_TASKS.prevention;
       }
       if(d.rewardsState)rewardsState={...DEFAULT_REWARDS_STATE,...d.rewardsState};
-      if(d.xpState)xpState={...xpState,...d.xpState};
+      if(d.xpState){
+        const mergedCompanionXP={
+          edna:Math.max(xpState.companionXP?.edna||0,d.xpState.companionXP?.edna||0),
+          kronk:Math.max(xpState.companionXP?.kronk||0,d.xpState.companionXP?.kronk||0),
+        };
+        const mergedTotalXP=Math.max(xpState.totalXP||0,d.xpState.totalXP||0);
+        xpState={...xpState,...d.xpState,totalXP:mergedTotalXP,companionXP:mergedCompanionXP};
+      }
       if(d.companionPhotos)companionPhotos={...companionPhotos,...d.companionPhotos};
       if(d.dogState)dogState=d.dogState;
       if(d.groomState)groomState=d.groomState;
