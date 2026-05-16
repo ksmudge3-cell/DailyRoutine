@@ -3512,7 +3512,6 @@ const SEALED_ROOMS=[
 let ednaPatrolInterval=null;
 ednaPatrolLeft=58;
 const ednaX=ednaAtDoor?MAP_POS.dogs.x:58;
-const ednaX=ednaAtDoor?MAP_POS.dogs.x:60;
 let ednaPatrolDir=-1; // -1 = toward Floor, 1 = toward Kennels
 let currentRoom=loadLocal('dr-last-screen','today')||'today';
 
