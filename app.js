@@ -3625,29 +3625,27 @@ function renderRoomBorder(name){
 function stopEdnaPatrol(){
   if(ednaPatrolInterval){clearInterval(ednaPatrolInterval);ednaPatrolInterval=null;}
 }
-
 function startEdnaPatrol(){
   stopEdnaPatrol();
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-const MIN=62;
-const MAX=74;
-ednaPatrolLeft=68;
+  const MIN=62;
+  const MAX=74;
   const DURATION=8000;
   const STEP=(MAX-MIN)/(DURATION/50);
-  ednaPatrolLeft=58;
+  ednaPatrolLeft=68;
   ednaPatrolDir=-1;
 
-ednaPatrolInterval=setInterval(()=>{
-  const el=document.querySelector('.map-sprite-edna');
-  if(!el){stopEdnaPatrol();return;}
-  ednaPatrolLeft+=ednaPatrolDir*STEP;
-  if(ednaPatrolLeft<=MIN){ednaPatrolLeft=MIN;ednaPatrolDir=1;}
-  else if(ednaPatrolLeft>=MAX){ednaPatrolLeft=MAX;ednaPatrolDir=-1;}
-  el.style.left=ednaPatrolLeft+'%';
-  el.style.top=ednaPatrolTop+'%';
-  el.style.transform='translate(-50%, -50%)';
-  el.querySelector('img').style.transform=ednaPatrolDir===1?'rotate(-90deg)':'rotate(90deg)';
-},50);
+  ednaPatrolInterval=setInterval(()=>{
+    const el=document.querySelector('.map-sprite-edna');
+    if(!el){stopEdnaPatrol();return;}
+    ednaPatrolLeft+=ednaPatrolDir*STEP;
+    if(ednaPatrolLeft<=MIN){ednaPatrolLeft=MIN;ednaPatrolDir=1;}
+    else if(ednaPatrolLeft>=MAX){ednaPatrolLeft=MAX;ednaPatrolDir=-1;}
+    el.style.left=ednaPatrolLeft+'%';
+    el.style.top=ednaPatrolTop+'%';
+    el.style.transform='translate(-50%, -50%)';
+    el.querySelector('img').style.transform=ednaPatrolDir===1?'rotate(-90deg)':'rotate(90deg)';
+  },50);
 }
 
 function renderMap(){
