@@ -3702,7 +3702,7 @@ function renderMap(){
   </div>`;
 
   const kronkSprite=`<div class="map-sprite map-sprite-kronk"
-    style="position:absolute;left:35%;top:45%;" onclick="showRoom('dogs')" title="Kronk">
+    style="position:absolute;left:35%;top:35%;" onclick="showRoom('dogs')" title="Kronk">
     <img src="${CHAR_KRONK_FRONT}" width="34" height="34" alt="Kronk"
       style="image-rendering:pixelated;">
   </div>`;
