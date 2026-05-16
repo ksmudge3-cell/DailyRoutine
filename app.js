@@ -3654,54 +3654,70 @@ function renderMap(){
   const streak=calcStreak();
   const pts=getPoints();
   const level=xpState&&xpState.level?xpState.level:1;
+  const todayPct=dayPct(new Date().getDay());
 
-  const roomTaps=Object.entries(ROOMS).map(([id,room])=>{
+  // Visual state nodes — door images with state classes for Style Chat animations
+  const roomNodes=Object.entries(ROOMS).map(([id,room])=>{
     const p=MAP_POS[id];if(!p)return'';
-    const pct=id==='today'?dayPct(new Date().getDay()):0;
     const isBoss=id==='spin'&&typeof bossActive!=='undefined'&&bossActive;
-
-    let stateClass='';
-    if(id===currentRoom)stateClass+=' map-room-active';
-    if(id==='today'&&pct===100)stateClass+=' map-room-complete';
-    if(isBoss)stateClass+=' map-room-boss';
-    if(id==='today'&&isRecoveryMode())stateClass+=' map-room-recovery';
-    if(id==='today'&&collapseState?.active?.applyDate===todayStr())stateClass+=' map-room-collapsed';
-
-    let attention='';
-    if(id==='today'&&countDebuffs()>=3)
-      attention=`<span class="map-attn-icon map-attn-pulse">${pixelIcon(ICON_WARNING,16)}</span>`;
-    else if(id==='dogs'&&typeof dogPct!=='undefined'&&dogPct<100)
-      attention=`<span class="map-attn-icon map-attn-pulse">${pixelIcon(ICON_PAW,16)}</span>`;
-    else if(id==='inbox'&&inbox.length>0)
-      attention=`<span class="map-attn-icon map-attn-pulse">${pixelIcon(COMM_BRACELET_PX,16)}</span>`;
-    else if(id==='rewards'&&getPoints()>0)
-      attention=`<span class="map-attn-icon map-attn-pulse">${pixelIcon(ICON_COINS_STACK,16)}</span>`;
-    else if(isBoss)
-      attention=`<span class="map-attn-icon map-attn-pulse">${pixelIcon(ICON_SKULL,16)}</span>`;
-    else if(id==='coach'&&donutWeeklySummary?.week_number===getWeekNumber())
-      attention=`<span class="map-attn-icon map-attn-pulse">${pixelIcon(ICON_CROWN,16)}</span>`;
-
-    return`<div class="map-tap-zone${stateClass}" style="left:${p.x}%;top:${p.y}%;"
-      onclick="showRoom('${id}')" title="${room.name}">${attention}</div>`;
+    let cls='map-room-node';
+    if(id===currentRoom)cls+=' map-room-active';
+    if(id==='today'&&todayPct===100)cls+=' map-room-complete';
+    if(isBoss)cls+=' map-room-boss';
+    if(id==='today'&&isRecoveryMode())cls+=' map-room-recovery';
+    if(id==='today'&&collapseState?.active?.applyDate===todayStr())cls+=' map-room-collapsed';
+    return`<div class="${cls}" style="position:absolute;left:${p.x}%;top:${p.y}%;transform:translate(-50%,-50%);pointer-events:none;">
+      <img src="${room.door()}" width="32" height="32" style="image-rendering:pixelated;opacity:0.7;">
+    </div>`;
   }).join('');
 
-  const sealedTaps=SEALED_ROOMS.map(r=>
-    `<div class="map-tap-zone map-tap-sealed" style="left:${r.x}%;top:${r.y}%;"
-      onclick="showSealedRoom()" title="${r.label}"></div>`
-  ).join('');
+  // Attention icon overlays
+  const attentionIcons=Object.entries(ROOMS).map(([id,room])=>{
+    const p=MAP_POS[id];if(!p)return'';
+    const isBoss=id==='spin'&&typeof bossActive!=='undefined'&&bossActive;
+    let attention='';
+    if(id==='today'&&countDebuffs()>=3)
+      attention=pixelIcon(ICON_WARNING,16);
+    else if(id==='dogs'&&typeof dogPct!=='undefined'&&dogPct<100)
+      attention=pixelIcon(ICON_PAW,16);
+    else if(id==='inbox'&&inbox.length>0)
+      attention=pixelIcon(COMM_BRACELET_PX,16);
+    else if(id==='rewards'&&getPoints()>0)
+      attention=pixelIcon(ICON_COINS_STACK,16);
+    else if(isBoss)
+      attention=pixelIcon(ICON_SKULL,16);
+    else if(id==='coach'&&donutWeeklySummary?.week_number===getWeekNumber())
+      attention=pixelIcon(ICON_CROWN,16);
+    if(!attention)return'';
+    return`<div class="map-attn-wrap map-attn-pulse" style="position:absolute;left:${p.x}%;top:${p.y}%;transform:translate(-50%,-170%);pointer-events:none;">${attention}</div>`;
+  }).join('');
 
+  // SVG tap targets — hit detection only, no visuals
+  const svgTaps=`<svg class="map-tap-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"
+    style="position:absolute;inset:0;width:100%;height:100%;">
+    ${Object.entries(ROOMS).map(([id,room])=>{
+      const p=MAP_POS[id];if(!p)return'';
+      return`<circle cx="${p.x}" cy="${p.y}" r="6" fill="transparent"
+        onclick="showRoom('${id}')" style="cursor:pointer;"><title>${room.name}</title></circle>`;
+    }).join('')}
+    ${SEALED_ROOMS.map(r=>
+      `<circle cx="${r.x}" cy="${r.y}" r="6" fill="transparent"
+        onclick="showSealedRoom()" style="cursor:pointer;"><title>${r.label}</title></circle>`
+    ).join('')}
+  </svg>`;
 
-const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
-const ednaX=ednaAtDoor?MAP_POS.dogs.x:53;
-const ednaPatrolY=ednaPatrolTop||33;
-const ednaSprite=`<div class="map-sprite map-sprite-edna${ednaAtDoor?'':' map-sprite-patrol'}"
-  style="left:${ednaX}%;top:${ednaPatrolY}%;" onclick="showRoom('dogs')" title="Edna">
-  <img src="${ednaAtDoor?CHAR_EDNA_FRONT:CHAR_EDNA_APPROACH}" width="30" height="30" alt="Edna"
-    style="image-rendering:pixelated;">
-</div>`;
+  // Companions
+  const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
+  const ednaX=ednaAtDoor?MAP_POS.dogs.x:53;
+  const ednaPatrolY=ednaPatrolTop||36;
+  const ednaSprite=`<div class="map-sprite map-sprite-edna${ednaAtDoor?'':' map-sprite-patrol'}"
+    style="position:absolute;left:${ednaX}%;top:${ednaPatrolY}%;" onclick="showRoom('dogs')" title="Edna">
+    <img src="${ednaAtDoor?CHAR_EDNA_FRONT:CHAR_EDNA_APPROACH}" width="30" height="30" alt="Edna"
+      style="image-rendering:pixelated;">
+  </div>`;
 
   const kronkSprite=`<div class="map-sprite map-sprite-kronk"
-    style="left:37%;top:36%;" onclick="showRoom('dogs')" title="Kronk">
+    style="position:absolute;left:30%;top:44%;" onclick="showRoom('dogs')" title="Kronk">
     <img src="${CHAR_KRONK_FRONT}" width="34" height="34" alt="Kronk"
       style="image-rendering:pixelated;">
   </div>`;
@@ -3713,8 +3729,9 @@ const ednaSprite=`<div class="map-sprite map-sprite-edna${ednaAtDoor?'':' map-sp
     </div>
     <div class="map-layout">
       <img src="${ENV_DUNGEON_LAYOUT}" class="map-bg-image" alt="Dungeon Map">
-      ${roomTaps}
-      ${sealedTaps}
+      ${roomNodes}
+      ${svgTaps}
+      ${attentionIcons}
       ${ednaSprite}
       ${kronkSprite}
     </div>
