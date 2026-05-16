@@ -2348,7 +2348,7 @@ body { font-family: var(--font-body); }
 
 .room-border-inner {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   padding: 6px 16px 4px;
   height: 100%;
