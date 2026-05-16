@@ -3690,14 +3690,15 @@ function renderMap(){
       onclick="showSealedRoom()" title="${r.label}"></div>`
   ).join('');
 
-
-  const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
-  const ednaX=ednaAtDoor?MAP_POS.dogs.x:58;
-  const ednaSprite=`<div class="map-sprite map-sprite-edna${ednaAtDoor?'':' map-sprite-patrol'}"
-    style="left:${ednaX}%;top:${ednaPatrolY}%;" onclick="showRoom('dogs')" title="Edna">
-    <img src="${ednaAtDoor?CHAR_EDNA_FRONT:CHAR_EDNA_APPROACH}" width="30" height="30" alt="Edna"
-      style="image-rendering:pixelated;">
-  </div>`;
+  
+const ednaAtDoor=typeof dogPct!=='undefined'&&dogPct<100;
+const ednaX=ednaAtDoor?MAP_POS.dogs.x:58;
+const ednaPatrolY=ednaPatrolTop||33;
+const ednaSprite=`<div class="map-sprite map-sprite-edna${ednaAtDoor?'':' map-sprite-patrol'}"
+  style="left:${ednaX}%;top:${ednaPatrolY}%;" onclick="showRoom('dogs')" title="Edna">
+  <img src="${ednaAtDoor?CHAR_EDNA_FRONT:CHAR_EDNA_APPROACH}" width="30" height="30" alt="Edna"
+    style="image-rendering:pixelated;">
+</div>`;
 
   const kronkSprite=`<div class="map-sprite map-sprite-kronk"
     style="left:37%;top:36%;" onclick="showRoom('dogs')" title="Kronk">
