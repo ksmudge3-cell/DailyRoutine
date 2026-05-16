@@ -2159,6 +2159,7 @@ function renderRecoveryMode(){
 }
 
 function checkFloorCollapse(){
+  if(dayPct(new Date().getDay())===100)return; // floor cleared — immune to collapse
   const y=new Date();y.setDate(y.getDate()-1);
   const yDate=`${y.getFullYear()}-${y.getMonth()}-${y.getDate()}`;
   if(collapseState.checked===yDate)return;
@@ -2541,8 +2542,17 @@ function buildWeekData(){
     if(dq['winddown']==='red')notable.push('Doomscrolling');
     days.push({date:DNAMES[i],completion_pct:pct,orbs,notable_events:notable});
   }
-  return{week_number:getWeekNumber(),date_range:fmtDonutDateRange(),days,streak:calcStreak(),recovery_mode_count:0,floor_collapse_count:collapseState?.active?1:0,top_debuff:getTopDebuffName()};
-}
+  return{
+    week_number:getWeekNumber(),
+    date_range:fmtDonutDateRange(),
+    current_day:new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}),
+    current_time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}),
+    days,
+    streak:calcStreak(),
+    recovery_mode_count:0,
+    floor_collapse_count:collapseState?.active?1:0,
+    top_debuff:getTopDebuffName()
+};}
 
 function getTopDebuffName(){
   const counts={};
@@ -2616,7 +2626,15 @@ async function sendDonutMessage(message){
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':donutApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1000,system:DONUT_SYSTEM_CHAT+`\n\nToday is ${DAYS[new Date().getDay()]}, ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}.`+`\n\nCurrent week data:\n${JSON.stringify(weekData,null,2)}`,messages:history})    });
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:1000,
+        system:DONUT_SYSTEM_CHAT
+          +`\n\nToday is ${DAYS[new Date().getDay()]}, ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}. The current time is ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}. You know the current time and date. Use it when relevant — noticing it's 6:55 AM and the crawler hasn't eaten, or that it's late and they should be in wind down, is exactly the kind of observation you make.`
+          +`\n\nCurrent week data:\n${JSON.stringify(weekData,null,2)}`,
+        messages:history
+      })
+    });
     const data=await resp.json();
     const text=data.content?.[0]?.text||'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference. Try again.';
     donutChat.push({role:'assistant',content:text,timestamp:Date.now(),week_number:wn});
