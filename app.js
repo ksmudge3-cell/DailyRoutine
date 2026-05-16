@@ -256,7 +256,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutApiKey,commTowerHistory,commTowerPending,sideQuestBacklog},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -321,6 +321,9 @@ async function loadFromSupabase(){
       if(d.wheelSkips)wheelSkips=d.wheelSkips;
       if(d.wheelPinned)wheelPinned=d.wheelPinned;
       if(d.inbox)inbox=d.inbox;
+      if(d.commTowerHistory)commTowerHistory=d.commTowerHistory;
+      if(d.commTowerPending)commTowerPending=d.commTowerPending;
+      if(d.sideQuestBacklog)sideQuestBacklog=d.sideQuestBacklog;
       if(d.shopItems)shopItems=d.shopItems;
       if(d.qualityState)qualityState={...qualityState,...d.qualityState};
       if(d.customRewards)customRewards=d.customRewards;
@@ -355,7 +358,10 @@ let wheel=load('dr-wheel',DEFAULT_WHEEL);
 let wheelDone=load('dr-wheel-done',{});
 let wheelSkips=load('dr-wheel-skips',{});
 let wheelPinned=load('dr-wheel-pinned',{});
-let inbox=load('dr-inbox',[]);
+let inbox=[];
+let commTowerHistory=load('dr-comm-history',[]);
+let commTowerPending=load('dr-comm-pending',[]);
+let sideQuestBacklog=load('dr-side-quests',[]);
 let shopItems=load('dr-shop',[]);
 let archived=load('dr-archived',{tasks:[]});
 if(!archived.tasks)archived.tasks=[];
@@ -2165,6 +2171,17 @@ function renderRecoveryMode(){
   }
 }
 
+function checkCommTowerReset(){
+  const lastReset=loadLocal('dr-comm-reset-date',null);
+  const today=todayStr();
+  if(lastReset===today)return;
+  commTowerHistory=[];
+  commTowerPending=[];
+  save('dr-comm-history',[]);
+  save('dr-comm-pending',[]);
+  saveLocal('dr-comm-reset-date',today);
+}
+
 function checkFloorCollapse(){
   if(dayPct(new Date().getDay())===100)return; // floor cleared — immune to collapse
   const y=new Date();y.setDate(y.getDate()-1);
@@ -3624,7 +3641,7 @@ function renderRoomBorder(name){
     const hasAttn=(
       (id==='today'&&countDebuffs()>=3)||
       (id==='dogs'&&typeof dogPct!=='undefined'&&dogPct<100)||
-      (id==='inbox'&&inbox.length>0)||
+      (id==='inbox'&&commTowerPending.length>0)||
       (id==='rewards'&&getPoints()>0)||
       isBoss||
       (id==='coach'&&donutWeeklySummary?.week_number===getWeekNumber())
@@ -3690,7 +3707,7 @@ function renderMap(){
       attention=pixelIcon(ICON_WARNING,16);
     else if(id==='dogs'&&typeof dogPct!=='undefined'&&dogPct<100)
       attention=pixelIcon(ICON_PAW,16);
-    else if(id==='inbox'&&inbox.length>0)
+    else if(id==='inbox'&&commTowerPending.length>0)
       attention=pixelIcon(COMM_BRACELET_PX,16);
     else if(id==='rewards'&&getPoints()>0)
       attention=pixelIcon(ICON_COINS_STACK,16);
@@ -3755,7 +3772,6 @@ function showScreen(name,btn){showRoom(name);}
 
 /* ─── INIT ──────────────────────────────────────────────────────────────── */
 async function init(){
-  // Inject pixel icons into static HTML elements (avoids template literal in HTML bug)
   const cb=document.getElementById('congrats-banner');
   if(cb)cb.innerHTML=pixelIcon(ICON_STAR,14)+' FLOOR CLEARED — Edna and Kronk are proud of you!';
   const bdt=document.getElementById('boss-defeat-title-text');
@@ -3763,23 +3779,19 @@ async function init(){
   const clb=document.getElementById('claim-loot-btn');
   if(clb)clb.innerHTML=pixelIcon(ICON_POTION,14)+' Claim loot ✓';
 
-
-
   migrateDogTasks();
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkFloorCollapse();renderCollapseEvent();}});
   migrateGymIntoSchedule();
   document.documentElement.style.setProperty('--tex-stone-wall', `url(${TEX_STONE_WALL})`);
+  checkCommTowerReset();
   renderToday();renderInbox();updateProjectDropdown();refreshWheel();renderTaskManager();
 
-  // Update floor countdown every minute
   setInterval(renderFloorCountdown, 60000);
 
   showRoom(loadLocal('dr-last-screen','today')||'today');
 
-
   const synced=await loadFromSupabase();
   if(synced){
-    // Reload all state from localStorage (already updated by loadFromSupabase)
     state=load('dr-state',{});
     schedule=load('dr-schedule',DEFAULT_SCHEDULE);
     dogTasks=load('dr-dog-tasks',DEFAULT_DOG_TASKS);
@@ -3791,22 +3803,21 @@ async function init(){
     wheelDone=load('dr-wheel-done',{});
     wheelSkips=load('dr-wheel-skips',{});
     wheelPinned=load('dr-wheel-pinned',{});
-    inbox=load('dr-inbox',[]);
+    inbox=[];
     shopItems=load('dr-shop',[]);
-
     rewardsState=load('dr-rewards',DEFAULT_REWARDS_STATE);
     xpState=load('dr-xp',{totalXP:0,level:1,equippedTitle:null,unlockedTitles:['Freshly Fallen Crawler'],companionXP:{edna:0,kronk:0}});
     archived=load('dr-archived',{tasks:[]});
     if(!archived.tasks)archived.tasks=[];
     checkFloorCollapse();
-    // Expire stale floor condition
+    checkCommTowerReset();
     if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;saveLocal('dr-floor-condition',null);}
     migrateDogTasks();
     migrateGymIntoSchedule();
     showRoom(loadLocal('dr-last-screen','today')||'today');
   }
 
-if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
+  if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
     (notifs||[]).filter(n=>n.on).forEach(n=>{
       const[h,m]=(n.time||'00:00').split(':').map(Number);
       const now=new Date(),next=new Date();
@@ -3814,7 +3825,7 @@ if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
       setTimeout(()=>new Notification('Daily Routine',{body:n.label}),next-now);
     });
   }
-}        // ← this closes init()
+}    // ← this closes init()
 
 
 init();
