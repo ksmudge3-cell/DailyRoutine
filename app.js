@@ -2325,7 +2325,7 @@ function renderProfile(){
       <div class="crawler-level">
         <div class="level-badge">LVL ${info.level}</div>
         <div class="xp-bar-wrap">
-          <div class="xp-bar-label">${totalXP} XP${info.next?' · '+info.next.xp+' to next level':' · MAX'}</div>
+          <div class="xp-bar-label">${totalXP} XP${info.next?' · '+(info.next.xp-totalXP)+' to next level':' · MAX'}</div>
           ${renderBar(info.progress,'xp',{maxWidth:'100%'})}
         </div>
       </div>
