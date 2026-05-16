@@ -7,7 +7,7 @@
 --purple: #6511A8;  --purple-dim: rgba(101,17,168,0.12);
 --coral:  #D65A73;  --coral-dim:  rgba(214,90,115,0.12);
 --red:    #A10D0D;
---fire:   #C64A00;f
+--fire:   #C64A00;
 --gold:   #D49A00;  --gold-dim:   rgba(212,154,0,0.12);
 --blue:   #004DB5;
 --yellow: #F2D400;
@@ -40,7 +40,7 @@
   --scanline: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html { background: var(--bg); }
+html { background: var(--bg); overflow-x: hidden; }
 body { font-family: var(--mono); background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 120px; overflow-x: clip; }
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10, 10, 12, 0.95); backdrop-filter: blur(20px); border-top: 0.5px solid var(--border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
 .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 6px; cursor: pointer; color: var(--hint); font-size: 9px; font-family: var(--mono); border: none; background: none; transition: color 0.15s; }
@@ -1811,8 +1811,7 @@ body { font-family: var(--font-body); }
   width: 100%;
   max-width: 100vw;
   aspect-ratio: 1 / 0.85;
-  overflow-x: clip;
-  overflow-y: visible;
+  overflow: hidden;
   background: #0a0a0c;
 }
 
@@ -2035,6 +2034,11 @@ body { font-family: var(--font-body); }
   height: auto;
 }
 
+/* Rotate Edna sprite to face direction of travel (portrait→horizontal) */
+.map-sprite-edna img {
+  transform: rotate(90deg);
+}
+
 /* Kronk — wanders / sits in Floor → War Room corridor */
 
 .map-sprite-kronk {
@@ -2090,7 +2094,7 @@ body { font-family: var(--font-body); }
   animation-delay: 0s;
 }
 .map-env-torch-2 {
-  left: 91%; top: 15%;
+  left: 87%; top: 15%;
   width: 20px; height: auto;
   animation: torch-flicker 1.8s ease-in-out infinite;
   animation-delay: 0.65s;
@@ -2115,7 +2119,7 @@ body { font-family: var(--font-body); }
   opacity: 0.8;
 }
 .map-env-spiderweb-r {
-  left: 89%; top: 1%;
+  left: 84%; top: 1%;
   width: 52px; height: auto;
   opacity: 0.6;
   transform: scaleX(-1);
@@ -2130,7 +2134,7 @@ body { font-family: var(--font-body); }
 
 /* ENV_CHEST — bottom right */
 .map-env-chest {
-  left: 87%; top: 78%;
+  left: 83%; top: 78%;
   width: 38px; height: auto;
 }
 
@@ -2165,7 +2169,7 @@ body { font-family: var(--font-body); }
 /* ENV_CRACKED_GROUND — scattered, 3 instances */
 .map-env-crack-1 { left: 15%; top: 55%; width: 36px; height: auto; opacity: 0.45; }
 .map-env-crack-2 { left: 70%; top: 22%; width: 36px; height: auto; opacity: 0.45; }
-.map-env-crack-3 { left: 82%; top: 60%; width: 36px; height: auto; opacity: 0.45; transform: scaleX(-1); }
+.map-env-crack-3 { left: 78%; top: 60%; width: 36px; height: auto; opacity: 0.45; transform: scaleX(-1); }
 
 @media (prefers-reduced-motion: reduce) {
   .map-env-torch-1,
@@ -2665,7 +2669,7 @@ body { font-family: var(--font-body); }
 body.map-active #room-border       { display: none; }
 body.map-active .page-header       { display: none; }
 body.map-active .bottom-nav        { display: none; }
-body.map-active                    { padding-bottom: 0; }
+body.map-active                    { padding-bottom: 0; overflow-x: hidden; width: 100vw; max-width: 100vw; }
 
 /* Map layout fills full viewport */
 #screen-map .map-layout {
@@ -2674,8 +2678,7 @@ body.map-active                    { padding-bottom: 0; }
   max-width: 100vw;
   height: auto;
   min-height: 100dvh;
-  overflow-x: clip;
-  overflow-y: visible;
+  overflow: hidden;
   /* Fade left and right edges to black */
   mask-image: linear-gradient(
     to right,
