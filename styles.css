@@ -2668,6 +2668,21 @@ body.map-active                    { padding-bottom: 0; }
   height: auto;
   min-height: 100dvh;
   overflow: visible;
+  /* Fade left and right edges to black */
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
 }
 
 
