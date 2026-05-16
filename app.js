@@ -3693,7 +3693,7 @@ function renderMap(){
   }).join('');
 
   // SVG tap targets — hit detection only, no visuals
-  const svgTaps=`<svg class="map-tap-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"
+const svgTaps=`<svg class="map-tap-svg" viewBox="0 0 100 100" preserveAspectRatio="none"
     style="position:absolute;inset:0;width:100%;height:100%;">
     ${Object.entries(ROOMS).map(([id,room])=>{
       const p=MAP_POS[id];if(!p)return'';
