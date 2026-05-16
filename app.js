@@ -3792,6 +3792,6 @@ if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
   }
 }        // ← this closes init()
 
-
-init();
 }
+init();
+
