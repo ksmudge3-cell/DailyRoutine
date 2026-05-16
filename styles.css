@@ -2336,7 +2336,7 @@ body { font-family: var(--font-body); }
   bottom: 0;
   left: 0;
   right: 0;
-  height: 56px;
+  height: 40px;
   z-index: 100;
   padding-bottom: env(safe-area-inset-bottom);
   overflow: visible;
@@ -2395,8 +2395,8 @@ body { font-family: var(--font-body); }
   filter: saturate(0.65);
   transition: opacity 0.15s, filter 0.15s;
   position: relative;
-  top: -18px;
-  margin-bottom: -18px;
+  top: -26px;
+  margin-bottom: -26px;
 }
 .room-exit-btn:hover .room-exit-door,
 .room-exit-btn:focus .room-exit-door {
@@ -2459,8 +2459,8 @@ body { font-family: var(--font-body); }
   image-rendering: pixelated;
   display: block;
   position: relative;
-  top: -18px;
-  margin-bottom: -18px;
+  top: -26px;
+  margin-bottom: -26px;
 }
 .room-map-label {
   font-family: var(--font-hotdog);
