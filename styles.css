@@ -2182,10 +2182,10 @@ body { font-family: var(--font-body); }
 .map-bg-image {
   display: block;
   width: 100%;
-  height: 100%;
-  object-fit: contain;
-  position: absolute;
-  inset: 0;
+  height: auto;        /* natural height — scrolls vertically */
+  object-fit: unset;
+  position: relative;  /* not absolute — let it set the container height */
+  inset: unset;
   pointer-events: none;
 }
 
@@ -2665,8 +2665,9 @@ body.map-active                    { padding-bottom: 0; }
 #screen-map .map-layout {
   aspect-ratio: unset;
   width: 100%;
-  height: 100dvh;
-  max-height: 100dvh;
+  height: auto;
+  min-height: 100dvh;
+  overflow: visible;
 }
 
 
