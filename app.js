@@ -3491,27 +3491,28 @@ const ROOM_ADJ={
 
 // Map node centers (% of layout container)
 const MAP_POS={
-  coach:  {x:48, y:8},   // Donut's Chamber — shift left
-  today:  {x:48, y:30},  // The Floor — shift left
-  dogs:   {x:78, y:32},  // The Kennels — shift left, down slightly
-  gym:    {x:18, y:47},  // The Gym — shift left
-  spin:   {x:72, y:47},  // The Arena — shift left
-  profile:{x:18, y:63},  // The War Room — shift left
-  rewards:{x:72, y:62},  // The Vault — shift left
-  inbox:  {x:48, y:76},  // The Comm Tower — shift left
+  coach:  {x:48, y:9},   // good X, nudge down slightly
+  today:  {x:45, y:32},  // nudge left, down
+  dogs:   {x:75, y:33},  // nudge left, down
+  gym:    {x:17, y:48},  // good, tiny nudge left
+  spin:   {x:68, y:46},  // nudge left
+  profile:{x:17, y:64},  // good
+  rewards:{x:68, y:61},  // nudge left
+  inbox:  {x:45, y:75},  // nudge left
 };
 
 const SEALED_ROOMS=[
-  {id:'apothecary',      label:'The Apothecary',     x:13, y:14},
-  {id:'mess-hall',       label:'The Mess Hall',       x:82, y:14},
-  {id:'archive',         label:'The Archive',         x:14, y:91},
-  {id:'shrine',          label:'The Shrine',          x:48, y:94},
-  {id:'counting-house',  label:'The Counting House',  x:78, y:91},
+  {id:'apothecary',      label:'The Apothecary',     x:12, y:15},
+  {id:'mess-hall',       label:'The Mess Hall',       x:80, y:15},
+  {id:'archive',         label:'The Archive',         x:13, y:92},
+  {id:'shrine',          label:'The Shrine',          x:45, y:95},
+  {id:'counting-house',  label:'The Counting House',  x:76, y:92},
 ];
 
 
 let ednaPatrolInterval=null;
-let ednaPatrolLeft=63;
+ednaPatrolLeft=60; // midpoint between 45 and 75
+const ednaX=ednaAtDoor?MAP_POS.dogs.x:60;
 let ednaPatrolDir=-1; // -1 = toward Floor, 1 = toward Kennels
 let currentRoom=loadLocal('dr-last-screen','today')||'today';
 
