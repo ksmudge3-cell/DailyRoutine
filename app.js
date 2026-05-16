@@ -2229,7 +2229,6 @@ function renderFloorConditionBanner(){
 }
 
 function renderCollapseEvent(){
-  function renderCollapseEvent(){
   const el=document.getElementById('collapse-event-banner');if(!el)return;
   const active=!!(collapseState?.active);
   el.classList.toggle('active', active);
@@ -3792,6 +3791,6 @@ if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
   }
 }        // ← this closes init()
 
-}
+
 init();
 
