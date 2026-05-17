@@ -46,8 +46,8 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 6px; cursor: pointer; color: var(--hint); font-size: 9px; font-family: var(--mono); border: none; background: none; transition: color 0.15s; }
 .nav-btn.active { color: var(--teal); }
 .nav-icon { font-size: 18px; line-height: 1; }
-.screen { display: none; padding: 0 16px; padding-top: env(safe-area-inset-top, 16px); overflow-y: auto; }
-.screen.active { display: block; height: 100vh; max-height: 100vh; overflow-y: auto; }
+.screen { display: none; padding: 0 16px; padding-top: env(safe-area-inset-top, 16px); overflow: hidden; }
+.screen.active { display: block; height: 100vh; max-height: 100vh; overflow: hidden; }
 .page-header { padding: 24px 0 16px; }
 .page-header h1 { font-family: var(--serif); font-size: 28px; font-weight: 300; color: var(--text); }
 .page-header p { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 0.05em; }
@@ -1676,6 +1676,11 @@ body { font-family: var(--font-body); }
   color: var(--text);
   outline: none;
   transition: border-color 0.15s;
+  min-height: 44px;
+  max-height: 160px;
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.5;
 }
 .donut-input:focus { border-color: rgba(212,154,0,0.55); }
 .donut-input::placeholder { color: var(--hint); }
@@ -2991,8 +2996,8 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 6px; cursor: pointer; color: var(--hint); font-size: 9px; font-family: var(--mono); border: none; background: none; transition: color 0.15s; }
 .nav-btn.active { color: var(--teal); }
 .nav-icon { font-size: 18px; line-height: 1; }
-.screen { display: none; padding: 0 16px; padding-top: env(safe-area-inset-top, 16px); overflow-y: auto; }
-.screen.active { display: block; height: 100vh; max-height: 100vh; overflow-y: auto; }
+.screen { display: none; padding: 0 16px; padding-top: env(safe-area-inset-top, 16px); overflow: hidden; }
+.screen.active { display: block; height: 100vh; max-height: 100vh; overflow: hidden; }
 .page-header { padding: 24px 0 16px; }
 .page-header h1 { font-family: var(--serif); font-size: 28px; font-weight: 300; color: var(--text); }
 .page-header p { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 0.05em; }
@@ -4610,18 +4615,7 @@ body { font-family: var(--font-body); }
   background: var(--bg);
   border-top: 0.5px solid var(--border);
 }
-.donut-input {
-  flex: 1;
-  background: var(--surface2);
-  border: 0.5px solid rgba(212,154,0,0.25);
-  border-radius: var(--radius-sm);
-  padding: 10px 14px;
-  font-family: var(--font-body);
-  font-size: 14px;
-  color: var(--text);
-  outline: none;
-  transition: border-color 0.15s;
-}
+
 .donut-input:focus { border-color: rgba(212,154,0,0.55); }
 .donut-input::placeholder { color: var(--hint); }
 .donut-send-btn {
@@ -5928,9 +5922,3 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   min-height: 0;
 }
 .comm-send-btn:active { opacity: 0.8; }
-
-/* ── Today screen scroll ─────────────────────────────────────────────────── */
-#screen-today {
-  overflow-y: auto;
-  padding-bottom: 100px; /* clears the room-border nav */
-}
