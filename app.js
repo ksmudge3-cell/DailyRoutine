@@ -3568,7 +3568,7 @@ function checkDonutBiscuitExpiry(){
   if(Date.now()>donutBiscuitState.expiresAt){
     donutBiscuitState={active:false,expiresAt:null};
     save('dr-donut-biscuit',donutBiscuitState);
-    debouncedSync();
+    syncToSupabase();
     renderCoach();
   }
 }
