@@ -2906,15 +2906,6 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 }
 
 /* ── Input row ───────────────────────────────────────────── */
-.comm-input-row {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  gap: 8px;
-  padding: 10px 0;
-  background: var(--bg);
-  border-top: 0.5px solid var(--border);
-}
 .comm-input {
   flex: 1;
   background: var(--surface2);
