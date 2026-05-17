@@ -2143,6 +2143,7 @@ IMPORTANT: The id field in action must be a plain unique string like action_1 or
     });
     const data=await resp.json();
     const raw=data.content?.[0]?.text||'{}';
+    console.log('RAW API RESPONSE:', raw);
     let parsed;
     try{
       // Try to find JSON block anywhere in the response
