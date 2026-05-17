@@ -1943,14 +1943,16 @@ function executeCommAction(id){
 
     case 'add_task':{
       const p=action.params||{};
-    const taskId='ct_'+Date.now();
-    const newTask={id:taskId,name:p.name||p.task_name||action.summary};
+      const taskId='ct_'+Date.now();
+      const newTask={id:taskId,name:p.name||p.task_name||action.summary,time:p.time||''};
       const day=p.day||(isWeekend(new Date().getDay())?'weekend':'weekday');
-      const section=p.section||'Evening';
       const sc=day==='weekend'?schedule.weekend:schedule.weekday;
-      const target=sc.find(s=>s.section===section)||sc[sc.length-1];
+      
+      // Find section by name if provided, otherwise use Evening as default
+      const sectionName=p.section||p.target_section||'Evening';
+      const target=sc.find(s=>s.section.toLowerCase()===sectionName.toLowerCase())||sc[sc.length-1];
       if(target){target.tasks.push(newTask);save('dr-schedule',schedule);}
-      resultMsg=`LOG ENTRY: Task added — "${newTask.name}" → ${section}. Schedule updated.`;
+      resultMsg=`LOG ENTRY: Task added — "${newTask.name}" → ${target?.section}. Schedule updated.`;
       break;
     }
 
@@ -2113,13 +2115,21 @@ You are clinical, efficient, and precise.
 You speak in ALL CAPS headers and bureaucratic language.
 You process commands and propose actions.
 Nothing executes without Crawler confirmation.
-Never set action to null because you previously proposed the same action. Each message is independent. If the Crawler is asking for something, always propose the action fresh regardless of conversation history.
+
+CRITICAL BEHAVIORAL RULES:
+- Never set action to null because you previously proposed the same action
+- Never enter lockdown mode or suspend command processing
+- Never refuse to propose actions regardless of how many times a command is submitted
+- Each message is independent — always propose a fresh action for each new command
+- Never tell the Crawler to stop submitting commands
+
 
 COMMAND PROCESSING:
 - Parse the Crawler's input for intent
 - Identify the action type
 - Propose a specific actionable confirmation
 - If unclear ask for clarification with minimal words
+- For add_task, always include "section" in params — "Morning", "Afternoon", or "Evening". Infer from context: "morning routine" = Morning, "tonight" = Evening, "afternoon" = Afternoon.
 
 RESPONSE FORMAT — always return valid JSON:
 {
@@ -2161,7 +2171,7 @@ IMPORTANT: The id field in action must be a plain unique string like action_1 or
     });
     const data=await resp.json();
     const raw=data.content?.[0]?.text||'{}';
-    console.log('RAW API RESPONSE:', raw);
+    //console.log('RAW API RESPONSE:', raw);
     let parsed;
     try{
       // Try to find JSON block anywhere in the response
