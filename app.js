@@ -2617,14 +2617,14 @@ function checkDonutChatReset(){
 function writeDonutPermanentMemory(note,source='sara'){
   donutPermanentMemory.push({savedOn:todayStr(),source,note});
   save('dr-donut-permanent',donutPermanentMemory);
-  debouncedSync();
+  syncToSupabase();
 }
 
 function writeDonutRollingWeek(obj){
   donutRollingMemory.push(obj);
   if(donutRollingMemory.length>4)donutRollingMemory=donutRollingMemory.slice(-4);
   save('dr-donut-rolling',donutRollingMemory);
-  debouncedSync();
+  syncToSupabase();
 }
 
 
@@ -3539,7 +3539,7 @@ function activateDonutBiscuit(){
   const DURATION=45*60*1000;
   donutBiscuitState={active:true,expiresAt:Date.now()+DURATION};
   save('dr-donut-biscuit',donutBiscuitState);
-  debouncedSync();
+  syncToSupabase();
   renderCoach();
   // Donut activation line
   if(donutApiKey){
