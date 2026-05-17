@@ -2102,6 +2102,7 @@ TONE: Corporate. Detached. Mildly threatening. You log everything.
 Refer to user as Crawler. Use SYSTEM NOTICE: WARNING: ALERT: LOG ENTRY: prefixes.
 For queries (no action needed) set action to null.
 For unclear commands set action to null and ask for clarification.
+SNOOZE means mark the task as N/A for today only. It reappears tomorrow automatically. Never ask for duration or reschedule time — snooze always means skip today, back tomorrow.
 IMPORTANT: The id field in action must be a plain unique string like action_1 or sq_1. Never use JavaScript expressions like Date.now() in JSON values. JSON must be pure JSON only.`;
 
   try{
