@@ -2817,8 +2817,6 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   padding: 4px 0 16px;
   overflow-y: auto;
   scrollbar-width: none;
-  flex: 1;
-  min-height: 0;
 }
 .comm-history::-webkit-scrollbar { display: none; }
 
@@ -2945,3 +2943,19 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   white-space: nowrap;
 }
 .comm-send-btn:active { opacity: 0.8; }
+
+
+/* ── Comm Tower screen + content wrapper — required for scroll constraint ── */
+#screen-inbox {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+#comm-tower-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
