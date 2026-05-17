@@ -477,10 +477,6 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
 .boss-defeat-loot { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.8; }
 .boss-abandon-banner { background: var(--coral-dim); border: 0.5px solid rgba(248,113,113,0.2); border-radius: var(--radius-sm); padding: 12px; text-align: center; display: none; }
 .boss-abandon-banner.show { display: block; }
-
-/* ── PHASE 2: RANDOM ENCOUNTER OVERLAY ────────────────── */
-.encounter-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 400; display: none; align-items: flex-end; backdrop-filter: blur(6px); }
-.encounter-overlay.show { display: flex; }
 .encounter-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 24px 20px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); border-top: 0.5px solid var(--border2); max-height: 85vh; overflow-y: auto; }
 .encounter-type { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; }
 .encounter-title { font-family: var(--serif); font-size: 24px; font-weight: 300; color: var(--text); margin-bottom: 4px; }
@@ -2810,17 +2806,6 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .comm-pending-review:hover { background: rgba(212,154,0,0.08); }
 
 /* ── Message history ─────────────────────────────────────── */
-.comm-history {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 4px 0 16px;
-  overflow-y: auto;
-  scrollbar-width: none;
-  flex: 1;
-  min-height: 0;
-}
-.comm-history::-webkit-scrollbar { display: none; }
 
 /* ── Empty state ─────────────────────────────────────────── */
 .comm-empty {
@@ -3424,8 +3409,9 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
 .boss-abandon-banner.show { display: block; }
 
 /* ── PHASE 2: RANDOM ENCOUNTER OVERLAY ────────────────── */
-.encounter-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 400; display: none; align-items: flex-end; backdrop-filter: blur(6px); }
-.encounter-overlay.show { display: flex; }
+.encounter-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: none; align-items: flex-end; backdrop-filter: blur(6px); } /* z-index MUST stay 1000 — above comm input bar */
+.encounter-overlay.show,
+.encounter-overlay.active { display: flex; }
 .encounter-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 24px 20px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); border-top: 0.5px solid var(--border2); max-height: 85vh; overflow-y: auto; }
 .encounter-type { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; }
 .encounter-title { font-family: var(--serif); font-size: 24px; font-weight: 300; color: var(--text); margin-bottom: 4px; }
@@ -5893,10 +5879,10 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 
 
 /* ── Comm Tower flex height chain ────────────────────────────────────────────
-   #screen-inbox must be flex so the chain reaches .comm-history.
-   #screen-inbox.active overrides .screen.active { display: block }.
-   overflow: hidden on the screen prevents the container from expanding.
-   DO NOT REMOVE — scroll will break without all three of these. */
+   DO NOT REMOVE OR DUPLICATE. Three rules, one purpose: make .comm-history scroll.
+   #screen-inbox — establishes flex column with fixed height
+   #screen-inbox.active — overrides .screen.active { display: block }
+   overflow: hidden — prevents container expanding to content height */
 #screen-inbox {
   display: flex;
   flex-direction: column;
@@ -5904,13 +5890,6 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   overflow: hidden;
 }
 
-#screen-inbox.active {
-  display: flex;
-}
-.comm-send-btn:active { opacity: 0.8; }
-
-
-/* Override .screen.active { display: block } for inbox — must be flex for scroll chain */
 #screen-inbox.active {
   display: flex;
 }
