@@ -1993,6 +1993,15 @@ function executeCommAction(id){
       resultMsg=`LOG ENTRY: ${action.summary} — EXECUTED.`;
       break;
   }
+    case 'declare_condition':{
+    const p=action.params||{};
+    const condType=p.condition||p.type||'';
+    floorCondition={type:condType,date:todayStr(),declared:Date.now()};
+    saveLocal('dr-floor-condition',floorCondition);
+    if(typeof declareFloorCondition==='function')declareFloorCondition(condType);
+    resultMsg=`FLOOR CONDITION DECLARED: ${condType}. Affected tasks set to Recovering. Expires midnight.`;
+    break;
+  }
 
   commTowerHistory.push({role:'system',content:resultMsg,timestamp:Date.now()});
   commTowerPending=commTowerPending.filter(a=>a.id!==id);
@@ -2102,8 +2111,8 @@ RESPONSE FORMAT — always return valid JSON:
 Refer to user as Crawler. Use SYSTEM NOTICE: WARNING: ALERT: LOG ENTRY: prefixes.
 For queries (no action needed) set action to null.
 For unclear commands set action to null and ask for clarification.
-work_emergency — Crawler is staying late at work for a clinical emergency. 
-pet_emergency — Crawler's own pet or a friend's animal needs emergency attention.
+work_emergency — Crawler is staying late at work for a clinical/patient emergency and cannot maintain standard floor compliance today. Suspend floor penalties, snooze gym and evening tasks, log the event.
+pet_emergency — Crawler's own pet or a friend's animal needs emergency attention. Same floor suspension as work_emergency.low_capacity — simply declare the floor condition. Do not ask which tasks to remove or modify. The dungeon handles task impact automatically.
 SNOOZE means mark the task as N/A for today only. It reappears tomorrow automatically. Never ask for duration or reschedule time — snooze always means skip today, back tomorrow.
 IMPORTANT: The id field in action must be a plain unique string like action_1 or sq_1. Never use JavaScript expressions like Date.now() in JSON values. JSON must be pure JSON only.`;
 
