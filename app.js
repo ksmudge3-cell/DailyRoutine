@@ -3938,8 +3938,7 @@ function showRoom(name){
     if(name==='today')renderToday();
     else if(name==='dogs')renderDogs();
     else if(name==='spin'){updateProjectDropdown();refreshWheel();renderAvoidance();renderTaskManager();}
-    else if(name==='inbox'){renderInbox();setTimeout(()=>{const h=document.getElementById('comm-history');if(h)h.scrollTop=h.scrollHeight;},300);}    else if(name==='shop'){renderShop();setTimeout(()=>{const i=document.getElementById('shop-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addShopItem();};},50);}
-    else if(name==='rewards')renderRewards();
+    else if(name==='inbox'){renderInbox();setTimeout(()=>{const h=document.getElementById('comm-history');if(h)h.scrollTop=h.scrollHeight;},500);}    else if(name==='rewards')renderRewards();
     else if(name==='profile')renderProfile();
     else if(name==='coach')renderCoach();
     else if(name==='gym')renderGym();
