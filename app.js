@@ -3698,7 +3698,8 @@ function renderRewards(){
 
 
   // ── Vending Machine Food ──────────────────────────────────────────────
-  const VENDING_FOOD=[
+const VENDING_FOOD=[
+    {id:'vm-biscuit',name:'Enchanted Pet Biscuit',icon:ICON_FANCY_CAT_TREAT,real:'45 min upgrade',coins:10,desc:'Upgrades Donut for 45 minutes. She will pretend not to be excited.',special:true},
     {id:'fries',    name:'Crawler Fries',    icon:ICON_FRIES,        real:'~$3',   coins:15,  desc:'Hot and acceptable.'},
     {id:'cookie',   name:'Mystery Cookie',   icon:ICON_COOKIE,       real:'~$2',   coins:10,  desc:'Probably fine.'},
     {id:'sandwich', name:'Dungeon Sandwich', icon:ICON_SANDWICH,     real:'~$6',   coins:30,  desc:'A respectable meal.'},
@@ -3707,17 +3708,19 @@ function renderRewards(){
   ];
   const foodHtml=`<div class="food-grid">${VENDING_FOOD.map(f=>{
     const can=pts>=f.coins;
+    const action=f.id==='vm-biscuit'?'activateDonutBiscuit()':'spendCoins('+f.coins+',"'+f.name+'")';
     return`<div class="food-item${can?' affordable':''}">
       <div class="food-icon">${pixelIcon(f.icon,36)}</div>
       <div class="food-name">${f.name}</div>
       <div class="food-real">${f.real} IRL</div>
       <div class="food-cost">${pixelIcon(ICON_COINS_STACK,12)} ${f.coins} coins</div>
-      <button class="food-btn" ${!can?'disabled':''} onclick="spendCoins(${f.coins},'${f.name}')">
+      <button class="food-btn" ${!can?'disabled':''} onclick="${action}">
         ${can?'Redeem':'Need '+f.coins}
       </button>
     </div>`;
   }).join('')}</div>`;
 
+  
   wrap.innerHTML=`
     <div class="points-hero">
       <div class="points-total">${pixelIcon(ICON_COINS_STACK,32)}${pts}</div>
