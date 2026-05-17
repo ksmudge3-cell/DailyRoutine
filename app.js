@@ -1884,8 +1884,6 @@ function renderInbox(){
   },50);
 }
 function showCommConfirm(id){
-  console.log('showCommConfirm called with:', id);
-  console.log('action:', action);
   const action=commTowerPending.find(a=>a.id===id);
   if(!action)return;
 
