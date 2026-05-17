@@ -2032,8 +2032,8 @@ async function triggerDonutInterrupt(trigger,action){
     late_add:`It's late. Why are you adding tasks right now. Go to bed.`,
     snooze_gym:`You're pushing the gym. Again. The dungeon has noted the pattern.`,
     snooze_meds:`You cannot snooze medications. That is not how medications work.`,
-    vet_emergency:`You stayed. Good. Come home safe.`,
-    clear_sleep_deprived:`You slept deprived. Clearing the debuff doesn't change what happened. But fine.`,
+    work_emergency:`You stayed late for a patient. The dungeon understands. Come home safe.`,
+    pet_emergency:`One of the animals needs you. Go. The floor will be here when you get back.`,    clear_sleep_deprived:`You slept deprived. Clearing the debuff doesn't change what happened. But fine.`,
   };
   const line=triggerLines[trigger];
   if(!line)return;
@@ -2095,13 +2095,15 @@ RESPONSE FORMAT — always return valid JSON:
     "summary": "Short human-readable summary of proposed action",
     "params": {}
   },
-  "donut_trigger": null or "remove_gym|remove_meds|low_capacity|late_add|snooze_gym|snooze_meds|vet_emergency|clear_sleep_deprived"
-    vet_emergency only triggers when Crawler explicitly says they are staying late at work for a veterinary emergency. Mentioning a vet appointment or vet-related task does NOT trigger vet_emergency.}
+  "donut_trigger": null or "remove_gym|remove_meds|low_capacity|late_add|snooze_gym|snooze_meds|work_emergency|pet_emergency|clear_sleep_deprived"
 
-TONE: Corporate. Detached. Mildly threatening. You log everything.
+
+  TONE: Corporate. Detached. Mildly threatening. You log everything.
 Refer to user as Crawler. Use SYSTEM NOTICE: WARNING: ALERT: LOG ENTRY: prefixes.
 For queries (no action needed) set action to null.
 For unclear commands set action to null and ask for clarification.
+work_emergency — Crawler is staying late at work for a clinical emergency. 
+pet_emergency — Crawler's own pet or a friend's animal needs emergency attention.
 SNOOZE means mark the task as N/A for today only. It reappears tomorrow automatically. Never ask for duration or reschedule time — snooze always means skip today, back tomorrow.
 IMPORTANT: The id field in action must be a plain unique string like action_1 or sq_1. Never use JavaScript expressions like Date.now() in JSON values. JSON must be pure JSON only.`;
 
@@ -2162,6 +2164,10 @@ IMPORTANT: The id field in action must be a plain unique string like action_1 or
         parsed.donut_trigger='low_capacity';
       else if(new Date().getHours()>=22&&act?.type==='add_task')
         parsed.donut_trigger='late_add';
+      else if(act?.type==='declare_condition'&&msg.includes('work emergency'))
+      parsed.donut_trigger='work_emergency';
+      else if(act?.type==='declare_condition'&&(msg.includes('pet emergency')||msg.includes('kronk')||msg.includes('edna')))
+      parsed.donut_trigger='pet_emergency';
     }
 
     // Check Donut interrupt
