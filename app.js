@@ -1878,10 +1878,7 @@ function renderInbox(){
   setTimeout(()=>{const h=document.getElementById('comm-history');if(h)h.scrollTop=h.scrollHeight;},50);
 
   // Wire enter key
-  setTimeout(()=>{
-    const inp=document.getElementById('comm-input');
-    if(inp)inp.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendCommMessage();}};
-  },50);
+  setTimeout(()=>{const h=document.getElementById('comm-history');if(h)h.scrollTop=h.scrollHeight;},300);
 }
 function showCommConfirm(id){
   const action=commTowerPending.find(a=>a.id===id);
@@ -3932,8 +3929,7 @@ function showRoom(name){
     if(name==='today')renderToday();
     else if(name==='dogs')renderDogs();
     else if(name==='spin'){updateProjectDropdown();refreshWheel();renderAvoidance();renderTaskManager();}
-    else if(name==='inbox'){renderInbox();setTimeout(()=>{const i=document.getElementById('inbox-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addInboxItem();};},50);}
-    else if(name==='shop'){renderShop();setTimeout(()=>{const i=document.getElementById('shop-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addShopItem();};},50);}
+    else if(name==='inbox'){renderInbox();setTimeout(()=>{const h=document.getElementById('comm-history');if(h)h.scrollTop=h.scrollHeight;},300);}    else if(name==='shop'){renderShop();setTimeout(()=>{const i=document.getElementById('shop-input');if(i)i.onkeydown=e=>{if(e.key==='Enter')addShopItem();};},50);}
     else if(name==='rewards')renderRewards();
     else if(name==='profile')renderProfile();
     else if(name==='coach')renderCoach();
