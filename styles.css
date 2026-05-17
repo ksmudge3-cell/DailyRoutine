@@ -480,7 +480,7 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
 
 /* ── PHASE 2: RANDOM ENCOUNTER OVERLAY ────────────────── */
 .encounter-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; /* MUST stay 1000 — must sit above bottom-nav(100), edit-overlay(300) & toasts(500). Do NOT lower. */ display: none; align-items: flex-end; backdrop-filter: blur(6px); }
-.encounter-overlay.show { display: flex; }
+.encounter-overlay.show, .encounter-overlay.active { display: flex; }
 .encounter-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 24px 20px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); border-top: 0.5px solid var(--border2); max-height: 85vh; overflow-y: auto; }
 .encounter-type { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; }
 .encounter-title { font-family: var(--serif); font-size: 24px; font-weight: 300; color: var(--text); margin-bottom: 4px; }
@@ -3425,7 +3425,7 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
 
 /* ── PHASE 2: RANDOM ENCOUNTER OVERLAY ────────────────── */
 .encounter-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; /* MUST stay 1000 — must sit above bottom-nav(100), edit-overlay(300) & toasts(500). Do NOT lower. */ display: none; align-items: flex-end; backdrop-filter: blur(6px); }
-.encounter-overlay.show { display: flex; }
+.encounter-overlay.show, .encounter-overlay.active { display: flex; }
 .encounter-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 24px 20px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); border-top: 0.5px solid var(--border2); max-height: 85vh; overflow-y: auto; }
 .encounter-type { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; }
 .encounter-title { font-family: var(--serif); font-size: 24px; font-weight: 300; color: var(--text); margin-bottom: 4px; }
