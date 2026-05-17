@@ -647,7 +647,9 @@ body {
 .food-item .food-name { font-size:11px; color:var(--text); font-weight:600; }
 .food-item .food-real { font-size:10px; color:var(--hint); font-style:italic; }
 .food-item .food-cost { font-size:10px; color:var(--amber); margin-top:2px; }
-.food-item .food-btn { margin-top:4px; padding:5px 12px; font-size:10px; background:var(--amber-dim); border:0.5px solid rgba(245,166,35,0.3); border-radius:99px; color:var(--amber); cursor:pointer; font-family:inherit; }
+.food-item .food-btn { margin-top:4px; padding:5px 12px; font-size:10px; background:var(--amber-dim); border:0.5px solid rgba(245,166,35,0.3); border-radius:99px; color:var(--amber); cursor:pointer; font-family:inherit; transition: background 0.15s, border-color 0.15s, transform 0.1s; }
+.food-item .food-btn:hover { background:rgba(212,154,0,0.2); border-color:rgba(245,166,35,0.6); }
+.food-item .food-btn:active { background:rgba(212,154,0,0.3); transform:scale(0.95); }
 .food-item .food-btn:disabled { opacity:0.4; cursor:default; }
 
 

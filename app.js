@@ -3539,6 +3539,7 @@ function activateDonutBiscuit(){
   const DURATION=45*60*1000;
   donutBiscuitState={active:true,expiresAt:Date.now()+DURATION};
   save('dr-donut-biscuit',donutBiscuitState);
+  spendCoins(10,'Enchanted Pet Biscuit');
   syncToSupabase();
   renderCoach();
   // Donut activation line
