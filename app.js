@@ -2587,8 +2587,7 @@ function writeDonutRollingWeek(obj){
   debouncedSync();
 }
 
-function checkFloorCollapse(){
-  const y=new Date();y.setDate(y.getDate()-1);
+
 
 function checkFloorCollapse(){
   const y=new Date();y.setDate(y.getDate()-1);
