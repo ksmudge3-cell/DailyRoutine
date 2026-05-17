@@ -256,7 +256,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutApiKey,commTowerHistory,commTowerPending,sideQuestBacklog},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,commTowerHistory,commTowerPending,sideQuestBacklog},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -331,6 +331,9 @@ async function loadFromSupabase(){
       if(d.donutWeeklySummary)donutWeeklySummary=d.donutWeeklySummary;
       if(d.donutTherapistSummary)donutTherapistSummary=d.donutTherapistSummary;
       if(d.donutApiKey){donutApiKey=d.donutApiKey;saveLocal('dr-anthropic-key',donutApiKey);}
+      if(d.donutRollingMemory)donutRollingMemory=d.donutRollingMemory;
+      if(d.donutPermanentMemory)donutPermanentMemory=d.donutPermanentMemory;
+      if(d.donutBiscuitState)donutBiscuitState=d.donutBiscuitState;
       if(d.archived){archived=d.archived;if(!archived.tasks)archived.tasks=[];}
       ['state','schedule','dogTasks','dogState','groomState','prevState','notifs','wheel','wheelDone','wheelSkips','wheelPinned','inbox','shopItems','archived'].forEach(k=>saveLocal('dr-'+k.replace(/([A-Z])/g,'-$1').toLowerCase(),eval(k)));
       saveLocal('dr-rewards',rewardsState);
@@ -389,6 +392,9 @@ let donutChat=load('dr-donut-chat',[]);
 let donutWeeklySummary=load('dr-donut-summary',null);
 let donutTherapistSummary=load('dr-donut-therapist',null);
 let donutApiKey=loadLocal('dr-anthropic-key',null);
+let donutRollingMemory=load('dr-donut-rolling',[]);
+let donutPermanentMemory=load('dr-donut-permanent',[]);
+let donutBiscuitState=load('dr-donut-biscuit',{active:false,expiresAt:null});
 let donutView='donut',donutLoading=false;
 let currentSpinTask=null, reSpinsLeft=3;
 
@@ -2559,6 +2565,31 @@ function checkCommTowerReset(){
   saveLocal('dr-comm-reset-date',today);
 }
 
+function checkDonutChatReset(){
+  const lastReset=loadLocal('dr-donut-chat-reset-date',null);
+  const today=todayStr();
+  if(lastReset===today)return;
+  donutChat=[];
+  save('dr-donut-chat',[]);
+  saveLocal('dr-donut-chat-reset-date',today);
+}
+
+function writeDonutPermanentMemory(note,source='sara'){
+  donutPermanentMemory.push({savedOn:todayStr(),source,note});
+  save('dr-donut-permanent',donutPermanentMemory);
+  debouncedSync();
+}
+
+function writeDonutRollingWeek(obj){
+  donutRollingMemory.push(obj);
+  if(donutRollingMemory.length>4)donutRollingMemory=donutRollingMemory.slice(-4);
+  save('dr-donut-rolling',donutRollingMemory);
+  debouncedSync();
+}
+
+function checkFloorCollapse(){
+  const y=new Date();y.setDate(y.getDate()-1);
+
 function checkFloorCollapse(){
   const y=new Date();y.setDate(y.getDate()-1);
   const yDow=y.getDay();
@@ -3001,6 +3032,15 @@ async function generateWeeklySummary(force=false){
     save('dr-donut-summary',donutWeeklySummary);
     donutTherapistSummary={week_number:wn,text:buildTherapistText(weekData)};
     save('dr-donut-therapist',donutTherapistSummary);
+    writeDonutRollingWeek({
+      weekOf:weekData.date_range||`Week ${wn}`,
+      week_number:wn,
+      floorAvg:weekData.avg_pct||0,
+      gymSessions:weekData.gym_count||0,
+      topSkipped:weekData.most_skipped||[],
+      streakHigh:weekData.streak_high||0,
+      themes:''
+    });
     // Seed chat with Donut's closing question
     const lastChatWn=donutChat.length?donutChat[donutChat.length-1].week_number:null;
     if(lastChatWn!==wn&&text){
@@ -4160,6 +4200,7 @@ async function init(){
   migrateGymIntoSchedule();
   document.documentElement.style.setProperty('--tex-stone-wall', `url(${TEX_STONE_WALL})`);
   checkCommTowerReset();
+  checkDonutChatReset();
   renderToday();updateProjectDropdown();refreshWheel();renderTaskManager();
 
   setInterval(renderFloorCountdown, 60000);
@@ -4187,6 +4228,7 @@ async function init(){
     if(!archived.tasks)archived.tasks=[];
     checkFloorCollapse();
     checkCommTowerReset();
+    checkDonutChatReset();
     if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;saveLocal('dr-floor-condition',null);}
     migrateDogTasks();
     migrateGymIntoSchedule();
