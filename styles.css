@@ -2906,6 +2906,15 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 }
 
 /* ── Input row ───────────────────────────────────────────── */
+.comm-input-row {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  padding: 10px 0;
+  background: var(--bg);
+  border-top: 0.5px solid var(--border);
+}
 .comm-input {
   flex: 1;
   background: var(--surface2);
@@ -5889,9 +5898,9 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
    overflow: hidden on the screen prevents the container from expanding.
    DO NOT REMOVE — scroll will break without all three of these. */
 #screen-inbox {
-  display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100vh;
+  max-height: 100vh;
   overflow: hidden;
 }
 
