@@ -2063,21 +2063,61 @@ function getActiveDebuffNames(){
   return getActiveBuffs().filter(b=>b&&b.type==='debuff').map(b=>b.label||b.id);
 }
 
+const DONUT_INTERRUPT_FALLBACKS={
+  remove_gym:`YOU ARE DELETING THE GYM. I SEE THAT. THE DUNGEON SEES THAT.`,
+  remove_meds:`ABSOLUTELY NOT. THE SYSTEM WILL NOT PROCESS THIS WITHOUT MY OBJECTION ON RECORD.`,
+  low_capacity:`NOTED. THREE TASKS. DO NOT ABUSE THIS.`,
+  late_add:`IT IS LATE. WHY ARE YOU ADDING TASKS RIGHT NOW. GO TO BED.`,
+  snooze_gym:`YOU ARE PUSHING THE GYM. AGAIN. THE DUNGEON HAS NOTED THE PATTERN.`,
+  snooze_meds:`YOU CANNOT SNOOZE MEDICATIONS. THAT IS NOT HOW MEDICATIONS WORK.`,
+  work_emergency:`YOU STAYED LATE FOR A PATIENT. THE DUNGEON UNDERSTANDS. COME HOME SAFE.`,
+  pet_emergency:`ONE OF THE ANIMALS NEEDS YOU. GO. THE FLOOR WILL BE HERE WHEN YOU GET BACK.`,
+  clear_sleep_deprived:`YOU SLEPT DEPRIVED. CLEARING THE DEBUFF DOES NOT CHANGE WHAT HAPPENED. BUT FINE.`,
+};
+
 async function triggerDonutInterrupt(trigger,action){
-  const triggerLines={
-    remove_gym:`You're deleting the gym. I see that. The dungeon sees that.`,
-    remove_meds:`Absolutely not. The System will not process this without my objection on record.`,
-    low_capacity:`Noted. Three tasks. Don't abuse this.`,
-    late_add:`It's late. Why are you adding tasks right now. Go to bed.`,
-    snooze_gym:`You're pushing the gym. Again. The dungeon has noted the pattern.`,
-    snooze_meds:`You cannot snooze medications. That is not how medications work.`,
-    work_emergency:`You stayed late for a patient. The dungeon understands. Come home safe.`,
-    pet_emergency:`One of the animals needs you. Go. The floor will be here when you get back.`,    clear_sleep_deprived:`You slept deprived. Clearing the debuff doesn't change what happened. But fine.`,
+  if(!trigger)return;
+  const fallback=DONUT_INTERRUPT_FALLBACKS[trigger];
+  if(!fallback)return;
+  if(!donutApiKey){
+    commTowerHistory.push({role:'donut',content:fallback,timestamp:Date.now()});
+    save('dr-comm-history',commTowerHistory);
+    return;
+  }
+  const triggerContext={
+    remove_gym:'Sara just asked The System to remove the gym task.',
+    remove_meds:'Sara just asked The System to remove or skip her medications.',
+    low_capacity:'Sara just declared a Low Capacity day.',
+    late_add:'Sara is adding new tasks late at night.',
+    snooze_gym:'Sara just snoozed the gym task.',
+    snooze_meds:'Sara just tried to snooze her medications.',
+    work_emergency:'Sara is staying late at the vet clinic for a patient emergency.',
+    pet_emergency:'One of Sara\'s animals or a friend\'s animal needs emergency attention.',
+    clear_sleep_deprived:'Sara is trying to clear the Sleep Deprived debuff.',
   };
-  const line=triggerLines[trigger];
-  if(!line)return;
-  commTowerHistory.push({role:'donut',content:line,timestamp:Date.now()});
+  const ctx=triggerContext[trigger]||`Trigger: ${trigger}`;
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':donutApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:120,
+        system:DONUT_SYSTEM_CHAT
+          +`\n\nToday is ${DAYS[new Date().getDay()]}, ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}. The current time is ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}.`
+          +`\n\nFloor: ${dayPct(new Date().getDay())}% | Streak: ${calcStreak()} days | Debuffs: ${getActiveDebuffNames().join(', ')||'none'}`
+          +`\n\nYou are interrupting a command Sara just sent to The System. Respond with ONE short punchy line, in character, in ALL CAPS. No label. No asterisks. No stage directions. Under 25 words.`,
+        messages:[{role:'user',content:ctx}]
+      })
+    });
+    const data=await resp.json();
+    const text=(data.content?.[0]?.text||'').trim();
+    commTowerHistory.push({role:'donut',content:text||fallback,timestamp:Date.now()});
+  }catch(e){
+    commTowerHistory.push({role:'donut',content:fallback,timestamp:Date.now()});
+  }
   save('dr-comm-history',commTowerHistory);
+  renderInbox();
 }
 
 
@@ -3118,11 +3158,16 @@ function renderCoach(){
   if(!donutApiKey){wrap.innerHTML=renderDonutSetup();return;}
   // Monday auto-generate
   if(new Date().getDay()===1&&donutWeeklySummary?.week_number!==getWeekNumber()&&!donutLoading)generateWeeklySummary();
+  checkDonutBiscuitExpiry();
+  const biscuitBanner=donutBiscuitState?.active&&donutBiscuitState?.expiresAt>Date.now()
+    ?`<div class=\"donut-biscuit-active\">✨ ENCHANTED BISCUIT ACTIVE — ${Math.ceil((donutBiscuitState.expiresAt-Date.now())/60000)} MIN REMAINING</div>`
+    :'';
   wrap.innerHTML=`
-    <div class="donut-tab-header">
-      <button class="donut-view-btn${donutView==='donut'?' active':''}" onclick="setDonutView('donut')">DONUT</button>
-      <button class="donut-view-btn${donutView==='therapist'?' active':''}" onclick="setDonutView('therapist')">THERAPIST</button>
+    <div class=\"donut-tab-header\">
+      <button class=\"donut-view-btn${donutView==='donut'?' active':''}\" onclick=\"setDonutView('donut')\">DONUT</button>
+      <button class=\"donut-view-btn${donutView==='therapist'?' active':''}\" onclick=\"setDonutView('therapist')\">THERAPIST</button>
     </div>
+    ${biscuitBanner}
     ${donutView==='donut'?renderDonutMain():renderTherapistMain()}`;
   setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},50);
 }
@@ -3253,6 +3298,8 @@ const DEFAULT_REWARDS=[
   {id:'vm-cookie',name:'Sugar-Based Morale Boost',desc:'A cookie. Small. Provides temporary morale. The System is not judging. Much.',real:'Cafeteria cookie ($2)',emoji:'🍪',cost:10,tier:'vending',category:'food'},
   {id:'vm-lunch',name:'Cafeteria Floor Provisions',desc:'A real lunch, obtained via currency from the cafeteria on your current floor. You were supposed to bring this from home. You did not.',real:'Cafeteria lunch ($8–10)',emoji:'🍱',cost:45,tier:'vending',category:'food'},
   {id:'vm-pizza',name:'Emergency Pizza Protocol',desc:'Pizza. Fifteen dollars. The dungeon notes this with concern. Meal prep on Sunday would have prevented this. The dungeon is not subtle about this.',real:'Pizza ($15)',emoji:'🍕',cost:75,tier:'vending',category:'food'},
+  // ─── ENCHANTED PET BISCUIT ────────────────────────────────────
+  {id:'vm-biscuit',name:'Enchanted Pet Biscuit',desc:'Upgrades Princess Donut to her full capabilities for 45 minutes. This is what made her Donut. She will pretend not to be excited. She will be a little excited.',real:'45 min Donut upgrade',icon:'ICON_FANCY_CAT_TREAT',cost:10,tier:'vending',category:'special'},
   // ─── COMMON LOOT — 25–50 🪙 ───────────────────────────────────
   {id:'r-coffee',name:'Elixir of Alertness',desc:'A rare brew, hot and bitter, said to grant focus and ward off the morning fog.',real:'Fancy coffee',emoji:'☕',cost:30,tier:'small',category:'you'},
   {id:'r-snack',name:'Dungeon Rations (The Good Kind)',desc:'Not the grey slop they serve on floor 4. Your favorite snack, procured from the outside world.',real:'Favorite snack',emoji:'🍫',cost:25,tier:'small',category:'you'},
@@ -3419,6 +3466,44 @@ function checkStreakBonuses(){
   }
 }
 
+function activateDonutBiscuit(){
+  const DURATION=45*60*1000;
+  donutBiscuitState={active:true,expiresAt:Date.now()+DURATION};
+  save('dr-donut-biscuit',donutBiscuitState);
+  debouncedSync();
+  renderCoach();
+  // Donut activation line
+  if(donutApiKey){
+    fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':donutApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:80,
+        system:`You are Princess Donut from Dungeon Crawler Carl. Sara just activated an Enchanted Pet Biscuit — the same item that made you sapient. You now have enhanced capabilities for 45 minutes. Respond with ONE line in ALL CAPS. You would pretend not to be excited. You would be a little excited. No asterisks. No stage directions. Under 20 words.`,
+        messages:[{role:'user',content:'Enchanted Pet Biscuit activated.'}]
+      })
+    }).then(r=>r.json()).then(data=>{
+      const text=(data.content?.[0]?.text||'').trim();
+      if(text){
+        donutChat.push({role:'assistant',content:text,timestamp:Date.now(),week_number:getWeekNumber()});
+        save('dr-donut-chat',donutChat);
+        renderCoach();
+      }
+    }).catch(()=>{});
+  }
+}
+
+function checkDonutBiscuitExpiry(){
+  if(!donutBiscuitState?.active)return;
+  if(Date.now()>donutBiscuitState.expiresAt){
+    donutBiscuitState={active:false,expiresAt:null};
+    save('dr-donut-biscuit',donutBiscuitState);
+    debouncedSync();
+    renderCoach();
+  }
+}
+
 function redeemReward(rewardId){
   const reward=DEFAULT_REWARDS.find(r=>r.id===rewardId);if(!reward)return;
   const pts=getPoints();
@@ -3428,6 +3513,7 @@ function redeemReward(rewardId){
   rewardsState.redeemed.push({rewardId,redeemedAt:Date.now(),cost:reward.cost});
   rewardsState.log.unshift({type:'redeem',pts:-reward.cost,label:'Redeemed: '+reward.name,ts:Date.now()});
   save('dr-rewards',rewardsState);
+  if(rewardId==='vm-biscuit'){activateDonutBiscuit();showPtsToast('✨ Enchanted Pet Biscuit active — 45 min');renderRewards();return;}
   fireConfetti();
   showPtsToast('🎉 '+reward.name+' unlocked!');
   renderRewards();
@@ -4217,6 +4303,7 @@ async function init(){
   document.documentElement.style.setProperty('--tex-stone-wall', `url(${TEX_STONE_WALL})`);
   checkCommTowerReset();
   checkDonutChatReset();
+  checkDonutBiscuitExpiry();
   renderToday();updateProjectDropdown();refreshWheel();renderTaskManager();
 
   setInterval(renderFloorCountdown, 60000);
