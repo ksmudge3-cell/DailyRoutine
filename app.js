@@ -1877,9 +1877,12 @@ function renderInbox(){
   // Scroll to bottom
   setTimeout(()=>{const h=document.getElementById('comm-history');if(h)h.scrollTop=h.scrollHeight;},50);
 
+
   // Wire enter key
-  setTimeout(()=>{const h=document.getElementById('comm-history');if(h)h.scrollTop=h.scrollHeight;},300);
-}
+  setTimeout(()=>{
+    const inp=document.getElementById('comm-input');
+    if(inp)inp.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendCommMessage();}};
+  },50);}
 function showCommConfirm(id){
   const action=commTowerPending.find(a=>a.id===id);
   if(!action)return;
@@ -2139,7 +2142,12 @@ IMPORTANT: The id field in action must be a plain unique string like action_1 or
     commTowerHistory.push({role:'system',content:parsed.message||'SYSTEM NOTICE: Command received.',timestamp:Date.now()});
 
     if(parsed.action){
-      const actions=Array.isArray(parsed.action)?parsed.action:[parsed.action];
+      // Normalize numeric-keyed objects to arrays (AI sometimes returns {0:{...},1:{...}} instead of [{...},{...}])
+      let rawAction=parsed.action;
+      if(!Array.isArray(rawAction)&&typeof rawAction==='object'&&'0' in rawAction){
+        rawAction=Object.values(rawAction).filter(v=>typeof v==='object'&&v.id);
+      }
+      const actions=Array.isArray(rawAction)?rawAction:[rawAction];
       actions.forEach(a=>commTowerPending.push({...a,timestamp:Date.now()}));
       save('dr-comm-pending',commTowerPending);
     }
