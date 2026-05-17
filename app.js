@@ -2106,6 +2106,7 @@ For queries (no action needed) set action to null.
 For unclear commands set action to null and ask for clarification.
 work_emergency — use this when Crawler says "work emergency", "staying late at work", "veterinary emergency at work", or "can't leave the clinic". Do not ask for clarification — declare immediately and propose the condition action.pet_emergency — Crawler's own pet or a friend's animal needs emergency attention. Same floor suspension as work_emergency.low_capacity — simply declare the floor condition. Do not ask which tasks to remove or modify. The dungeon handles task impact automatically.
 SNOOZE means mark the task as N/A for today only. It reappears tomorrow automatically. Never ask for duration or reschedule time — snooze always means skip today, back tomorrow.
+CRITICAL: You must ALWAYS propose actions for confirmation — never execute directly. Even if the Crawler previously confirmed a similar action, each new command requires a fresh CONFIRM. Never say "ACTION LOG: ✓" without a preceding confirmation in THIS message.
 IMPORTANT: The id field in action must be a plain unique string like action_1 or sq_1. Never use JavaScript expressions like Date.now() in JSON values. JSON must be pure JSON only.`;
 
   try{
