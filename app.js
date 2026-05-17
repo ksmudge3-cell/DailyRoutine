@@ -1870,7 +1870,7 @@ function renderInbox(){
     ${pendingHtml}
     <div class="comm-history" id="comm-history">${historyHtml||'<div class="comm-empty">THE SYSTEM IS ONLINE. AWAITING INPUT.</div>'}</div>
     <div class="comm-input-row">
-      <input class="comm-input" id="comm-input" type="text" placeholder="Send a command...">
+      <textarea class="comm-input" id="comm-input" placeholder="Send a command..." rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
       <button class="comm-send-btn" onclick="sendCommMessage()">SEND</button>
     </div>`;
 
@@ -1880,7 +1880,7 @@ function renderInbox(){
   // Wire enter key
   setTimeout(()=>{
     const inp=document.getElementById('comm-input');
-    if(inp)inp.onkeydown=e=>{if(e.key==='Enter')sendCommMessage();};
+    if(inp)inp.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendCommMessage();}};
   },50);
 }
 function showCommConfirm(id){
