@@ -1955,13 +1955,14 @@ function executeCommAction(id){
       break;
     }
 
-    case 'declare_condition':{
-      const p=action.params||{};
-      floorCondition={type:p.condition||p.type,date:todayStr(),declared:Date.now()};
-      saveLocal('dr-floor-condition',floorCondition);
-      declareFloorCondition(floorCondition.type);
-      resultMsg=`FLOOR CONDITION DECLARED: ${floorCondition.type}. Affected tasks set to Recovering. Expires midnight.`;
-      break;
+      case 'declare_condition':{
+    const p=action.params||{};
+    const condType=p.condition||p.type||'';
+    floorCondition={type:condType,date:todayStr(),declared:Date.now()};
+    saveLocal('dr-floor-condition',floorCondition);
+    if(typeof declareFloorCondition==='function')declareFloorCondition(condType);
+    resultMsg=`FLOOR CONDITION DECLARED: ${condType}. Affected tasks set to Recovering. Expires midnight.`;
+    break;
     }
 
     case 'clear_debuff':{
@@ -1993,15 +1994,7 @@ function executeCommAction(id){
       resultMsg=`LOG ENTRY: ${action.summary} — EXECUTED.`;
       break;
   }
-    case 'declare_condition':{
-    const p=action.params||{};
-    const condType=p.condition||p.type||'';
-    floorCondition={type:condType,date:todayStr(),declared:Date.now()};
-    saveLocal('dr-floor-condition',floorCondition);
-    if(typeof declareFloorCondition==='function')declareFloorCondition(condType);
-    resultMsg=`FLOOR CONDITION DECLARED: ${condType}. Affected tasks set to Recovering. Expires midnight.`;
-    break;
-  }
+
 
   commTowerHistory.push({role:'system',content:resultMsg,timestamp:Date.now()});
   commTowerPending=commTowerPending.filter(a=>a.id!==id);
