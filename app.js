@@ -526,6 +526,14 @@ function openEditOverlay(type,sectionIdx,taskIdx){
   setTimeout(()=>document.getElementById('edit-name-input').focus(),80);
 }
 
+function openEditOverlayById(type,taskId){
+  const sc=type==='weekday'?schedule.weekday:schedule.weekend;
+  let foundSection=-1,foundIdx=-1;
+  sc.forEach((s,si)=>s.tasks.forEach((t,ti)=>{if(t.id===taskId){foundSection=si;foundIdx=ti;}}));
+  if(foundSection===-1)return;
+  openEditOverlay(type,foundSection,foundIdx);
+}
+
 function openAddOverlay(type,sectionIdx){
   const sc=type==='weekday'?schedule.weekday:schedule.weekend;
   const section=sc[sectionIdx];
@@ -950,7 +958,7 @@ function renderToday(){
           // For Sunday injected tasks, find real taskIdx in base schedule
           let realTaskIdx=taskIdx;
           if(isSunday(selectedDay)&&sectionIdx===0)realTaskIdx=Math.max(0,taskIdx-1); // adjust for injected task
-          lpStart(()=>openEditOverlay(schedType,sectionIdx,isSundayInjected?-1:realTaskIdx));
+          lpStart(()=>{if(!isSundayInjected)openEditOverlayById(schedType,task.id);});
         }
       });
       div.addEventListener('pointerup',lpEnd);
@@ -1946,18 +1954,24 @@ function executeCommAction(id){
       break;
     }
 
-    case 'remove_task':{
-      const p=action.params||{};
-      const tid=p.task_id||p.id;
-      ['weekday','weekend'].forEach(dayType=>{
-        (schedule[dayType]||[]).forEach(s=>{
-          s.tasks=s.tasks.filter(t=>t.id!==tid&&t.name!==p.name);
-        });
+  case 'remove_task':{
+    const p=action.params||{};
+    const tid=p.task_id||p.id;
+    const tname=(p.name||p.task_name||'').toLowerCase();
+    ['weekday','weekend'].forEach(dayType=>{
+      (schedule[dayType]||[]).forEach(s=>{
+        s.tasks=s.tasks.filter(t=>
+          t.id!==tid&&
+          t.name!==p.name&&
+          t.name!==p.task_name&&
+          t.name?.toLowerCase()!==tname
+        );
       });
-      save('dr-schedule',schedule);
-      resultMsg=`LOG ENTRY: Task removed — "${p.name||tid}". Schedule updated.`;
-      break;
-    }
+    });
+    save('dr-schedule',schedule);
+    resultMsg=`LOG ENTRY: Task removed — "${p.name||p.task_name||tid}". Schedule updated.`;
+    break;
+  }
 
     case 'snooze_task':{
       const p=action.params||{};
