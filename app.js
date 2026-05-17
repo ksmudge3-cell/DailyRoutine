@@ -3163,27 +3163,28 @@ function renderCoach(){
     ?`<div class=\"donut-biscuit-active\">✨ ENCHANTED BISCUIT ACTIVE — ${Math.ceil((donutBiscuitState.expiresAt-Date.now())/60000)} MIN REMAINING</div>`
     :'';
   wrap.innerHTML=`
-    <div class=\"donut-tab-header\">
-      <button class=\"donut-view-btn${donutView==='donut'?' active':''}\" onclick=\"setDonutView('donut')\">DONUT</button>
-      <button class=\"donut-view-btn${donutView==='therapist'?' active':''}\" onclick=\"setDonutView('therapist')\">THERAPIST</button>
+<div class="donut-tab-header">
+      <button class="donut-view-btn${donutView==='report'?' active':''}" onclick="setDonutView('report')">REPORT</button>
+      <button class="donut-view-btn${donutView==='donut'?' active':''}" onclick="setDonutView('donut')">DONUT</button>
+      <button class="donut-view-btn${donutView==='therapist'?' active':''}" onclick="setDonutView('therapist')">THERAPIST</button>
     </div>
     ${biscuitBanner}
-    ${donutView==='donut'?renderDonutMain():renderTherapistMain()}`;
+    ${donutView==='report'?renderDonutReport():donutView==='donut'?renderDonutChat():renderTherapistMain()}`;
   setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},200);
 }
 
 function setDonutView(v){donutView=v;renderCoach();}
 
-function renderDonutMain(){
+function renderDonutReport(){
   const wn=getWeekNumber();
-  let summaryHtml='';
   if(donutLoading&&!donutWeeklySummary){
-    summaryHtml=`<div class="donut-loading"><div class="donut-loading-text">The dungeon is compiling your floor report...</div></div>`;
-  } else if(donutWeeklySummary){
+    return`<div class="donut-loading"><div class="donut-loading-text">The dungeon is compiling your floor report...</div></div>`;
+  }
+  if(donutWeeklySummary){
     const s=donutWeeklySummary.stats||{};
     const floorsCleared=(s.days||[]).filter(d=>d.completion_pct===100).length;
     const avgPct=s.days?.length?Math.round(s.days.reduce((a,d)=>a+d.completion_pct,0)/7):0;
-    summaryHtml=`
+    return`
       <div class="donut-summary-section">
         <img src="${ICON_PRINCESS_DONUT_PORTRAIT}" class="donut-portrait" alt="Princess Donut">
         <div class="donut-report-header">
@@ -3203,15 +3204,16 @@ function renderDonutMain(){
         <div class="donut-divider"></div>
         <button class="donut-generate-btn" onclick="generateWeeklySummary(true)">Regenerate Report</button>
       </div>`;
-  } else {
-    summaryHtml=`
-      <div class="donut-no-summary">
-        <img src="${ICON_PRINCESS_DONUT_PORTRAIT}" class="donut-portrait" alt="Princess Donut">
-        <div class="donut-no-summary-text">The floor report generates Monday morning. Come back then, Crawler.</div>
-        <button class="donut-generate-btn" onclick="generateWeeklySummary(true)">Generate Now</button>
-      </div>`;
   }
+  return`
+    <div class="donut-no-summary">
+      <img src="${ICON_PRINCESS_DONUT_PORTRAIT}" class="donut-portrait" alt="Princess Donut">
+      <div class="donut-no-summary-text">The floor report generates Monday morning. Come back then, Crawler.</div>
+      <button class="donut-generate-btn" onclick="generateWeeklySummary(true)">Generate Now</button>
+    </div>`;
+}
 
+function renderDonutChat(){
   const msgs=donutChat.map(m=>{
     const isD=m.role==='assistant';
     const time=new Date(m.timestamp).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
@@ -3237,14 +3239,14 @@ function renderDonutMain(){
   </div>`:'';
 
   return`
-    ${summaryHtml}
     <div class="donut-chat-section">
       <div class="donut-chat-msgs" id="donut-chat-msgs">
         ${msgs}${typing}
       </div>
       <div class="donut-input-row">
-        <input type="text" id="donut-input" class="donut-input" placeholder="Talk to Donut..."
-          onkeydown="if(event.key==='Enter')submitDonutMsg()">
+        <textarea id="donut-input" class="donut-input" placeholder="Talk to Donut..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitDonutMsg();}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
         <button class="donut-send-btn" onclick="submitDonutMsg()"${donutLoading?' disabled':''}>SEND</button>
       </div>
     </div>`;
