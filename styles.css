@@ -479,7 +479,7 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
 .boss-abandon-banner.show { display: block; }
 
 /* ── PHASE 2: RANDOM ENCOUNTER OVERLAY ────────────────── */
-.encounter-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 400; display: none; align-items: flex-end; backdrop-filter: blur(6px); }
+.encounter-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; /* MUST stay 1000 — must sit above bottom-nav(100), edit-overlay(300) & toasts(500). Do NOT lower. */ display: none; align-items: flex-end; backdrop-filter: blur(6px); }
 .encounter-overlay.show { display: flex; }
 .encounter-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 24px 20px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); border-top: 0.5px solid var(--border2); max-height: 85vh; overflow-y: auto; }
 .encounter-type { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; }
@@ -2240,7 +2240,7 @@ body { font-family: var(--font-body); }
   animation: map-attn-pulse 1.8s ease-in-out infinite;
 }
 
-/* Edna patrol — slow 8s loop translation */
+/* Edna patrol — movement is 100% JS-driven (JS sets transform). No CSS animation/keyframe here, by design — do not add one (it would fight the JS transform updates). */
 
 
 
@@ -3424,7 +3424,7 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
 .boss-abandon-banner.show { display: block; }
 
 /* ── PHASE 2: RANDOM ENCOUNTER OVERLAY ────────────────── */
-.encounter-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 400; display: none; align-items: flex-end; backdrop-filter: blur(6px); }
+.encounter-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; /* MUST stay 1000 — must sit above bottom-nav(100), edit-overlay(300) & toasts(500). Do NOT lower. */ display: none; align-items: flex-end; backdrop-filter: blur(6px); }
 .encounter-overlay.show { display: flex; }
 .encounter-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 24px 20px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); border-top: 0.5px solid var(--border2); max-height: 85vh; overflow-y: auto; }
 .encounter-type { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; }
@@ -5185,7 +5185,7 @@ body { font-family: var(--font-body); }
   animation: map-attn-pulse 1.8s ease-in-out infinite;
 }
 
-/* Edna patrol — slow 8s loop translation */
+/* Edna patrol — movement is 100% JS-driven (JS sets transform). No CSS animation/keyframe here, by design — do not add one (it would fight the JS transform updates). */
 
 
 
@@ -5909,5 +5909,22 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
+}
+
+/* ── Comm Tower content wrapper — THE MISSING FLEX LINK ──────────────────────
+   #comm-tower-content is the child between #screen-inbox (flex column, 100vh)
+   and .comm-history. With no rule it defaults to display:block, which BREAKS
+   the chain: .comm-history's flex:1 / min-height:0 do nothing inside a block
+   parent, so .comm-history grows to content height and never scrolls
+   (scrollHeight === clientHeight; scrollTop snaps to 0).
+   flex-direction MUST be column — NEVER column-reverse — or the pending queue
+   renders above .comm-tower-header (Issue 2).
+   Selector is scoped (#screen-inbox #comm-tower-content, specificity 0,2,0) so
+   it overrides any stray plain #comm-tower-content rule. DO NOT REMOVE. */
+#screen-inbox #comm-tower-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 .comm-send-btn:active { opacity: 0.8; }
