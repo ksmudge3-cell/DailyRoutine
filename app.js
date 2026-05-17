@@ -4115,7 +4115,7 @@ async function init(){
   migrateGymIntoSchedule();
   document.documentElement.style.setProperty('--tex-stone-wall', `url(${TEX_STONE_WALL})`);
   checkCommTowerReset();
-  renderToday();renderInbox();updateProjectDropdown();refreshWheel();renderTaskManager();
+  renderToday();updateProjectDropdown();refreshWheel();renderTaskManager();
 
   setInterval(renderFloorCountdown, 60000);
 
