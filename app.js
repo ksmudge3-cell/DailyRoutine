@@ -3235,7 +3235,12 @@ function renderCoach(){
   setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},200);
 }
 
-function setDonutView(v){donutView=v;renderCoach();}
+function setDonutView(v){
+  donutView=v;
+  const sc=document.getElementById('screen-coach');
+  if(sc){sc.classList.toggle('donut-scroll-mode',v==='report'||v==='therapist');}
+  renderCoach();
+}
 
 function renderDonutReport(){
   const wn=getWeekNumber();

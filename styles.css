@@ -3026,6 +3026,13 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   overflow: hidden;
 }
 
+/* REPORT / THERAPIST tabs — no flex scroll chain, content scrolls full screen.
+   JS adds .donut-scroll-mode via setDonutView() when v==='report'||'therapist'.
+   Overrides overflow:hidden so the screen itself scrolls instead of clipping. */
+#screen-coach.active.donut-scroll-mode {
+  overflow-y: auto;
+}
+
 /* LINK 2 — the page header (SIBLING of #coach-content, not an ancestor).
    #screen-coach contains TWO children: this header and #coach-content.
    flex:0 0 auto pins the header to its natural height so it never grows
@@ -3050,20 +3057,6 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   flex: 1 1 0;
   min-height: 0;          /* REMOVE = wrapper grows to content = no scroll */
 }
-
-/* SUMMARY SECTION — must NOT grow unbounded.
-   Sibling of .donut-chat-section inside #coach-content. If unstyled it
-   expands to full content height (1180px+), starving the chat section entirely.
-   flex:0 0 auto = take only what you need, never grow.
-   max-height:40% = hard cap so chat section always gets the majority of space.
-   overflow-y:auto = if summary content overflows its cap, scroll internally. */
-.donut-summary-section {
-  flex: 0 0 auto;
-  max-height: 40%;
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-.donut-summary-section::-webkit-scrollbar { display: none; }
 
 /* LINK 4 — pass-through container.
    flex:1 1 0 consumes the wrapper's full height (basis 0 = ignore content
