@@ -2113,7 +2113,13 @@ IMPORTANT: The id field in action must be a plain unique string like action_1 or
         model:'claude-haiku-4-5-20251001',
         max_tokens:600,
         system:SYSTEM_PROMPT+`\n\nCurrent dungeon state:\n${JSON.stringify(dataPackage,null,2)}`,
-        messages:[{role:'user',content:message}]
+        messages:[
+          ...commTowerHistory.slice(-10).filter(m=>m.role==='user'||m.role==='system').map(m=>({
+            role:m.role==='system'?'assistant':'user',
+            content:m.content
+          })),
+          {role:'user',content:message}
+        ]
       })
     });
     const data=await resp.json();
