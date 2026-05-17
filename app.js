@@ -1935,8 +1935,8 @@ function executeCommAction(id){
 
     case 'add_task':{
       const p=action.params||{};
-      const taskId='ct_'+Date.now();
-      const newTask={id:taskId,name:p.name||action.summary,time:p.time||''};
+    const taskId='ct_'+Date.now();
+    const newTask={id:taskId,name:p.name||p.task_name||action.summary};
       const day=p.day||(isWeekend(new Date().getDay())?'weekend':'weekday');
       const section=p.section||'Evening';
       const sc=day==='weekend'?schedule.weekend:schedule.weekday;
@@ -2153,6 +2153,7 @@ IMPORTANT: The id field in action must be a plain unique string like action_1 or
       const jsonMatch=raw.match(/\{[\s\S]*\}/);
       const jsonStr=jsonMatch?jsonMatch[0]:raw;
       parsed=JSON.parse(jsonStr);
+      console.log('parsed action:', parsed?.action);
     }catch(e){
       // No valid JSON — treat entire response as a system message
       parsed={message:raw.replace(/```json[\s\S]*```/g,'').trim(),action:null,donut_trigger:null};
