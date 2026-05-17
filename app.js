@@ -2138,6 +2138,24 @@ IMPORTANT: The id field in action must be a plain unique string like action_1 or
     }
 
     save('dr-comm-history',commTowerHistory);
+    
+    // Client-side trigger detection — don't rely on AI for these
+    if(!parsed.donut_trigger){
+      const msg=message.toLowerCase();
+      const act=parsed.action;
+      if(act?.params?.task_id==='meds-pm'||act?.params?.task_id==='meds-am')
+        parsed.donut_trigger='snooze_meds';
+      else if(act?.params?.task_id==='gym'&&act?.type==='snooze_task')
+        parsed.donut_trigger='snooze_gym';
+      else if(act?.type==='remove_task'&&(act?.params?.name?.toLowerCase().includes('gym')||act?.params?.task_id==='gym'))
+        parsed.donut_trigger='remove_gym';
+      else if(act?.type==='remove_task'&&(act?.params?.task_id==='meds-am'||act?.params?.task_id==='meds-pm'))
+        parsed.donut_trigger='remove_meds';
+      else if(act?.type==='declare_condition'&&act?.params?.condition==='low_capacity')
+        parsed.donut_trigger='low_capacity';
+      else if(new Date().getHours()>=22&&act?.type==='add_task')
+        parsed.donut_trigger='late_add';
+    }
 
     // Check Donut interrupt
     if(parsed.donut_trigger){
