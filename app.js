@@ -426,21 +426,17 @@ function getScheduleFor(idx){
 function getDayData(idx){const k=dayKey(idx);if(!state[k])state[k]={};return state[k];}
 function getDogDayData(){const k=todayStr();if(!dogState[k])dogState[k]={};return dogState[k];}
 
-function dayPct(idx){
+function dayPct(idx, date){
+  const d=date||new Date();
+  const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  const ds=state[k]||{};
+  const dq=qualityState[k]||{};
   const sc=getScheduleFor(idx);
-  const ids=sc.reduce((a,s)=>a.concat(s.tasks.map(t=>t.id)),[]);
-  if(!ids.length)return 0;
-  const k=dayKey(idx);
-  const data=state[k]||{};
-  const qDay=qualityState[k]||{};
-  const naIds=new Set(ids.filter(id=>qDay[id]==='gray'));
-  const fc=k===todayStr()?getActiveFloorCondition():null;
-  const recIds=fc?new Set(fc.tasks==='all'?ids:ids.filter(id=>(fc.tasks||[]).includes(id))):new Set();
-  const excludedIds=new Set([...naIds,...recIds]);
-  const denom=ids.length-excludedIds.size;
-  if(!denom)return 100;
-  const done=ids.filter(id=>!excludedIds.has(id)&&data[id]&&qDay[id]!=='red').length;
-  return Math.round(done/denom*100);
+  const all=sc.reduce((a,s)=>a.concat(s.tasks),[]);
+  const naSet=new Set(all.filter(t=>dq[t.id]==='gray').map(t=>t.id));
+  const total=all.filter(t=>!naSet.has(t.id)).length;
+  const done=all.filter(t=>!naSet.has(t.id)&&ds[t.id]).length;
+  return total>0?Math.round(done/total*100):0;
 }
 
 function calcStreak(){
@@ -1842,7 +1838,13 @@ function renderInbox(){
   // Pending queue
   const pendingHtml=commTowerPending.length?`
     <div class="comm-pending-queue">
-      <div class="comm-section-label">PENDING ACTIONS</div>
+      <div class="comm-section-label" style="display:flex;align-items:center;justify-content:space-between;">
+        PENDING ACTIONS
+        <span style="display:flex;gap:8px;">
+          <button class="comm-pending-review" onclick="confirmAllComm()" style="background:rgba(0,122,122,0.2);border-color:var(--teal);">CONFIRM ALL</button>
+          <button class="comm-pending-review" onclick="cancelAllComm()" style="background:rgba(161,13,13,0.15);border-color:var(--red);">CANCEL ALL</button>
+        </span>
+      </div>
       ${commTowerPending.map(a=>`
         <div class="comm-pending-item" id="pending-${a.id}">
           <span class="comm-pending-icon">⏳</span>
@@ -1907,6 +1909,19 @@ function showCommConfirm(id){
 function cancelCommAction(id){
   commTowerPending=commTowerPending.filter(a=>a.id!==id);
   save('dr-comm-pending',commTowerPending);
+  renderInbox();
+}
+function confirmAllComm(){
+  const ids=[...commTowerPending.map(a=>a.id)];
+  ids.forEach(id=>executeCommAction(id));
+}
+
+function cancelAllComm(){
+  if(!commTowerPending.length)return;
+  commTowerPending=[];
+  save('dr-comm-pending',commTowerPending);
+  commTowerHistory.push({role:'system',content:'LOG ENTRY: All pending actions cancelled by Crawler.',timestamp:Date.now()});
+  save('dr-comm-history',commTowerHistory);
   renderInbox();
 }
 
@@ -2515,8 +2530,9 @@ function checkCommTowerReset(){
 }
 
 function checkFloorCollapse(){
-  if(dayPct(new Date().getDay())===100)return; // floor cleared — immune to collapse
   const y=new Date();y.setDate(y.getDate()-1);
+  const yDow=y.getDay();
+  if(dayPct(yDow,y)===100)return; // yesterday's floor was cleared — immune
   const yDate=`${y.getFullYear()}-${y.getMonth()}-${y.getDate()}`;
   if(collapseState.checked===yDate)return;
   collapseState.checked=yDate;
