@@ -46,8 +46,8 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 6px; cursor: pointer; color: var(--hint); font-size: 9px; font-family: var(--mono); border: none; background: none; transition: color 0.15s; }
 .nav-btn.active { color: var(--teal); }
 .nav-icon { font-size: 18px; line-height: 1; }
-.screen { display: none; padding: 0 16px; padding-top: env(safe-area-inset-top, 16px); overflow: hidden; }
-.screen.active { display: block; height: 100vh; max-height: 100vh; overflow: hidden; }
+.screen { display: none; padding: 0 16px; padding-top: env(safe-area-inset-top, 16px); overflow-y: auto; }
+.screen.active { display: block; height: 100vh; max-height: 100vh; overflow-y: auto; }
 .page-header { padding: 24px 0 16px; }
 .page-header h1 { font-family: var(--serif); font-size: 28px; font-weight: 300; color: var(--text); }
 .page-header p { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 0.05em; }
@@ -2991,8 +2991,8 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 6px; cursor: pointer; color: var(--hint); font-size: 9px; font-family: var(--mono); border: none; background: none; transition: color 0.15s; }
 .nav-btn.active { color: var(--teal); }
 .nav-icon { font-size: 18px; line-height: 1; }
-.screen { display: none; padding: 0 16px; padding-top: env(safe-area-inset-top, 16px); overflow: hidden; }
-.screen.active { display: block; height: 100vh; max-height: 100vh; overflow: hidden; }
+.screen { display: none; padding: 0 16px; padding-top: env(safe-area-inset-top, 16px); overflow-y: auto; }
+.screen.active { display: block; height: 100vh; max-height: 100vh; overflow-y: auto; }
 .page-header { padding: 24px 0 16px; }
 .page-header h1 { font-family: var(--serif); font-size: 28px; font-weight: 300; color: var(--text); }
 .page-header p { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 0.05em; }
@@ -5898,9 +5898,9 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
    overflow: hidden on the screen prevents the container from expanding.
    DO NOT REMOVE — scroll will break without all three of these. */
 #screen-inbox {
+  display: flex;
   flex-direction: column;
-  height: 100vh;
-  max-height: 100vh;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -5928,3 +5928,9 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   min-height: 0;
 }
 .comm-send-btn:active { opacity: 0.8; }
+
+/* ── Today screen scroll ─────────────────────────────────────────────────── */
+#screen-today {
+  overflow-y: auto;
+  padding-bottom: 100px; /* clears the room-border nav */
+}
