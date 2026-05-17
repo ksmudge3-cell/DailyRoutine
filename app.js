@@ -3114,7 +3114,7 @@ async function sendDonutMessage(message){
   donutChat.push({role:'user',content:message.trim(),timestamp:Date.now(),week_number:wn});
   save('dr-donut-chat',donutChat);
   donutLoading=true;renderCoach();
-  setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},50);
+  setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},200);
   try{
     const history=donutChat.slice(-30).map(m=>({role:m.role,content:m.content}));
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
@@ -3142,7 +3142,7 @@ async function sendDonutMessage(message){
   }
   save('dr-donut-chat',donutChat);
   donutLoading=false;renderCoach();
-  setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},50);
+  setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},200);
 }
 
 function submitDonutMsg(){
@@ -3169,7 +3169,7 @@ function renderCoach(){
     </div>
     ${biscuitBanner}
     ${donutView==='donut'?renderDonutMain():renderTherapistMain()}`;
-  setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},50);
+  setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},200);
 }
 
 function setDonutView(v){donutView=v;renderCoach();}
