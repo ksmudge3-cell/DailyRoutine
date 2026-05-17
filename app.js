@@ -2138,9 +2138,9 @@ IMPORTANT: The id field in action must be a plain unique string like action_1 or
     // Add system response to history
     commTowerHistory.push({role:'system',content:parsed.message||'SYSTEM NOTICE: Command received.',timestamp:Date.now()});
 
-    // Queue action if proposed
     if(parsed.action){
-      commTowerPending.push({...parsed.action,timestamp:Date.now()});
+      const actions=Array.isArray(parsed.action)?parsed.action:[parsed.action];
+      actions.forEach(a=>commTowerPending.push({...a,timestamp:Date.now()}));
       save('dr-comm-pending',commTowerPending);
     }
 
