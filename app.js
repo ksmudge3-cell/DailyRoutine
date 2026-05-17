@@ -2125,8 +2125,15 @@ IMPORTANT: The id field in action must be a plain unique string like action_1 or
     const data=await resp.json();
     const raw=data.content?.[0]?.text||'{}';
     let parsed;
-    try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}
-    catch(e){parsed={message:raw,action:null,donut_trigger:null};}
+    try{
+      // Try to find JSON block anywhere in the response
+      const jsonMatch=raw.match(/\{[\s\S]*\}/);
+      const jsonStr=jsonMatch?jsonMatch[0]:raw;
+      parsed=JSON.parse(jsonStr);
+    }catch(e){
+      // No valid JSON — treat entire response as a system message
+      parsed={message:raw.replace(/```json[\s\S]*```/g,'').trim(),action:null,donut_trigger:null};
+    }
 
     // Add system response to history
     commTowerHistory.push({role:'system',content:parsed.message||'SYSTEM NOTICE: Command received.',timestamp:Date.now()});
