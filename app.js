@@ -3708,19 +3708,19 @@ const VENDING_FOOD=[
   ];
   const foodHtml=`<div class="food-grid">${VENDING_FOOD.map(f=>{
     const can=pts>=f.coins;
-    const action=f.id==='vm-biscuit'?'activateDonutBiscuit()':'spendCoins('+f.coins+',"'+f.name+'")';
+    const action=f.id==='vm-biscuit'?'activateDonutBiscuit()':'spendCoins('+f.coins+',this.dataset.name)';
     return`<div class="food-item${can?' affordable':''}">
       <div class="food-icon">${pixelIcon(f.icon,36)}</div>
       <div class="food-name">${f.name}</div>
       <div class="food-real">${f.real} IRL</div>
       <div class="food-cost">${pixelIcon(ICON_COINS_STACK,12)} ${f.coins} coins</div>
-      <button class="food-btn" ${!can?'disabled':''} onclick="${action}">
+      <button class="food-btn" data-name="${f.name}" ${!can?'disabled':''} onclick="${action}">
         ${can?'Redeem':'Need '+f.coins}
       </button>
     </div>`;
   }).join('')}</div>`;
 
-  
+
   wrap.innerHTML=`
     <div class="points-hero">
       <div class="points-total">${pixelIcon(ICON_COINS_STACK,32)}${pts}</div>
