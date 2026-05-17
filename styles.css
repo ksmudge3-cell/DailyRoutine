@@ -47,7 +47,7 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .nav-btn.active { color: var(--teal); }
 .nav-icon { font-size: 18px; line-height: 1; }
 .screen { display: none; padding: 0 16px; padding-top: env(safe-area-inset-top, 16px); overflow: hidden; }
-.screen.active { display: block; height: 100vh; max-height: 100vh; overflow: hidden; }
+.screen.active { display: block; height: 100vh; max-height: 100vh; overflow-y: auto; }
 .page-header { padding: 24px 0 16px; }
 .page-header h1 { font-family: var(--serif); font-size: 28px; font-weight: 300; color: var(--text); }
 .page-header p { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 0.05em; }
