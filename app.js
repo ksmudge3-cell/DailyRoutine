@@ -4273,7 +4273,6 @@ function startEdnaPatrol(){
 
   ednaPatrolInterval=setInterval(()=>{
     const el = document.querySelector('.map-sprite-edna');
-    console.log(getComputedStyle(el).position, getComputedStyle(el).left);
     if(!el){stopEdnaPatrol();return;}
     ednaPatrolLeft+=ednaPatrolDir*STEP;
     if(ednaPatrolLeft<=MIN){ednaPatrolLeft=MIN;ednaPatrolDir=1;}
