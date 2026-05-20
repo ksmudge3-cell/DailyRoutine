@@ -3198,8 +3198,7 @@ async function sendDonutMessage(message){
           +(donutRollingMemory.length?`\n\nRECENT WEEKS (last ${donutRollingMemory.length}):\n${donutRollingMemory.map(w=>`Week of ${w.weekOf}: avg completion ${w.floorAvg}%, gym ${w.gymSessions} sessions, streak high ${w.streakHigh}${w.themes?', themes: '+w.themes:''}`).join('\n')}`:'')
           +(donutPermanentMemory.length?`\n\nPERMANENT MEMORY:\n${donutPermanentMemory.map(m=>`[${m.savedOn}${m.source==='donut'?' — you saved this':''}] ${m.note}`).join('\n')}`:'')
           +`\n\nCurrent floor state:\nCompletion: ${dayPct(new Date().getDay())}% | Streak: ${calcStreak()} days | Active debuffs: ${getActiveDebuffNames().join(', ')||'none'} | Floor condition: ${floorCondition?.name||'none'}`
-          +`\n\nSpin wheel tasks completed today: ${Object.keys(wheelDone).filter(id=>{const t=Date.now();return wheelDone[id]&&(t-wheelDone[id])<86400000;}).length}`
-          +`\n\nCurrent week data:\n${JSON.stringify(weekData,null,2)}`,
+          +`\n\nToday's tasks:\n${getTodayTaskSummary().map(t=>`${t.done?'✓':'○'} ${t.name} [${t.quality}]`).join('\n')}`          +`\n\nCurrent week data:\n${JSON.stringify(weekData,null,2)}`,
         messages:history
       })
     });
