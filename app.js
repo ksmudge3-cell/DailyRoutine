@@ -4263,7 +4263,7 @@ function stopEdnaPatrol(){
 }
 function startEdnaPatrol(){
   stopEdnaPatrol();
-  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ // if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const MIN=60;
   const MAX=85;
   const DURATION=8000;
