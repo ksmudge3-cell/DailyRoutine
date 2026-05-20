@@ -3197,9 +3197,10 @@ async function sendDonutMessage(message){
           +`\n\nToday is ${DAYS[new Date().getDay()]}, ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}. The current time is ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}. You know the current time and date. Use it — noticing it's 6:55 AM and Sara hasn't eaten, or it's late and she should be in wind down, is exactly the kind of observation you make.`
           +(donutRollingMemory.length?`\n\nRECENT WEEKS (last ${donutRollingMemory.length}):\n${donutRollingMemory.map(w=>`Week of ${w.weekOf}: avg completion ${w.floorAvg}%, gym ${w.gymSessions} sessions, streak high ${w.streakHigh}${w.themes?', themes: '+w.themes:''}`).join('\n')}`:'')
           +(donutPermanentMemory.length?`\n\nPERMANENT MEMORY:\n${donutPermanentMemory.map(m=>`[${m.savedOn}${m.source==='donut'?' — you saved this':''}] ${m.note}`).join('\n')}`:'')
-          +`\n\nCurrent floor state:\nCompletion: ${dayPct(new Date().getDay())}% | Streak: ${calcStreak()} days | Active debuffs: ${getActiveDebuffNames().join(', ')||'none'} | Floor condition: ${floorCondition?.name||'none'}\n\nToday's tasks (you can see these — do not ask Sara to read them back):\n${getTodayTaskSummary().map(t=>`${t.done?'✓':'○'} ${t.name} [${t.quality}]`).join('\n')}`        messages:history
-      })
-    });
+          +`\n\nCurrent floor state:\nCompletion: ${dayPct(new Date().getDay())}% | Streak: ${calcStreak()} days | Active debuffs: ${getActiveDebuffNames().join(', ')||'none'} | Floor condition: ${floorCondition?.name||'none'}\n\nToday's tasks (you can see these — do not ask Sara to read them back):\n${getTodayTaskSummary().map(t=>`${t.done?'✓':'○'} ${t.name} [${t.quality}]`).join('\n')}`
+          +`\n\nCurrent week data:\n${JSON.stringify(weekData,null,2)}`,
+        messages:history
+      })    });
     const data=await resp.json();
     const text=data.content?.[0]?.text||'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference. Try again.';
     donutChat.push({role:'assistant',content:text,timestamp:Date.now(),week_number:wn});
