@@ -3128,7 +3128,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 /* ── Dungeon Record — text panel overlaid on card's right side ─────────── */
 .sara-dungeon-record {
   position: absolute;
-  top: 10%;
+  top: 7%;
   left: 58%;
   right: 3%;
   bottom: 26%;
@@ -3212,8 +3212,8 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   display: flex;
   flex-direction: column;
   gap: 1px;
-  margin-top: 2px;
-  max-height: 84px; /* ~5 rows at 7px Silkscreen with line-height 1.55 */
+  margin-top: 0px;
+  max-height: 94px; /* ~5 rows at 7px Silkscreen with line-height 1.55 */
   overflow: hidden;
 }
 .sara-dungeon-record .title-row {
