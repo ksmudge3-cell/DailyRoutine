@@ -2814,12 +2814,28 @@ function renderProfile(){
       <div class="system-msg" style="margin-top:10px;margin-bottom:0;"><div class="sys-body">${bossHP<=0?'BOSS DEFEATED. Floor complete. Well done, Crawler.':bossHP<30?'WARNING: Boss weakening. Push through.':bossHP<60?`NOTICE: The ${weeklyBoss} watches your progress.`:`NOTICE: The boss is watching your weekend plans.`}</div></div>
     </div>
 
+<div style="font-size:10px;letter-spacing:0.1em;color:var(--hint);text-transform:uppercase;margin:16px 0 8px;">⚔ Crawler</div>
+    <div class="sara-card-wrap">
+      <img src="${CHAR_SARA_CARD}" class="sara-card-portrait" alt="Sara">
+      <div class="sara-card-stats">
+        <div class="sara-card-name">Sara</div>
+        <div class="sara-card-class">Beast Keeper</div>
+        <div class="sara-card-passive">Stubborn Survivor</div>
+        <div class="sara-stat-bars">
+          ${renderStatBar(Math.min(100,streak*5+Math.min(50,Math.floor((Date.now()-new Date('2026-05-10').getTime())/86400000))),ICON_BAR_FILL_TEAL,'Grit')}
+          ${renderStatBar((()=>{const vIds=['meds-am','meds-pm','sleep','breakfast','dinner'];const today=state[dayKey(new Date().getDay())]||{};const done=vIds.filter(id=>today[id]).length;return Math.round(done/vIds.length*100);})(),ICON_BAR_FILL_TEAL,'Vitality')}
+          ${renderStatBar(Math.min(100,(weekData?.gym_count||0)*20),ICON_BAR_FILL_TEAL,'Strength')}
+          ${renderStatBar((()=>{const q=qualityState[dayKey(new Date().getDay())]||{};const vals=Object.values(q);return vals.length?Math.round(vals.filter(v=>v==='legendary'||v==='green').length/vals.length*100):0;})(),ICON_BAR_FILL_TEAL,'Focus')}
+          ${renderStatBar(dogPct,ICON_BAR_FILL_TEAL,'Bond')}
+        </div>
+      </div>
+    </div>
+
     <div style="display:flex;gap:8px;margin:0 0 16px 0;">
       <div style="flex:1;"><img src="${CHAR_EDNA_CARD}" style="width:100%;border-radius:6px;border:1px solid var(--border);" alt="Edna"></div>
       <div style="flex:1;"><img src="${CHAR_KRONK_CARD}" style="width:100%;border-radius:6px;border:1px solid var(--border);" alt="Kronk"></div>
     </div>
     <div style="font-size:10px;letter-spacing:0.1em;color:var(--hint);text-transform:uppercase;margin:16px 0 8px;">⚔ Companions</div>
-
     <div class="companion-card">
       <div class="companion-card-header">
         <div class="companion-avatar" onclick="openPhotoModal('edna')" style="cursor:pointer;position:relative;">
