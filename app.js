@@ -335,8 +335,11 @@ async function loadFromSupabase(){
       if(d.donutPermanentMemory)donutPermanentMemory=d.donutPermanentMemory;
       if(d.donutBiscuitState)donutBiscuitState=d.donutBiscuitState;
       if(d.archived){archived=d.archived;if(!archived.tasks)archived.tasks=[];}
-      ['state','schedule','dogTasks','dogState','groomState','prevState','notifs','wheel','wheelDone','wheelSkips','wheelPinned','inbox','shopItems','archived'].forEach(k=>saveLocal('dr-'+k.replace(/([A-Z])/g,'-$1').toLowerCase(),eval(k)));
+      ['state','schedule','dogTasks','dogState','groomState','prevState','notifs','wheel','wheelDone','wheelSkips','wheelPinned','inbox','archived'].forEach(k=>saveLocal('dr-'+k.replace(/([A-Z])/g,'-$1').toLowerCase(),eval(k)));
       saveLocal('dr-rewards',rewardsState);
+      // Explicit keys that don't match the camelCase→kebab auto-conversion above:
+      saveLocal('dr-xp',xpState);
+      saveLocal('dr-shop',shopItems);
       // Force sync back so cleaned data overwrites stale Supabase data permanently
       setTimeout(syncToSupabase, 2000);
       return true;
