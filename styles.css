@@ -3128,8 +3128,8 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 /* ── Dungeon Record — text panel overlaid on card's right side ─────────── */
 .sara-dungeon-record {
   position: absolute;
-  top: 8%;
-  left: 50%;
+  top: 12%;
+  left: 55%;
   right: 3%;
   bottom: 26%;
   display: flex;
