@@ -2786,7 +2786,10 @@ function renderProfile(){
   <div class="sara-card-wrap">
       <img src="${CHAR_SARA_CARD}" class="sara-card-portrait" alt="Sara">
       <div class="sara-card-xp-bar">
-        ${renderBar(info.progress,'xp',{maxWidth:'100%'})}
+        <div class="sara-xp-row">
+          <div class="level-badge">LVL ${info.level}</div>
+          ${renderBar(info.progress,'xp',{maxWidth:'100%'})}
+        </div>
         <div class="sara-xp-label">${totalXP} XP${info.next?' · '+(info.next.xp-totalXP)+' to lvl':' · MAX'}</div>
       </div>
       <div class="sara-card-stats">
@@ -2800,7 +2803,6 @@ function renderProfile(){
           ${renderStatBar((()=>{const q=qualityState[dayKey(new Date().getDay())]||{};const vals=Object.values(q);return vals.length?Math.round(vals.filter(v=>v==='legendary'||v==='green').length/vals.length*100):0;})(),ICON_BAR_FILL_TEAL,'FOC')}
           ${renderStatBar(dogPct,ICON_BAR_FILL_TEAL,'BND')}       
           </div>
-       <div class="sara-card-level"><div class="level-badge">LVL ${info.level}</div></div>
       </div>
     </div>
     <div style="margin:8px 0 12px;">${effectsHtml}</div>
