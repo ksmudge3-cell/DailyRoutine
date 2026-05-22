@@ -3469,3 +3469,64 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .sara-xp-slot .level-badge {
   display: none;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   SCOREBOARD — Floor Screen
+═══════════════════════════════════════════════════════════ */
+
+.scoreboard-wrap {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.scoreboard-panel {
+  position: relative;
+  flex: 1;
+}
+
+.scoreboard-bg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.scoreboard-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.scoreboard-num {
+  font-family: var(--font-game);
+  font-size: 28px;
+  color: #FFD43A;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.scoreboard-label {
+  font-family: var(--font-hotdog);
+  font-size: 7px;
+  color: var(--hint);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ── Flip animation ──────────────────────────────────────── */
+@keyframes scoreFlip {
+  0%   { transform: rotateX(0deg); }
+  40%  { transform: rotateX(90deg); }
+  60%  { transform: rotateX(-10deg); }
+  80%  { transform: rotateX(5deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+.flip .scoreboard-num {
+  animation: scoreFlip 300ms ease forwards;
+  transform-style: preserve-3d;
+}

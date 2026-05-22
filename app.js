@@ -1006,6 +1006,41 @@ function isRecoveryMode(){
 }
 
 
+function renderScoreboard(){
+  const el=document.getElementById('today-scoreboard');
+  if(!el)return;
+  const streak=calcStreak();
+  const rec=getDungeonRecord();
+  const day=rec.daysInDungeon||0;
+  const survived=rec.floorsSurvived||0;
+
+  // First render — build the DOM
+  if(!el.querySelector('.scoreboard-wrap')){
+    el.innerHTML=`<div class="scoreboard-wrap">
+      <div class="scoreboard-panel" id="sb-panel-streak"><img src="${UI_SCOREBOARD_PANEL}" class="scoreboard-bg" alt=""><div class="scoreboard-inner"><div class="scoreboard-num" id="sb-streak">0</div><div class="scoreboard-label">STREAK</div></div></div>
+      <div class="scoreboard-panel" id="sb-panel-day"><img src="${UI_SCOREBOARD_PANEL}" class="scoreboard-bg" alt=""><div class="scoreboard-inner"><div class="scoreboard-num" id="sb-day">0</div><div class="scoreboard-label">DAY</div></div></div>
+      <div class="scoreboard-panel" id="sb-panel-survived"><img src="${UI_SCOREBOARD_PANEL}" class="scoreboard-bg" alt=""><div class="scoreboard-inner"><div class="scoreboard-num" id="sb-survived">0</div><div class="scoreboard-label">SURVIVED</div></div></div>
+    </div>`;
+    renderScoreboard._prev={streak,day,survived};
+  }
+
+  // Update values, flip if changed
+  const prev=renderScoreboard._prev||{};
+  [{id:'streak',val:streak},{id:'day',val:day},{id:'survived',val:survived}].forEach(({id,val})=>{
+    const numEl=document.getElementById('sb-'+id);
+    const panelEl=document.getElementById('sb-panel-'+id);
+    if(!numEl||!panelEl)return;
+    if(prev[id]!==val){
+      panelEl.classList.add('flip');
+      setTimeout(()=>{numEl.textContent=val;panelEl.classList.remove('flip');},150);
+    } else {
+      numEl.textContent=val;
+    }
+  });
+  renderScoreboard._prev={streak,day,survived};
+}
+renderScoreboard._prev={};
+
 function renderToday(){
   const ti=new Date().getDay();
   document.getElementById('today-heading').textContent=DAYS[ti];
@@ -1042,6 +1077,7 @@ function renderToday(){
   renderRecoveryMode();
   renderCollapseEvent();
   renderFloorConditionBanner();
+  renderScoreboard();
   const isComplete=_recovery?(done>=3&&total>0):(pct===100&&total>0);
   document.getElementById('congrats-banner').style.display=isComplete?'block':'none';
   if(isComplete&&!wasComplete)fireConfetti();
