@@ -2786,7 +2786,7 @@ function renderProfile(){
   <div class="sara-card-wrap">
       <img src="${CHAR_SARA_CARD}" class="sara-card-portrait" alt="Sara">
       <div class="sara-card-xp-bar">
-        ${renderBar(info.progress,'hp',{maxWidth:'100%'})}
+        ${renderBar(info.progress,'xp',{maxWidth:'100%'})}
         <div class="sara-xp-label">${totalXP} XP${info.next?' · '+(info.next.xp-totalXP)+' to lvl':' · MAX'}</div>
       </div>
       <div class="sara-card-stats">
