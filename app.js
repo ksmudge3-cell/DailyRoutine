@@ -335,13 +335,27 @@ async function loadFromSupabase(){
       if(d.donutPermanentMemory)donutPermanentMemory=d.donutPermanentMemory;
       if(d.donutBiscuitState)donutBiscuitState=d.donutBiscuitState;
       if(d.archived){archived=d.archived;if(!archived.tasks)archived.tasks=[];}
-      ['state','schedule','dogTasks','dogState','groomState','prevState','notifs','wheel','wheelDone','wheelSkips','wheelPinned','inbox','archived'].forEach(k=>saveLocal('dr-'+k.replace(/([A-Z])/g,'-$1').toLowerCase(),eval(k)));
-      saveLocal('dr-rewards',rewardsState);
-      // Explicit keys that don't match the camelCase→kebab auto-conversion above:
-      saveLocal('dr-xp',xpState);
+      // Explicit save list — keys must match what init() re-loads (line ~4400).
+      // Auto camelCase→kebab conversion was lossy (xpState→dr-xp-state, but actual key is dr-xp).
+      saveLocal('dr-state',state);
+      saveLocal('dr-schedule',schedule);
+      saveLocal('dr-dog-tasks',dogTasks);
+      saveLocal('dr-dog-state',dogState);
+      saveLocal('dr-groom-state',groomState);
+      saveLocal('dr-prev-state',prevState);
+      saveLocal('dr-notifs',notifs);
+      saveLocal('dr-wheel',wheel);
+      saveLocal('dr-wheel-done',wheelDone);
+      saveLocal('dr-wheel-skips',wheelSkips);
+      saveLocal('dr-wheel-pinned',wheelPinned);
+      saveLocal('dr-inbox',inbox);
       saveLocal('dr-shop',shopItems);
-      // Force sync back so cleaned data overwrites stale Supabase data permanently
-      setTimeout(syncToSupabase, 2000);
+      saveLocal('dr-archived',archived);
+      saveLocal('dr-rewards',rewardsState);
+      saveLocal('dr-xp',xpState);
+      saveLocal('dr-quality',qualityState);
+      // Read-only load. Removed the previous auto-sync-back (setTimeout syncToSupabase 2000)
+      // — it was the mechanism that propagated the wipe across devices.
       return true;
     }
   }catch(e){console.warn('Load failed',e);}
@@ -476,6 +490,107 @@ function calcBestStreak(){
     if(ids.length>0&&done>=Math.ceil(ids.length*0.8)){c++;b=Math.max(b,c);}else c=0;
   }
   return b;
+}
+
+/* ─── Dungeon Record — live aggregates from state/qualityState ─────────── */
+function getDungeonRecord(){
+  const parseKey=k=>{const[y,m,d]=k.split('-').map(Number);return new Date(y,m,d);};
+  const stateKeys=Object.keys(state||{});
+  const qKeys=Object.keys(qualityState||{});
+  const allKeys=[...new Set([...stateKeys,...qKeys])].sort((a,b)=>parseKey(a)-parseKey(b));
+
+  // Task name lookup
+  const taskNames={};
+  const allSections=[...(schedule.weekday||[]),...(schedule.weekend||[])];
+  allSections.forEach(sec=>(sec.tasks||[]).forEach(t=>{taskNames[t.id]=t.name;}));
+  // Include dog tasks too
+  Object.values(dogTasks?.shared||{}).forEach(arr=>(arr||[]).forEach(t=>{taskNames[t.id]=t.name;}));
+
+  // FLOORS SURVIVED — days that met the ≥80% completion bar (same threshold as calcStreak)
+  let floorsSurvived=0;
+  // DAYS IN DUNGEON — calendar days from first activity until today
+  const firstKey=allKeys[0];
+  const daysInDungeon=firstKey
+    ? Math.max(1,Math.floor((Date.now()-parseKey(firstKey).getTime())/86400000)+1)
+    : 1;
+  // TOTAL ROOMS — every checked-off task across all time
+  let totalRooms=0;
+  // Per-task counts
+  const completedCounts={};
+  const skippedCounts={};
+  // Per-day-of-week aggregates
+  const dowSum=[0,0,0,0,0,0,0],dowN=[0,0,0,0,0,0,0];
+
+  allKeys.forEach(k=>{
+    const d=parseKey(k);if(isNaN(d))return;
+    const dow=d.getDay();
+    const sc=getScheduleFor(dow);
+    const ids=sc.reduce((a,s)=>a.concat(s.tasks.map(t=>t.id)),[]);
+    const idSet=new Set(ids);
+    const ds=state[k]||{};
+    const dq=qualityState[k]||{};
+    const naSet=new Set(ids.filter(id=>dq[id]==='gray'));
+    const counted=ids.filter(id=>!naSet.has(id));
+    const done=counted.filter(id=>ds[id]).length;
+    // Floors survived
+    if(counted.length>0&&done>=Math.ceil(counted.length*0.8))floorsSurvived++;
+    // Day-of-week running average
+    if(counted.length>0){
+      dowSum[dow]+=done/counted.length*100;
+      dowN[dow]+=1;
+    }
+    // Total rooms + completed counts
+    Object.entries(ds).forEach(([id,v])=>{
+      if(v && !id.endsWith('_ts')){
+        totalRooms++;
+        completedCounts[id]=(completedCounts[id]||0)+1;
+      }
+    });
+    // Skip counts (red = skipped/debuff, gray = N/A, treat 'red' only as a real skip)
+    Object.entries(dq).forEach(([id,v])=>{
+      if(v==='red')skippedCounts[id]=(skippedCounts[id]||0)+1;
+    });
+  });
+
+  const bestStreakVal=calcBestStreak();
+
+  // Top entries
+  const topCompletedId=Object.entries(completedCounts).sort((a,b)=>b[1]-a[1])[0]?.[0];
+  const topSkippedId=Object.entries(skippedCounts).sort((a,b)=>b[1]-a[1])[0]?.[0];
+  const mostCompleted=topCompletedId?(taskNames[topCompletedId]||topCompletedId):'—';
+  const mostSkipped=topSkippedId?(taskNames[topSkippedId]||topSkippedId):'—';
+
+  // Best/hardest day of week — by avg completion %, requiring at least 2 samples
+  const dowNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let bestDay='—',hardestDay='—',bestAvg=-1,worstAvg=101;
+  dowSum.forEach((s,i)=>{
+    if(dowN[i]>=2){
+      const avg=s/dowN[i];
+      if(avg>bestAvg){bestAvg=avg;bestDay=dowNames[i];}
+      if(avg<worstAvg){worstAvg=avg;hardestDay=dowNames[i];}
+    }
+  });
+
+  // LEGENDARY ORBS — count of 'purple'/'legendary' quality marks
+  let legendaryOrbs=0;
+  Object.values(qualityState||{}).forEach(day=>{
+    Object.values(day).forEach(v=>{
+      if(v==='purple'||v==='legendary')legendaryOrbs++;
+    });
+  });
+
+  // TOTAL COLLAPSES — count of zero-completion days after a productive run
+  // (no persistent collapse log exists; this is the best approximation from existing data)
+  let totalCollapses=0;
+  for(let i=1;i<allKeys.length;i++){
+    const prev=state[allKeys[i-1]]||{};
+    const cur=state[allKeys[i]]||{};
+    const prevDone=Object.values(prev).filter((v,idx)=>v && !Object.keys(prev)[idx].endsWith('_ts')).length;
+    const curDone=Object.values(cur).filter((v,idx)=>v && !Object.keys(cur)[idx].endsWith('_ts')).length;
+    if(prevDone>=3&&curDone===0)totalCollapses++;
+  }
+
+  return{floorsSurvived,daysInDungeon,bestStreak:bestStreakVal,totalRooms,mostCompleted,mostSkipped,bestDay,hardestDay,legendaryOrbs,totalCollapses};
 }
 
 function fmtTime(ts){const d=new Date(ts);return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});}
@@ -2742,6 +2857,7 @@ function renderProfile(){
   const weeklyBoss=DCC.getWeeklyBoss();
   const wp=(() => {let wt=0,wd=0;for(let i=0;i<7;i++){const s=getScheduleFor(i),ids=s.reduce((a,sec)=>a.concat(sec.tasks.map(t=>t.id)),[]),idSet=new Set(ids);wt+=ids.length;wd+=Object.entries(state[dayKey(i)]||{}).filter(([k,v])=>v&&idSet.has(k)).length;}return wt?Math.round(wd/wt*100):0;})();
   const bossHP=Math.max(0,100-wp);
+  const rec=getDungeonRecord();
 
   // Companion XP & evolution
   const cxp=xpState.companionXP||{edna:0,kronk:0};
@@ -2788,26 +2904,39 @@ function renderProfile(){
  wrap.innerHTML=`
   <div class="sara-card-wrap">
       <img src="${CHAR_SARA_CARD}" class="sara-card-portrait" alt="Sara">
-      <div class="sara-card-xp-bar">
-        <div class="sara-xp-row">
-          <div class="level-badge">LVL ${info.level}</div>
-          ${renderBar(info.progress,'xp',{maxWidth:'100%'})}
-        </div>
-        <div class="sara-xp-label">${totalXP} XP${info.next?' · '+(info.next.xp-totalXP)+' to lvl':' · MAX'}</div>
-      </div>
-      <div class="sara-card-stats">
-        <div class="sara-card-name">Sara</div>
-        <div class="sara-card-class">Beast Keeper</div>
-        <div class="sara-card-passive">Stubborn Survivor</div>
-        <div class="sara-stat-bars">
-          ${renderStatBar(Math.min(100,streak*5+Math.min(50,Math.floor((Date.now()-new Date('2026-05-10').getTime())/86400000))),ICON_BAR_FILL_TEAL,'GRT')}
-          ${renderStatBar((()=>{const vIds=['meds-am','meds-pm','sleep','breakfast','dinner'];const today=state[dayKey(new Date().getDay())]||{};const done=vIds.filter(id=>today[id]).length;return Math.round(done/vIds.length*100);})(),ICON_BAR_FILL_TEAL,'VIT')}
-          ${renderStatBar(Math.min(100,(gymHistory?.sessions||[]).filter(s=>{const d=new Date(s.date||s.ts);return d>=new Date(Date.now()-7*86400000);}).length*20),ICON_BAR_FILL_TEAL,'STR')}
-          ${renderStatBar((()=>{const q=qualityState[dayKey(new Date().getDay())]||{};const vals=Object.values(q);return vals.length?Math.round(vals.filter(v=>v==='legendary'||v==='green').length/vals.length*100):0;})(),ICON_BAR_FILL_TEAL,'FOC')}
-          ${renderStatBar(dogPct,ICON_BAR_FILL_TEAL,'BND')}       
-          </div>
+      <div class="sara-dungeon-record">
+        <div class="dr-title">DUNGEON RECORD</div>
+        <div class="dr-divider"></div>
+        <div class="dr-row"><span class="dr-label">FLOORS SURVIVED</span><span class="dr-value">${rec.floorsSurvived}</span></div>
+        <div class="dr-row"><span class="dr-label">DAYS IN DUNGEON</span><span class="dr-value">${rec.daysInDungeon}</span></div>
+        <div class="dr-row"><span class="dr-label">BEST STREAK</span><span class="dr-value">${rec.bestStreak}</span></div>
+        <div class="dr-row"><span class="dr-label">TOTAL ROOMS</span><span class="dr-value">${rec.totalRooms}</span></div>
+        <div class="dr-gap"></div>
+        <div class="dr-row"><span class="dr-label">MOST COMPLETED</span><span class="dr-value">${rec.mostCompleted}</span></div>
+        <div class="dr-row"><span class="dr-label">MOST SKIPPED</span><span class="dr-value">${rec.mostSkipped}</span></div>
+        <div class="dr-row"><span class="dr-label">BEST DAY</span><span class="dr-value">${rec.bestDay}</span></div>
+        <div class="dr-row"><span class="dr-label">HARDEST DAY</span><span class="dr-value">${rec.hardestDay}</span></div>
+        <div class="dr-gap"></div>
+        <div class="dr-row"><span class="dr-label">LEGENDARY ORBS</span><span class="dr-value">${rec.legendaryOrbs}</span></div>
+        <div class="dr-row"><span class="dr-label">TOTAL COLLAPSES</span><span class="dr-value">${rec.totalCollapses}</span></div>
+        <div class="dr-divider"></div>
       </div>
     </div>
+    <div class="sara-stat-bars-full">
+      ${renderStatBar(Math.min(100,streak*5+Math.min(50,Math.floor((Date.now()-new Date('2026-05-10').getTime())/86400000))),ICON_BAR_FILL_TEAL,'GRT')}
+      ${renderStatBar((()=>{const vIds=['meds-am','meds-pm','sleep','breakfast','dinner'];const today=state[dayKey(new Date().getDay())]||{};const done=vIds.filter(id=>today[id]).length;return Math.round(done/vIds.length*100);})(),ICON_BAR_FILL_TEAL,'VIT')}
+      ${renderStatBar(Math.min(100,(gymHistory?.sessions||[]).filter(s=>{const d=new Date(s.date||s.ts);return d>=new Date(Date.now()-7*86400000);}).length*20),ICON_BAR_FILL_TEAL,'STR')}
+      ${renderStatBar((()=>{const q=qualityState[dayKey(new Date().getDay())]||{};const vals=Object.values(q);return vals.length?Math.round(vals.filter(v=>v==='legendary'||v==='green').length/vals.length*100):0;})(),ICON_BAR_FILL_TEAL,'FOC')}
+      ${renderStatBar(dogPct,ICON_BAR_FILL_TEAL,'BND')}
+    </div>
+    <div class="sara-xp-section">
+      <div class="sara-xp-row">
+        <div class="level-badge">LVL ${info.level}</div>
+        ${renderBar(info.progress,'xp',{maxWidth:'100%'})}
+      </div>
+      <div class="sara-xp-label">${totalXP} XP${info.next?' · '+(info.next.xp-totalXP)+' to LVL':' · MAX'}</div>
+    </div>
+    <div class="sara-card-title">${title}</div>
     <div style="margin:8px 0 12px;">${effectsHtml}</div>
 
 
