@@ -3511,7 +3511,7 @@ async function sendDonutMessage(message){
   const wn=getWeekNumber();
   const weekData=buildWeekData();
   const timedMessage=`[${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}] ${message.trim()}`;
-  donutChat.push({role:'user',content:timedMessage,timestamp:Date.now(),week_number:wn});
+  donutChat.push({role:'user',content:message.trim(),display:message.trim(),timestamp:Date.now(),week_number:wn});
   save('dr-donut-chat',donutChat);
   donutLoading=true;renderCoach();
   setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},200);
