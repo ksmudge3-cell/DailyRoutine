@@ -2824,8 +2824,7 @@ function renderProfile(){
         <div class="sara-stat-bars">
           ${renderStatBar(Math.min(100,streak*5+Math.min(50,Math.floor((Date.now()-new Date('2026-05-10').getTime())/86400000))),ICON_BAR_FILL_TEAL,'Grit')}
           ${renderStatBar((()=>{const vIds=['meds-am','meds-pm','sleep','breakfast','dinner'];const today=state[dayKey(new Date().getDay())]||{};const done=vIds.filter(id=>today[id]).length;return Math.round(done/vIds.length*100);})(),ICON_BAR_FILL_TEAL,'Vitality')}
-          ${renderStatBar(Math.min(100,(weekData?.gym_count||0)*20),ICON_BAR_FILL_TEAL,'Strength')}
-          ${renderStatBar((()=>{const q=qualityState[dayKey(new Date().getDay())]||{};const vals=Object.values(q);return vals.length?Math.round(vals.filter(v=>v==='legendary'||v==='green').length/vals.length*100):0;})(),ICON_BAR_FILL_TEAL,'Focus')}
+${renderStatBar(Math.min(100,(gymHistory?.sessions||[]).filter(s=>{const d=new Date(s.date||s.ts);return d>=new Date(Date.now()-7*86400000);}).length*20),ICON_BAR_FILL_TEAL,'Strength')}          ${renderStatBar((()=>{const q=qualityState[dayKey(new Date().getDay())]||{};const vals=Object.values(q);return vals.length?Math.round(vals.filter(v=>v==='legendary'||v==='green').length/vals.length*100):0;})(),ICON_BAR_FILL_TEAL,'Focus')}
           ${renderStatBar(dogPct,ICON_BAR_FILL_TEAL,'Bond')}
         </div>
       </div>
