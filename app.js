@@ -3510,7 +3510,8 @@ async function sendDonutMessage(message){
   if(!donutApiKey||!message.trim()||donutLoading)return;
   const wn=getWeekNumber();
   const weekData=buildWeekData();
-  donutChat.push({role:'user',content:message.trim(),timestamp:Date.now(),week_number:wn});
+  const timedMessage=`[${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}] ${message.trim()}`;
+  donutChat.push({role:'user',content:timedMessage,timestamp:Date.now(),week_number:wn});
   save('dr-donut-chat',donutChat);
   donutLoading=true;renderCoach();
   setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},200);
