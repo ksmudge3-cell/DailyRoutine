@@ -3503,7 +3503,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .scoreboard-num {
   font-family: var(--font-game);
   font-size: 28px;
-  color: #FFD43A;
+  color: #D49A00;
   line-height: 1;
   letter-spacing: 0.04em;
 }
