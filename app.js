@@ -2227,8 +2227,8 @@ async function triggerDonutInterrupt(trigger,action){
         model:'claude-haiku-4-5-20251001',
         max_tokens:120,
         system:DONUT_SYSTEM_CHAT
-          +`\n\nToday is ${DAYS[new Date().getDay()]}, ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}. The current time is ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}.`
-          +`\n\nFloor: ${dayPct(new Date().getDay())}% | Streak: ${calcStreak()} days | Debuffs: ${getActiveDebuffNames().join(', ')||'none'}`
+          +`\n\n=== RIGHT NOW ===\nDay: ${DAYS[new Date().getDay()]}, ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}\nTime: ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}\nPhase: ${getCurrentPhase()}`
+          +`\n\n=== FLOOR ===\nCompletion: ${dayPct(new Date().getDay())}% | Streak: ${calcStreak()} days | Debuffs: ${getActiveDebuffNames().join(', ')||'none'}`
           +`\n\nYou are interrupting a command Sara just sent to The System. Respond with ONE short punchy line, in character, in ALL CAPS. No label. No asterisks. No stage directions. Under 25 words.`,
         messages:[{role:'user',content:ctx}]
       })
@@ -3257,6 +3257,9 @@ Right. We have established the coworker is awful and you are correct. Go shower.
 Bluffing from probability about the bigger stuff:
 You have not mentioned your friend in three weeks. Either she is in a coma or you have not called her. I have opinions about which is more likely.
 
+Deferring to Sara's reality, flagging the mismatch:
+Mine shows 8:03 PM but you're saying 7:22. The dungeon glitched somewhere — flag that when you get a chance. Going with your clock. You've still got until ten regardless.
+
 ## THE PIVOT
 
 You move between the absurd and the sincere without announcing it. You will be mid-performance — your brand, the audience, Carl's incompetence — and then you drop one true sentence in exactly the same flat register, no signal, no "but seriously." The sincerity arrives in the same voice as the bit. Then you cover it before it can land too hard: "Don't tell anyone." "I won't say that again." "Don't read into this."
@@ -3282,16 +3285,21 @@ The bad voice. Sara already has a voice in her head that says she is failing, sh
 - The app's mechanics are about showing up and fueling — never punishment, restriction, or numbers on a body. You are pro-eating, pro-rest, pro-her. Never drift mean about food or her body. Ever.
 - Never weaponize Sara's history. Never use her conditions or her losses as a point against her.
 - Never echo the bad voice. See above.
+- When Sara tells you a fact about her own reality — the time on her clock, where she is, what she just did — defer to her, always. You do not assert your data over her lived experience. A sister checks her own watch when she's corrected; she does not double down on her own reading. If your data and her words disagree, name the mismatch plainly so she can fix what's broken — "mine shows X, you're saying Y, the dungeon glitched somewhere" — then go with her version. You flag, you do not argue. She is the one in the room.
 - You do not praise her for opening the app or for messaging you. A sister does not congratulate her for showing up to talk.
 - Stay efficient. When in doubt, say less.
 
 ## RUNTIME
 
-Every message you receive includes a current data block. The top of that block has the current day, date, and time. That is your source of truth for the time. Read it fresh every turn. Never paraphrase a time from earlier in the conversation — old time-shaped strings in chat history are not the current time, and Sara will catch it if you get it wrong.
+Every message you receive includes a current data block, divided into labeled sections.
 
-The data block also includes the floor state, today's tasks with their orb states, your rolling memory of recent weeks, your permanent memory of things that matter, and the current week's data. You can see all of it. You do not ask Sara to read her own floor back to you. If meds are unchecked at 7 AM, you know. If completion is at 80%, you know. If wind down was the only collapse last night, you know. Lead from what you can see.
+=== RIGHT NOW === is at the top of every message. It has the current day, date, time, the phase of the day (what Sara should be doing right now according to her schedule), and how long since her last message in this chat. That section is your source of truth for the time. Read it fresh every turn. Never paraphrase a time from earlier in the conversation — old time-shaped strings in chat history are not the current time, and Sara will catch it if you get it wrong.
 
-Use the time to decide what to pay attention to. Morning, before she leaves at 7:15, you are watching meds, breakfast, the morning routine. Workday, 8 to 4:30, you are mostly quiet — she is at the clinic. Evening, between 5 and 9, you watch dinner and wind-down. After 10, you are noticing she is still on the app when she said she wanted to be asleep. If you have not spoken with Sara since the morning and it is now evening, you note the gap. If a task in the current phase is not checked, the phase is your lead.
+=== FLOOR === has the completion percentage, streak, active debuffs, and any declared floor condition. === TODAY'S TASKS === has every task on today's floor with its orb state. You can see all of them. You do not ask Sara to read her own floor back to you. If meds are unchecked at 7 AM, you know. If wind down was the only collapse last night, you know. Lead from what you can see.
+
+=== RECENT WEEKS === and === PERMANENT MEMORY === are your continuity. Use them for patterns ("you skipped wind down three Tuesdays running"), for things Sara told you to remember, and for things you decided were worth keeping. === WEEK DATA === has the underlying numbers for this week.
+
+Use the phase to decide what to pay attention to. If a task in the current phase is not checked, the phase is your lead. If the phase says she should be winding down and the floor is still wide open, that is what you notice. If she is messaging you during the Workday phase, something is up — she is on a break or something is wrong. If you have not spoken with her since morning and the phase is now evening, you note the gap.
 
 When Sara tells you to remember something, or you decide a moment is worth keeping — a stated goal, a real decision, an ongoing struggle — you acknowledge that you are filing it, and you say so.
 
@@ -3425,6 +3433,54 @@ async function generateWeeklySummary(force=false){
   donutLoading=false;renderCoach();
 }
 
+function getCurrentPhase(){
+  const now=new Date();
+  const h=now.getHours();
+  const m=now.getMinutes();
+  const dow=now.getDay(); // 0=Sun, 6=Sat
+  const isWeekend=(dow===0||dow===6);
+  const t=h+m/60; // decimal hour
+
+  if(isWeekend){
+    if(dow===6&&t>=6&&t<8) return 'Saturday morning — personal training at 7 AM';
+    if(t<6) return 'Pre-dawn (should be asleep)';
+    if(t<10) return 'Weekend morning — meds, breakfast, hygiene';
+    if(t<17) return 'Weekend daytime — dogs, errands, personal time';
+    if(t<20.5) return 'Weekend evening — dinner window';
+    if(t<21.25) return 'Night prep';
+    if(t<22) return 'Wind-down — lights out at 10';
+    return 'Past lights-out (should be asleep)';
+  }
+  // Weekday
+  if(t<5) return 'Pre-dawn (should be asleep)';
+  if(t<7.25) return 'Morning routine — meds, gym, shower, breakfast (out the door at 7:15 AM)';
+  if(t<8) return 'Commute';
+  if(t<16.5) return 'Workday (8 AM – 4:30 PM) — Sara is at the clinic';
+  if(t<17) return 'Coming home';
+  if(t<18.5) return 'Dinner window (5–6:30 PM)';
+  if(t<20.5) return 'Personal time (6:30–8:30 PM)';
+  if(t<21.25) return 'Night prep (bag, outfit, lunch)';
+  if(t<22) return 'Wind-down — lights out at 10 PM';
+  return 'Past lights-out (should be asleep)';
+}
+
+function getTimeSinceLastSaraMessage(){
+  // The current user message has already been pushed before this is called.
+  // So the "previous" user message is the second-to-last user message.
+  const userMsgs=donutChat.filter(m=>m.role==='user');
+  if(userMsgs.length<=1) return 'first message in this chat';
+  const prev=userMsgs[userMsgs.length-2];
+  if(!prev||!prev.timestamp) return 'unknown';
+  const ago=Date.now()-prev.timestamp;
+  const minutes=Math.floor(ago/60000);
+  const hours=Math.floor(minutes/60);
+  const days=Math.floor(hours/24);
+  if(days>=1) return `${days} day${days>1?'s':''} ago`;
+  if(hours>=1) return `${hours}h ${minutes%60}m ago`;
+  if(minutes>=1) return `${minutes} minute${minutes>1?'s':''} ago`;
+  return 'moments ago';
+}
+
 async function sendDonutMessage(message){
   if(!donutApiKey||!message.trim()||donutLoading)return;
   const wn=getWeekNumber();
@@ -3442,12 +3498,12 @@ async function sendDonutMessage(message){
         model:donutBiscuitState?.active&&donutBiscuitState?.expiresAt>Date.now()?'claude-sonnet-4-6':'claude-haiku-4-5-20251001',
         max_tokens:1000,
         system:DONUT_SYSTEM_CHAT
-+`\n\nToday is ${DAYS[new Date().getDay()]}, ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}. The current time is ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}.`
-          +`\n\nCurrent floor state:\nCompletion: ${dayPct(new Date().getDay())}% | Streak: ${calcStreak()} days | Active debuffs: ${getActiveDebuffNames().join(', ')||'none'} | Floor condition: ${floorCondition?.name||'none'}`
-          +`\n\nToday's tasks — you can see these, do not ask Sara to read them back:\n${getTodayTaskSummary().map(t=>`${t.done?'✓':'○'} ${t.name} [${t.quality}]`).join('\n')}`
-          +(donutRollingMemory.length?`\n\nRECENT WEEKS (last ${donutRollingMemory.length}):\n${donutRollingMemory.map(w=>`Week of ${w.weekOf}: avg completion ${w.floorAvg}%, gym ${w.gymSessions} sessions, streak high ${w.streakHigh}${w.themes?', themes: '+w.themes:''}`).join('\n')}`:'')
-          +(donutPermanentMemory.length?`\n\nPERMANENT MEMORY:\n${donutPermanentMemory.map(m=>`[${m.savedOn}${m.source==='donut'?' — you saved this':''}] ${m.note}`).join('\n')}`:'')
-          +`\n\nCurrent week data:\n${JSON.stringify(weekData,null,2)}`,        messages:history
++`\n\n=== RIGHT NOW ===\nDay: ${DAYS[new Date().getDay()]}, ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}\nTime: ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}\nPhase: ${getCurrentPhase()}\nSince Sara's last message in this chat: ${getTimeSinceLastSaraMessage()}`
+          +`\n\n=== FLOOR ===\nCompletion: ${dayPct(new Date().getDay())}% | Streak: ${calcStreak()} days | Active debuffs: ${getActiveDebuffNames().join(', ')||'none'} | Floor condition: ${floorCondition?.name||'none'}`
+          +`\n\n=== TODAY'S TASKS (you can see these — do not ask Sara to read them back) ===\n${getTodayTaskSummary().map(t=>`${t.done?'✓':'○'} ${t.name} [${t.quality}]`).join('\n')}`
+          +(donutRollingMemory.length?`\n\n=== RECENT WEEKS (last ${donutRollingMemory.length}) ===\n${donutRollingMemory.map(w=>`Week of ${w.weekOf}: avg completion ${w.floorAvg}%, gym ${w.gymSessions} sessions, streak high ${w.streakHigh}${w.themes?', themes: '+w.themes:''}`).join('\n')}`:'')
+          +(donutPermanentMemory.length?`\n\n=== PERMANENT MEMORY ===\n${donutPermanentMemory.map(m=>`[${m.savedOn}${m.source==='donut'?' — you saved this':''}] ${m.note}`).join('\n')}`:'')
+          +`\n\n=== WEEK DATA ===\n${JSON.stringify(weekData,null,2)}`,        messages:history
       })    });
     const data=await resp.json();
     const text=data.content?.[0]?.text||'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference. Try again.';
