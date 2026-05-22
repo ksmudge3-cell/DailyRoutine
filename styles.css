@@ -3128,34 +3128,27 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 /* ── Dungeon Record — text panel overlaid on card's right side ─────────── */
 .sara-dungeon-record {
   position: absolute;
-  top: 8%;
+  top: 4%;
   left: 54%;
   right: 7%;
-  bottom: 18%;
+  bottom: 36%;
   display: flex;
   flex-direction: column;
   font-family: var(--font-stat, 'Silkscreen', monospace);
   overflow: hidden;
 }
-.sara-dungeon-record .dr-title {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  color: var(--amber);
-  text-align: center;
-  margin-bottom: 6px;
-}
 .sara-dungeon-record .dr-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(212,154,0,0.5), transparent);
-  margin: 4px 0;
+  margin: 3px 0;
 }
 .sara-dungeon-record .dr-row {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  font-size: 8px;
-  letter-spacing: 0.06em;
-  line-height: 1.6;
+  font-size: 7px;
+  letter-spacing: 0.05em;
+  line-height: 1.5;
   gap: 8px;
 }
 .sara-dungeon-record .dr-label {
@@ -3171,7 +3164,136 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   min-width: 0;
 }
 .sara-dungeon-record .dr-gap {
-  height: 6px;
+  height: 3px;
+}
+
+/* ── Name block at top of right panel ──────────────────────────────────── */
+.sara-name-block {
+  margin-bottom: 4px;
+}
+.sara-name-block .sara-name {
+  font-family: var(--font-title, 'Cinzel', serif);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--gold, #FFD43A);
+  line-height: 1;
+}
+.sara-name-block .sara-class-title {
+  font-family: var(--font-stat, 'Silkscreen', monospace);
+  font-size: 7px;
+  letter-spacing: 0.1em;
+  color: var(--amber, #D49A00);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sara-name-block .sara-passive {
+  font-family: var(--font-body, 'Crimson Pro', serif);
+  font-style: italic;
+  font-size: 10px;
+  color: var(--muted, #94a3b8);
+  margin-top: 2px;
+}
+
+/* ── Section sub-titles inside right panel (DUNGEON RECORD, TITLES) ────── */
+.sara-dungeon-record .dr-section-title {
+  font-family: var(--font-stat, 'Silkscreen', monospace);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--amber, #D49A00);
+  text-align: center;
+  margin: 2px 0 4px;
+}
+
+/* ── Titles list ───────────────────────────────────────────────────────── */
+.sara-dungeon-record .title-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 2px;
+}
+.sara-dungeon-record .title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-stat, 'Silkscreen', monospace);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  padding: 1px 2px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sara-dungeon-record .title-row .title-indicator {
+  width: 10px;
+  flex-shrink: 0;
+  text-align: center;
+}
+.sara-dungeon-record .title-row .title-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sara-dungeon-record .title-row.equipped {
+  color: var(--gold, #FFD43A);
+}
+.sara-dungeon-record .title-row.equipped .title-indicator {
+  color: var(--teal-hi, #2EF2E0);
+}
+.sara-dungeon-record .title-row.unlocked:not(.equipped) {
+  color: var(--muted, #94a3b8);
+  cursor: pointer;
+}
+.sara-dungeon-record .title-row.unlocked:not(.equipped):hover {
+  color: var(--pearl, #D9DCE1);
+  background: rgba(212,154,0,0.08);
+}
+.sara-dungeon-record .title-row.locked {
+  color: rgba(148, 163, 184, 0.35);
+}
+
+/* ── XP slot — in-card, matches Weekly Boss bar dimensions ─────────────── */
+.sara-xp-slot {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  bottom: 21%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sara-xp-slot .hero-bar-wrap {
+  height: 44px; /* same as Weekly Boss HP bar default */
+}
+.sara-xp-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sara-xp-meta .sara-xp-text {
+  font-family: var(--font-stat, 'Silkscreen', monospace);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--hint);
+}
+
+/* ── HP slot — in heart/skull row, fed by debuff state ─────────────────── */
+.sara-hp-slot {
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  bottom: 5%;
+}
+.sara-hp-slot .hero-bar-wrap {
+  height: 32px;
+}
+.sara-hp-slot.recovery .hero-bar-fill {
+  animation: hp-recovery-pulse 1.2s ease-in-out infinite;
+}
+@keyframes hp-recovery-pulse {
+  0%, 100% { opacity: 1; filter: brightness(1) saturate(1.4); }
+  50% { opacity: 0.55; filter: brightness(1.6) saturate(1.8); }
 }
 
 /* ── Full-width stat bars (companion-card style) below the card ────────── */
@@ -3198,44 +3320,6 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   height: 16px;
   flex: 1;
   min-width: 0;
-}
-
-/* ── XP section under the stat bars ────────────────────────────────────── */
-.sara-xp-section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 4px 0 8px;
-}
-.sara-xp-section .sara-xp-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.sara-xp-section .sara-xp-row .hero-bar-wrap {
-  flex: 1;
-  height: 28px;
-}
-.sara-xp-section .level-badge {
-  flex-shrink: 0;
-}
-.sara-xp-section .sara-xp-label {
-  font-family: var(--font-stat, 'Silkscreen', monospace);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: var(--hint);
-  text-align: right;
-}
-
-/* ── Equipped title — Crimson Pro italic, muted teal ───────────────────── */
-.sara-card-title {
-  font-family: var(--font-body, 'Crimson Pro', serif);
-  font-style: italic;
-  font-size: 14px;
-  color: rgba(46, 242, 224, 0.65);
-  text-align: center;
-  margin: 8px 0 14px;
-  letter-spacing: 0.02em;
 }
 
 .sara-card-name {

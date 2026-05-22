@@ -2901,12 +2901,36 @@ function renderProfile(){
   const effects=getActiveBuffs();
   const effectsHtml=effects.length?effects.map(e=>`<span class="status-chip ${e.type}" style="margin-right:6px;">${e.label}</span>`).join(''):'<span style="font-size:11px;color:var(--hint);">No active effects</span>';
 
+ // HP bar driven by debuff state (4+ debuffs or recovery mode = empty)
+ const debuffCount=countDebuffs();
+ const recoveryActive=isRecoveryMode();
+ const hpPct=recoveryActive?15:Math.max(0,100-debuffCount*25);
+
+ // Titles list — equipped + unlocked from xpState, locked from XP_LEVELS
+ const equippedTitle=title;
+ const unlockedTitles=new Set(xpState.unlockedTitles||[]);
+ const titleRows=XP_LEVELS.map(l=>{
+   const unlocked=unlockedTitles.has(l.title);
+   const equipped=equippedTitle===l.title;
+   const cls=['title-row',unlocked?'unlocked':'locked',equipped?'equipped':''].filter(Boolean).join(' ');
+   const safeTitle=l.title.replace(/'/g,"\\'");
+   const handler=unlocked&&!equipped?`onclick="equipTitle('${safeTitle}')"`:'';
+   const indicator=equipped?'▶':(unlocked?'·':'🔒');
+   const label=unlocked?l.title:'[locked]';
+   return `<div class="${cls}" ${handler}><span class="title-indicator">${indicator}</span><span class="title-name">${label}</span></div>`;
+ }).join('');
+
  wrap.innerHTML=`
   <div class="sara-card-wrap">
       <img src="${CHAR_SARA_CARD}" class="sara-card-portrait" alt="Sara">
       <div class="sara-dungeon-record">
-        <div class="dr-title">DUNGEON RECORD</div>
+        <div class="sara-name-block">
+          <div class="sara-name">SARA</div>
+          <div class="sara-class-title">BEAST KEEPER · ${equippedTitle}</div>
+          <div class="sara-passive">Stubborn Survivor</div>
+        </div>
         <div class="dr-divider"></div>
+        <div class="dr-section-title">DUNGEON RECORD</div>
         <div class="dr-row"><span class="dr-label">FLOORS SURVIVED</span><span class="dr-value">${rec.floorsSurvived}</span></div>
         <div class="dr-row"><span class="dr-label">DAYS IN DUNGEON</span><span class="dr-value">${rec.daysInDungeon}</span></div>
         <div class="dr-row"><span class="dr-label">BEST STREAK</span><span class="dr-value">${rec.bestStreak}</span></div>
@@ -2920,6 +2944,18 @@ function renderProfile(){
         <div class="dr-row"><span class="dr-label">LEGENDARY ORBS</span><span class="dr-value">${rec.legendaryOrbs}</span></div>
         <div class="dr-row"><span class="dr-label">TOTAL COLLAPSES</span><span class="dr-value">${rec.totalCollapses}</span></div>
         <div class="dr-divider"></div>
+        <div class="dr-section-title">TITLES</div>
+        <div class="title-list">${titleRows}</div>
+      </div>
+      <div class="sara-xp-slot">
+        ${renderBar(info.progress,'xp',{maxWidth:'100%'})}
+        <div class="sara-xp-meta">
+          <div class="level-badge">LVL ${info.level}</div>
+          <span class="sara-xp-text">${totalXP} XP${info.next?' · '+(info.next.xp-totalXP)+' to LVL':' · MAX'}</span>
+        </div>
+      </div>
+      <div class="sara-hp-slot${recoveryActive?' recovery':''}">
+        ${renderBar(hpPct,'hp',{maxWidth:'100%'})}
       </div>
     </div>
     <div class="sara-stat-bars-full">
@@ -2929,14 +2965,6 @@ function renderProfile(){
       ${renderStatBar((()=>{const q=qualityState[dayKey(new Date().getDay())]||{};const vals=Object.values(q);return vals.length?Math.round(vals.filter(v=>v==='legendary'||v==='green').length/vals.length*100):0;})(),ICON_BAR_FILL_TEAL,'FOC')}
       ${renderStatBar(dogPct,ICON_BAR_FILL_TEAL,'BND')}
     </div>
-    <div class="sara-xp-section">
-      <div class="sara-xp-row">
-        <div class="level-badge">LVL ${info.level}</div>
-        ${renderBar(info.progress,'xp',{maxWidth:'100%'})}
-      </div>
-      <div class="sara-xp-label">${totalXP} XP${info.next?' · '+(info.next.xp-totalXP)+' to LVL':' · MAX'}</div>
-    </div>
-    <div class="sara-card-title">${title}</div>
     <div style="margin:8px 0 12px;">${effectsHtml}</div>
 
 
