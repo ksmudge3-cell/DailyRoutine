@@ -256,7 +256,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,commTowerHistory,commTowerPending,sideQuestBacklog},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,commTowerHistory,collapseLog,commTowerPending,sideQuestBacklog},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -334,6 +334,7 @@ async function loadFromSupabase(){
       if(d.donutRollingMemory)donutRollingMemory=d.donutRollingMemory;
       if(d.donutPermanentMemory)donutPermanentMemory=d.donutPermanentMemory;
       if(d.donutBiscuitState)donutBiscuitState=d.donutBiscuitState;
+      if(d.collapseLog)collapseLog=d.collapseLog;
       if(d.archived){archived=d.archived;if(!archived.tasks)archived.tasks=[];}
       // Explicit save list — keys must match what init() re-loads (line ~4400).
       // Auto camelCase→kebab conversion was lossy (xpState→dr-xp-state, but actual key is dr-xp).
@@ -397,6 +398,7 @@ let shopCat='all', spinCat='clean', spinProject='all', selectedDay=new Date().ge
 let timerInterval=null, timerSeconds=0, timerRunning=false;
 let qualityState=load('dr-quality',{});
 let collapseState=load('dr-collapse',{});
+let collapseLog=load('dr-collapse-log',[]);
 let floorCondition=load('dr-floor-condition',null);
 let gymSession=loadLocal('dr-gym-session',null);
 let gymHistory=loadLocal('dr-gym-history',{prs:{},sessions:[]});
@@ -581,14 +583,17 @@ function getDungeonRecord(){
 
   // TOTAL COLLAPSES — count of zero-completion days after a productive run
   // (no persistent collapse log exists; this is the best approximation from existing data)
-  let totalCollapses=0;
-  for(let i=1;i<allKeys.length;i++){
-    const prev=state[allKeys[i-1]]||{};
-    const cur=state[allKeys[i]]||{};
-    const prevDone=Object.values(prev).filter((v,idx)=>v && !Object.keys(prev)[idx].endsWith('_ts')).length;
-    const curDone=Object.values(cur).filter((v,idx)=>v && !Object.keys(cur)[idx].endsWith('_ts')).length;
-    if(prevDone>=3&&curDone===0)totalCollapses++;
-  }
+  const totalCollapses=collapseLog.length||(() => {
+    let approx=0;
+    for(let i=1;i<allKeys.length;i++){
+      const prev=state[allKeys[i-1]]||{};
+      const cur=state[allKeys[i]]||{};
+      const prevDone=Object.values(prev).filter((v,idx)=>v&&!Object.keys(prev)[idx].endsWith('_ts')).length;
+      const curDone=Object.values(cur).filter((v,idx)=>v&&!Object.keys(cur)[idx].endsWith('_ts')).length;
+      if(prevDone>=3&&curDone===0)approx++;
+    }
+    return approx;
+  })();
 
   return{floorsSurvived,daysInDungeon,bestStreak:bestStreakVal,totalRooms,mostCompleted,mostSkipped,bestDay,hardestDay,legendaryOrbs,totalCollapses};
 }
@@ -2766,6 +2771,8 @@ function checkFloorCollapse(){
     else if(unchecked>=3){type='heavy';label='Heavy Collapse';effectLabel='-20% coins + Sleep Deprived';duration='Clears after 3 tasks completed today';}
     else{type='structural';label='Structural Damage';effectLabel='-10% coins today';duration='Clears after first task completed today';}
     collapseState.active={type,label,unchecked,effectLabel,duration,applyDate:todayStr()};
+    collapseLog.push({date:yDate,type,unchecked});
+    save('dr-collapse-log',collapseLog);
   }
   saveLocal('dr-collapse',collapseState);
 }
