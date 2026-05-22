@@ -2086,14 +2086,20 @@ function cancelCommAction(id){
 }
 function confirmAllComm(){
   const ids=[...commTowerPending.map(a=>a.id)];
+  const count=ids.length;
   ids.forEach(id=>executeCommAction(id));
+  commTowerHistory.push({role:'system',content:`BULK EXECUTION: ${count} action${count!==1?'s':''} confirmed. Queue cleared. All changes saved.`,timestamp:Date.now()});
+  save('dr-comm-history',commTowerHistory);
+  syncToSupabase();
+  renderInbox();
 }
 
 function cancelAllComm(){
   if(!commTowerPending.length)return;
+  const count=commTowerPending.length;
   commTowerPending=[];
   save('dr-comm-pending',commTowerPending);
-  commTowerHistory.push({role:'system',content:'LOG ENTRY: All pending actions cancelled by Crawler.',timestamp:Date.now()});
+  commTowerHistory.push({role:'system',content:`PENDING QUEUE CLEARED: ${count} action${count!==1?'s':''} discarded. No changes made.`,timestamp:Date.now()});
   save('dr-comm-history',commTowerHistory);
   renderInbox();
 }
@@ -2163,8 +2169,21 @@ function executeCommAction(id){
 
     case 'clear_debuff':{
       const p=action.params||{};
-      clearSlot(p.category||p.slot);
-      resultMsg=`LOG ENTRY: Debuff cleared — "${p.label||p.category}". The dungeon notes the cause has been addressed.`;
+      const targetDebuff=(p.debuff_id||p.category||p.label||'').toLowerCase().replace(/\s+/g,'-');
+      const k=dayKey(new Date().getDay());
+      if(!qualityState[k])qualityState[k]={};
+      let cleared=[];
+      for(const[taskId,cfg]of Object.entries(QUALITY_TASKS)){
+        if(cfg.debuff===targetDebuff||cfg.label.toLowerCase()===targetDebuff.toLowerCase()||cfg.label.toLowerCase()===(p.label||'').toLowerCase()){
+          delete qualityState[k][taskId];
+          cleared.push(taskId);
+        }
+      }
+      save('dr-quality',qualityState);
+      syncToSupabase();
+      resultMsg=cleared.length
+        ?`LOG ENTRY: Debuff cleared — "${p.label||targetDebuff}". Quality marks removed from ${cleared.length} task${cleared.length!==1?'s':''}. The dungeon notes the cause has been addressed.`
+        :`LOG ENTRY: Debuff "${p.label||targetDebuff}" — no matching quality marks found for today. No changes made.`;
       break;
     }
 
@@ -2185,12 +2204,41 @@ function executeCommAction(id){
       break;
     }
 
+    case 'move_task':{
+      const p=action.params||{};
+      const targetDay=p.day||'today';
+      const targetSection=p.section||(p.time_of_day)||'Evening';
+      const taskName=(p.name||p.task_name||'').toLowerCase();
+      // Find task across all sections of today's schedule
+      const fromSc=getScheduleFor(new Date().getDay());
+      let foundTask=null,fromSection=null;
+      for(const sec of fromSc){
+        const t=sec.tasks.find(t=>t.name.toLowerCase().includes(taskName)||t.id===p.task_id);
+        if(t){foundTask=t;fromSection=sec.label;break;}
+      }
+      if(!foundTask){
+        resultMsg=`LOG ENTRY: Move task failed — could not find task matching "${p.name||p.task_id}". No changes made.`;
+        break;
+      }
+      // Remove from current section
+      for(const sec of fromSc){
+        sec.tasks=sec.tasks.filter(t=>t.id!==foundTask.id);
+      }
+      // Insert into target section
+      const targetDow=targetDay==='tomorrow'?(new Date().getDay()+1)%7:new Date().getDay();
+      const targetSc=getScheduleFor(targetDow);
+      const targetSec=targetSc.find(s=>s.label.toLowerCase()===targetSection.toLowerCase())||targetSc[targetSc.length-1];
+      targetSec.tasks.push(foundTask);
+      save('dr-schedule',schedule);
+      syncToSupabase();
+      resultMsg=`LOG ENTRY: Task moved — "${foundTask.name}" relocated from ${fromSection} to ${targetSection}${targetDay!=='today'?' ('+targetDay+')':''}.`;
+      break;
+    }
+
     case 'query':
     default:
       resultMsg=`LOG ENTRY: ${action.summary} — EXECUTED.`;
       break;
-  }
-
 
   commTowerHistory.push({role:'system',content:resultMsg,timestamp:Date.now()});
   commTowerPending=commTowerPending.filter(a=>a.id!==id);
@@ -2198,7 +2246,8 @@ function executeCommAction(id){
   save('dr-comm-history',commTowerHistory);
 
   // Re-render affected screens
-  if(['add_task','remove_task','snooze_task'].includes(action.type))renderToday();
+  if(['add_task','remove_task','snooze_task','clear_debuff','move_task'].includes(action.type))renderToday();
+  if(['add_task','remove_task','snooze_task','clear_debuff'].includes(action.type))renderStatusBar();
   if(action.type==='declare_condition'){renderToday();renderCollapseEvent();}
 
   renderInbox();
