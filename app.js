@@ -2429,7 +2429,7 @@ IMPORTANT: The id field in action must be a plain unique string like action_1 or
             role:m.role==='system'?'assistant':'user',
             content:m.content
           })),
-          {role:'user',content:message}
+          {role:'user',content:timedMessage}
         ]
       })
     });
