@@ -3213,7 +3213,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   flex-direction: column;
   gap: 1px;
   margin-top: 2px;
-  max-height: 77px; /* ~5 rows at 7px Silkscreen with line-height 1.55 */
+  max-height: 84px; /* ~5 rows at 7px Silkscreen with line-height 1.55 */
   overflow: hidden;
 }
 .sara-dungeon-record .title-row {
@@ -3282,8 +3282,8 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .sara-hp-slot {
   position: absolute;
   left: 16%;
-  right: 18%;
-  bottom: 3%;
+  right: 17%;
+  bottom: 4%;
 }
 .sara-hp-slot .hero-bar-wrap {
   height: 32px;
