@@ -3464,6 +3464,25 @@ async function generateWeeklySummary(force=false){
     const _floorAvg=_days.length?Math.round(_days.reduce((a,d)=>a+d.completion_pct,0)/_days.length):0;
     const _gymSessions=_days.filter(d=>!(d.notable_events||[]).includes('Gym skipped')).length;
     const _topSkipped=weekData.top_debuff&&weekData.top_debuff!=='None'?[weekData.top_debuff]:[];
+    // Generate themes from this week's conversation
+    let themes='';
+    if(donutApiKey&&donutChat.length>2){
+      try{
+        const convoSnippet=donutChat.slice(-20).filter(m=>m.role==='user').map(m=>m.content).join(' | ').slice(0,600);
+        const tr=await fetch('https://api.anthropic.com/v1/messages',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','x-api-key':donutApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+          body:JSON.stringify({
+            model:'claude-haiku-4-5-20251001',
+            max_tokens:60,
+            system:'Summarize the key themes from these user messages in under 15 words. Plain text only, no labels.',
+            messages:[{role:'user',content:convoSnippet}]
+          })
+        });
+        const td=await tr.json();
+        themes=(td.content?.[0]?.text||'').trim().slice(0,150);
+      }catch(e){}
+    }
     writeDonutRollingWeek({
       weekOf:weekData.date_range||`Week ${wn}`,
       week_number:wn,
@@ -3471,7 +3490,7 @@ async function generateWeeklySummary(force=false){
       gymSessions:_gymSessions,
       topSkipped:_topSkipped,
       streakHigh:weekData.streak||0,
-      themes:''
+      themes
     });
     // Seed chat with Donut's closing question
     const lastChatWn=donutChat.length?donutChat[donutChat.length-1].week_number:null;
@@ -3514,6 +3533,13 @@ async function sendDonutMessage(message){
     const data=await resp.json();
     const text=data.content?.[0]?.text||'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference. Try again.';
     donutChat.push({role:'assistant',content:text,timestamp:Date.now(),week_number:wn});
+    // Permanent memory — detect "remember this" intent
+    const memTriggers=['remember','don\'t forget','keep in mind','note that','filing that','file that'];
+    const msgLower=message.trim().toLowerCase();
+    const respLower=text.toLowerCase();
+    if(memTriggers.some(t=>msgLower.includes(t)||respLower.includes('filing')||respLower.includes('filed')||respLower.includes('i will remember')||respLower.includes('i\'m going to remember'))){
+      writeDonutPermanentMemory(message.trim(),'sara');
+    }
   }catch(e){
     console.error('Donut error:',e);
     donutChat.push({role:'assistant',content:'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference. Try again.',timestamp:Date.now(),week_number:wn});
