@@ -3213,7 +3213,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   flex-direction: column;
   gap: 1px;
   margin-top: 2px;
-  max-height: 70px; /* ~5 rows at 7px Silkscreen with line-height 1.55 */
+  max-height: 77px; /* ~5 rows at 7px Silkscreen with line-height 1.55 */
   overflow: hidden;
 }
 .sara-dungeon-record .title-row {
@@ -3258,7 +3258,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   position: absolute;
   left: 5%;
   right: 5%;
-  bottom: 14%;
+  bottom: 11%;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -3463,4 +3463,8 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   color: var(--hint);
   text-align: right;
   letter-spacing: 0.04em;
+}
+
+.sara-xp-slot .level-badge {
+  display: none;
 }
