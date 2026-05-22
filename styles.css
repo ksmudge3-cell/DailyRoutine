@@ -3162,7 +3162,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   word-break: break-word;
 }
 .sara-dungeon-record .dr-gap {
-  height: 3px;
+  height: 0;
 }
 
 /* ── Name block at top of right panel ──────────────────────────────────── */
@@ -3204,7 +3204,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   letter-spacing: 0.14em;
   color: var(--amber, #D49A00);
   text-align: center;
-  margin: 0 0 4px;
+  margin: 0;
 }
 
 /* ── Titles list — max 5 rows visible, locked overflow hidden ───────────── */
