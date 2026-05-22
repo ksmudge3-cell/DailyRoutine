@@ -2851,6 +2851,17 @@ function renderProfile(){
   const streak=calcStreak();
   const bestStreak=calcBestStreak();
   const totalXP=xpState.totalXP||0;
+  // Reconcile unlocked titles — any title whose XP threshold is met should be unlocked,
+  // even if it was skipped by a big XP grant or earned before the title system existed.
+  if(!xpState.unlockedTitles)xpState.unlockedTitles=[];
+  let unlockedChanged=false;
+  XP_LEVELS.forEach(l=>{
+    if(totalXP>=l.xp && !xpState.unlockedTitles.includes(l.title)){
+      xpState.unlockedTitles.push(l.title);
+      unlockedChanged=true;
+    }
+  });
+  if(unlockedChanged)save('dr-xp',xpState);
   const info=getLevelInfo(totalXP);
   const coins=getPoints();
   const title=getEquippedTitle();

@@ -3129,8 +3129,8 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .sara-dungeon-record {
   position: absolute;
   top: 4%;
-  left: 54%;
-  right: 7%;
+  left: 52%;
+  right: 5%;
   bottom: 36%;
   display: flex;
   flex-direction: column;
@@ -3158,10 +3158,8 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .sara-dungeon-record .dr-value {
   color: var(--pearl, #D9DCE1);
   text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   min-width: 0;
+  word-break: break-word;
 }
 .sara-dungeon-record .dr-gap {
   height: 3px;
@@ -3182,12 +3180,10 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .sara-name-block .sara-class-title {
   font-family: var(--font-stat, 'Silkscreen', monospace);
   font-size: 7px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--amber, #D49A00);
   margin-top: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.4;
 }
 .sara-name-block .sara-passive {
   font-family: var(--font-body, 'Crimson Pro', serif);
@@ -3217,23 +3213,21 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .sara-dungeon-record .title-row {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 5px;
   font-family: var(--font-stat, 'Silkscreen', monospace);
   font-size: 8px;
   letter-spacing: 0.04em;
   line-height: 1.5;
   padding: 1px 2px;
-  white-space: nowrap;
-  overflow: hidden;
 }
 .sara-dungeon-record .title-row .title-indicator {
-  width: 10px;
+  width: 8px;
   flex-shrink: 0;
   text-align: center;
 }
 .sara-dungeon-record .title-row .title-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
+  min-width: 0;
 }
 .sara-dungeon-record .title-row.equipped {
   color: var(--gold, #FFD43A);
