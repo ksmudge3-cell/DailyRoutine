@@ -3519,7 +3519,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   color: var(--hint);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 /* ── Flip animation ──────────────────────────────────────── */
