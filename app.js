@@ -2819,26 +2819,7 @@ function renderProfile(){
       <div class="system-msg" style="margin-top:10px;margin-bottom:0;"><div class="sys-body">${bossHP<=0?'BOSS DEFEATED. Floor complete. Well done, Crawler.':bossHP<30?'WARNING: Boss weakening. Push through.':bossHP<60?`NOTICE: The ${weeklyBoss} watches your progress.`:`NOTICE: The boss is watching your weekend plans.`}</div></div>
     </div>
 
-    <div class="sara-card-wrap">
-      <img src="${CHAR_SARA_CARD}" class="sara-card-portrait" alt="Sara">
-      <div class="sara-card-stats">
-        <div class="sara-card-name">Sara</div>
-        <div class="sara-card-class">Beast Keeper</div>
-        <div class="sara-card-passive">Stubborn Survivor</div>
-        <div class="sara-stat-bars">
-          ${renderStatBar(Math.min(100,streak*5+Math.min(50,Math.floor((Date.now()-new Date('2026-05-10').getTime())/86400000))),ICON_BAR_FILL_TEAL,'Grit')}
-          ${renderStatBar((()=>{const vIds=['meds-am','meds-pm','sleep','breakfast','dinner'];const today=state[dayKey(new Date().getDay())]||{};const done=vIds.filter(id=>today[id]).length;return Math.round(done/vIds.length*100);})(),ICON_BAR_FILL_TEAL,'Vitality')}
-${renderStatBar(Math.min(100,(gymHistory?.sessions||[]).filter(s=>{const d=new Date(s.date||s.ts);return d>=new Date(Date.now()-7*86400000);}).length*20),ICON_BAR_FILL_TEAL,'Strength')}          ${renderStatBar((()=>{const q=qualityState[dayKey(new Date().getDay())]||{};const vals=Object.values(q);return vals.length?Math.round(vals.filter(v=>v==='legendary'||v==='green').length/vals.length*100):0;})(),ICON_BAR_FILL_TEAL,'Focus')}
-          ${renderStatBar(dogPct,ICON_BAR_FILL_TEAL,'Bond')}
-</div>
-        <div class="sara-card-level">
-          <div class="level-badge">LVL ${info.level}</div>
-          <div class="sara-xp-label">${totalXP} XP${info.next?' · '+(info.next.xp-totalXP)+' to lvl':' · MAX'}</div>
-        </div>
-        ${renderBar(info.progress,'xp',{maxWidth:'100%'})}
-        <div style="font-size:10px;color:var(--amber);margin-top:4px;">${title}</div>
-      </div>
-    </div>
+
     <div style="margin:8px 0 12px;">${effectsHtml}</div>
 
 
