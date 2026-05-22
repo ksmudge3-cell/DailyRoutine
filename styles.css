@@ -3533,3 +3533,38 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   animation: scoreFlip 300ms ease forwards;
   transform-style: preserve-3d;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   COLLAPSE SECTION
+═══════════════════════════════════════════════════════════ */
+
+.collapse-section-label {
+  font-family: var(--font-hotdog);
+  font-size: 7px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin: 8px 0 4px;
+}
+
+.collapse-task-list {
+  margin: 0 0 8px;
+  padding-left: 4px;
+}
+
+.collapse-task-row {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--pearl);
+  line-height: 1.6;
+}
+
+.collapse-task-dim {
+  color: var(--hint);
+}
+
+.collapse-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,154,0,0.5), transparent);
+  margin: 3px 0;
+}

@@ -2806,7 +2806,8 @@ function checkFloorCollapse(){
     if(unchecked>=5){type='total';label='Total Collapse';effectLabel='-25% coins, Recovery Mode active';duration='Complete 3 tasks to clear';}
     else if(unchecked>=3){type='heavy';label='Heavy Collapse';effectLabel='-20% coins + Sleep Deprived';duration='Clears after 3 tasks completed today';}
     else{type='structural';label='Structural Damage';effectLabel='-10% coins today';duration='Clears after first task completed today';}
-    collapseState.active={type,label,unchecked,effectLabel,duration,applyDate:todayStr()};
+    const unclearedNames=allTasks.filter(t=>!yData[t.id]&&yQ[t.id]!=='gray').map(t=>t.name);
+    collapseState.active={type,label,unchecked,effectLabel,duration,applyDate:todayStr(),unclearedNames};
     collapseLog.push({date:yDate,type,unchecked});
     save('dr-collapse-log',collapseLog);
   }
@@ -2865,27 +2866,56 @@ function renderFloorConditionBanner(){
 function renderCollapseEvent(){
   const el=document.getElementById('collapse-event-banner');if(!el)return;
   const active=!!(collapseState?.active);
-  el.classList.toggle('active', active);
+  el.classList.toggle('active',active);
   if(!active){el.innerHTML='';return;}
   const c=collapseState.active;
   if(!c||c.applyDate!==todayStr()){el.innerHTML='';return;}
+  const sc=getScheduleFor(new Date().getDay());
+  const allT=sc.reduce((a,s)=>a.concat(s.tasks),[]);
   const done=Object.entries(state[todayStr()]||{}).filter(([k,v])=>v&&!k.endsWith('_ts')).length;
+  const total=allT.length;
   const cleared=(c.type==='structural'&&done>=1)||(c.type==='heavy'&&done>=3);
-  if(cleared){delete collapseState.active;save('dr-collapse',collapseState);el.innerHTML='';return;}
-  const donutLines={
-    structural:['Structural cracks. Nothing fatal. Yet. One task. Make it count.','The dungeon notes your shortcomings. It is watching.'],
-    heavy:['Three rooms, Crawler. You left three rooms. The dungeon is disappointed.','Heavy damage. Complete three tasks to begin repairs.'],
-    total:['You left the floor half-cleared. The dungeon has sealed it. Recovery Mode activated.','Total collapse. Three tasks. That is all the dungeon asks.']
+  if(cleared){delete collapseState.active;save('dr-collapse',collapseState);el.innerHTML='';renderCollapseEvent._fired=false;return;}
+  const names=c.unclearedNames||[];
+  const taskListHtml=names.length
+    ?names.map(n=>`<div class="collapse-task-row">— ${n}</div>`).join('')
+    :`<div class="collapse-task-row collapse-task-dim">(task list unavailable for this collapse)</div>`;
+  const fallbackLines={
+    structural:'Structural cracks. Nothing fatal. Yet. One task.',
+    heavy:'Three rooms left standing. Complete three tasks to begin repairs.',
+    total:'Total collapse. Three tasks. That is all the dungeon asks.'
   };
-  const donutLine=DCC.getRandom(donutLines[c.type]);
+  const donutId='collapse-donut-line';
   el.innerHTML=`<div class="collapse-banner">
     <div class="collapse-title">⚠ FLOOR COLLAPSED</div>
+    <div class="collapse-divider"></div>
     <div class="collapse-body">${c.unchecked} room${c.unchecked!==1?'s':''} were uncleared at midnight. The dungeon has sealed this floor.</div>
+    <div class="collapse-section-label">UNCLEARED:</div>
+    <div class="collapse-task-list">${taskListHtml}</div>
+    <div class="collapse-divider"></div>
     <div class="collapse-debuff-line">DEBUFF APPLIED: ${c.label.toUpperCase()}</div>
     <div class="collapse-effect-line">Effect: ${c.effectLabel}</div>
-    <div class="collapse-duration-line">Duration: ${c.duration}</div>
-    <div class="donut-msg-wrap" style="margin-top:8px;"><span class="donut-signature">Princess Donut:</span><p class="donut-msg">${donutLine}</p></div>
+    <div class="collapse-duration-line">Clears: ${c.duration}</div>
+    <div class="collapse-divider"></div>
+    <div class="donut-msg-wrap"><span class="donut-signature">Princess Donut:</span><p class="donut-msg" id="${donutId}">${fallbackLines[c.type]||fallbackLines.structural}</p></div>
   </div>`;
+  if(donutApiKey&&!renderCollapseEvent._fired){
+    renderCollapseEvent._fired=true;
+    fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':donutApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:80,
+        system:DONUT_SYSTEM_CHAT+`\n\nToday is ${DAYS[new Date().getDay()]}. Current time: ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}.\n\nYou are delivering ONE line about last night's floor collapse. Be specific — you can see exactly what was left uncleared. Short and pointed. No asterisks. No stage directions.`,
+        messages:[{role:'user',content:`Floor collapsed last night. ${done} of ${total} rooms cleared. Uncleared: ${names.join(', ')||'unknown'}. Debuff applied: ${c.label}.`}]
+      })
+    }).then(r=>r.json()).then(data=>{
+      const text=(data.content?.[0]?.text||'').trim();
+      const lineEl=document.getElementById(donutId);
+      if(text&&lineEl)lineEl.textContent=text;
+    }).catch(()=>{});
+  }
 }
 
 
