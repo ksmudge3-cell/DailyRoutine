@@ -3282,8 +3282,8 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .sara-hp-slot {
   position: absolute;
   left: 16%;
-  right: 17%;
-  bottom: 4%;
+  right: 18%;
+  bottom: 3%;
 }
 .sara-hp-slot .hero-bar-wrap {
   height: 32px;
