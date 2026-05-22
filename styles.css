@@ -3101,88 +3101,82 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
    SARA CRAWLER CARD — Profile Tab
 ═══════════════════════════════════════════════════════════ */
 
-/* ── Outer wrapper — relative so stats overlay can anchor ── */
 .sara-card-wrap {
   position: relative;
   width: 100%;
   margin-bottom: 16px;
-  border-radius: var(--radius);
-  overflow: hidden;
 }
 
-/* ── Full-width card portrait image ─────────────────────── */
 .sara-card-portrait {
-  display: block;
   width: 100%;
-  height: auto;
-  image-rendering: auto;
+  display: block;
+  border-radius: var(--radius-sm);
 }
 
-/* ── Stats overlay — right half of the card ─────────────── */
 .sara-card-stats {
   position: absolute;
-  top: 10%;
-  right: 0;
-  width: 48%;
-  height: 80%;
+  top: 12%;
+  right: 2%;
+  width: 46%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  padding: 0 8px;
+  gap: 6px;
 }
 
-/* ── Name — Cinzel, amber ────────────────────────────────── */
 .sara-card-name {
   font-family: var(--font-title);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--amber);
   text-transform: uppercase;
   line-height: 1.1;
-  margin-bottom: 1px;
 }
 
-/* ── Class — Press Start 2P, teal ───────────────────────── */
 .sara-card-class {
   font-family: var(--font-hotdog);
-  font-size: 6px;
-  letter-spacing: 0.1em;
+  font-size: 7px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--teal);
-  margin-bottom: 2px;
 }
 
-/* ── Passive — Crimson Pro italic, hint ─────────────────── */
 .sara-card-passive {
   font-family: var(--font-body);
   font-size: 10px;
   font-style: italic;
   color: var(--hint);
   line-height: 1.3;
-  margin-bottom: 6px;
 }
 
-/* ── Stat bars — reuses companion card pattern ──────────── */
+.sara-card-level {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
 .sara-stat-bars {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   width: 100%;
 }
 
-/* Sara stat bars are narrower than companion — tighter label width */
 .sara-stat-bars .stat-row {
   margin-bottom: 0;
   gap: 4px;
   align-items: center;
 }
+
 .sara-stat-bars .stat-label {
-  width: 48px;
-  font-size: 5px;
+  font-family: var(--font-hotdog);
+  font-size: 7px;
   letter-spacing: 0.05em;
+  width: 52px;
+  flex-shrink: 0;
 }
+
 .sara-stat-bars .stat-bar-wrap {
   height: 8px;
 }
