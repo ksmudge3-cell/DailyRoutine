@@ -3489,9 +3489,9 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 
 .scoreboard-bg {
   display: block;
-  width: 100%;
-  height: auto;
-  image-rendering: pixelated
+  width: 523px;
+  height: 523px;
+  image-rendering: pixelated;
 }
 
 .scoreboard-inner {
