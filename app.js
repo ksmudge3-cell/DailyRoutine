@@ -2783,8 +2783,12 @@ function renderProfile(){
   const effectsHtml=effects.length?effects.map(e=>`<span class="status-chip ${e.type}" style="margin-right:6px;">${e.label}</span>`).join(''):'<span style="font-size:11px;color:var(--hint);">No active effects</span>';
 
  wrap.innerHTML=`
-    <div class="sara-card-wrap">
+  <div class="sara-card-wrap">
       <img src="${CHAR_SARA_CARD}" class="sara-card-portrait" alt="Sara">
+      <div class="sara-card-xp-bar">
+        ${renderBar(info.progress,'hp',{maxWidth:'100%'})}
+        <div class="sara-xp-label">${totalXP} XP${info.next?' · '+(info.next.xp-totalXP)+' to lvl':' · MAX'}</div>
+      </div>
       <div class="sara-card-stats">
         <div class="sara-card-name">Sara</div>
         <div class="sara-card-class">Beast Keeper</div>
@@ -2796,13 +2800,7 @@ function renderProfile(){
           ${renderStatBar((()=>{const q=qualityState[dayKey(new Date().getDay())]||{};const vals=Object.values(q);return vals.length?Math.round(vals.filter(v=>v==='legendary'||v==='green').length/vals.length*100):0;})(),ICON_BAR_FILL_TEAL,'FOC')}
           ${renderStatBar(dogPct,ICON_BAR_FILL_TEAL,'BND')}       
           </div>
-        <div class="sara-card-tagline">The Dogs Believe in You</div>
-        <div class="sara-card-level">
-          <div class="level-badge">LVL ${info.level}</div>
-          <div class="sara-xp-label">${totalXP} XP${info.next?' · '+(info.next.xp-totalXP)+' to lvl':' · MAX'}</div>
-        </div>
-        <div class="sara-xp-bar-wrap" style="width:100%;margin-top:4px;"><div class="sara-xp-bar-fill" style="width:${info.progress}%;height:4px;background:var(--teal);border-radius:2px;"></div></div>
-        <div style="font-size:10px;color:var(--amber);margin-top:4px;">${title}</div>
+       <div class="sara-card-level"><div class="level-badge">LVL ${info.level}</div></div>
       </div>
     </div>
     <div style="margin:8px 0 12px;">${effectsHtml}</div>

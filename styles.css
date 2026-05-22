@@ -3195,3 +3195,41 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   line-height: 1.4;
   margin-top: 4px;
 }
+
+/* ── XP bar — absolute, bottom strip of card frame ──────── */
+.sara-card-xp-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 12%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 10px;
+  gap: 4px;
+  background: rgba(0,0,0,0.45);
+}
+
+.sara-card-xp-bar .boss-hp-bg {
+  background: var(--surface2);
+  border-radius: 99px;
+  height: 8px;
+  overflow: hidden;
+  border: 0.5px solid rgba(0,122,122,0.25);
+}
+
+.sara-card-xp-bar .boss-hp-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--teal), var(--teal-hi, #2EF2E0));
+  transition: width 0.6s ease;
+}
+
+.sara-xp-label {
+  font-family: var(--font-game);
+  font-size: 9px;
+  color: var(--hint);
+  text-align: right;
+  letter-spacing: 0.04em;
+}
