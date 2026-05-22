@@ -3224,7 +3224,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   font-size: 7px;
   letter-spacing: 0.04em;
   line-height: 1.55;
-  padding: 1px 2px;
+  padding: 0 2px 1px;
 }
 .sara-dungeon-record .title-row .title-indicator {
   width: 8px;
