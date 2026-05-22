@@ -3204,7 +3204,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   letter-spacing: 0.14em;
   color: var(--amber, #D49A00);
   text-align: center;
-  margin: 0 0 1px;
+  margin: 0 0 4px;
 }
 
 /* ── Titles list — max 5 rows visible, locked overflow hidden ───────────── */
