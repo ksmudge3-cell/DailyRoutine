@@ -3129,7 +3129,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .sara-dungeon-record {
   position: absolute;
   top: 12%;
-  left: 60%;
+  left: 58%;
   right: 3%;
   bottom: 26%;
   display: flex;
@@ -3170,7 +3170,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   text-align: left;
   margin-bottom: 4px;
   margin-top: 6px;
-  padding-left: 10px;
+  padding-left: 8px;
 }
 .sara-name-block .sara-name {
   font-family: var(--font-title, 'Cinzel', serif);
