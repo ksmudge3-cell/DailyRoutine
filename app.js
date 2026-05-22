@@ -2790,29 +2790,24 @@ function renderProfile(){
         <div class="sara-card-class">Beast Keeper</div>
         <div class="sara-card-passive">Stubborn Survivor</div>
         <div class="sara-stat-bars">
-          ${renderStatBar(Math.min(100,streak*5+Math.min(50,Math.floor((Date.now()-new Date('2026-05-10').getTime())/86400000))),ICON_BAR_FILL_TEAL,'Grit')}
-          ${renderStatBar((()=>{const vIds=['meds-am','meds-pm','sleep','breakfast','dinner'];const today=state[dayKey(new Date().getDay())]||{};const done=vIds.filter(id=>today[id]).length;return Math.round(done/vIds.length*100);})(),ICON_BAR_FILL_TEAL,'Vitality')}
-          ${renderStatBar(Math.min(100,(gymHistory?.sessions||[]).filter(s=>{const d=new Date(s.date||s.ts);return d>=new Date(Date.now()-7*86400000);}).length*20),ICON_BAR_FILL_TEAL,'Strength')}
-          ${renderStatBar((()=>{const q=qualityState[dayKey(new Date().getDay())]||{};const vals=Object.values(q);return vals.length?Math.round(vals.filter(v=>v==='legendary'||v==='green').length/vals.length*100):0;})(),ICON_BAR_FILL_TEAL,'Focus')}
-          ${renderStatBar(dogPct,ICON_BAR_FILL_TEAL,'Bond')}
-        </div>
+          ${renderStatBar(Math.min(100,streak*5+Math.min(50,Math.floor((Date.now()-new Date('2026-05-10').getTime())/86400000))),ICON_BAR_FILL_TEAL,'GRT')}
+          ${renderStatBar((()=>{const vIds=['meds-am','meds-pm','sleep','breakfast','dinner'];const today=state[dayKey(new Date().getDay())]||{};const done=vIds.filter(id=>today[id]).length;return Math.round(done/vIds.length*100);})(),ICON_BAR_FILL_TEAL,'VIT')}
+          ${renderStatBar(Math.min(100,(gymHistory?.sessions||[]).filter(s=>{const d=new Date(s.date||s.ts);return d>=new Date(Date.now()-7*86400000);}).length*20),ICON_BAR_FILL_TEAL,'STR')}
+          ${renderStatBar((()=>{const q=qualityState[dayKey(new Date().getDay())]||{};const vals=Object.values(q);return vals.length?Math.round(vals.filter(v=>v==='legendary'||v==='green').length/vals.length*100):0;})(),ICON_BAR_FILL_TEAL,'FOC')}
+          ${renderStatBar(dogPct,ICON_BAR_FILL_TEAL,'BND')}       
+          </div>
+        <div class="sara-card-tagline">The Dogs Believe in You</div>
         <div class="sara-card-level">
           <div class="level-badge">LVL ${info.level}</div>
           <div class="sara-xp-label">${totalXP} XP${info.next?' · '+(info.next.xp-totalXP)+' to lvl':' · MAX'}</div>
         </div>
-        ${renderBar(info.progress,'xp',{maxWidth:'100%'})}
+        <div class="sara-xp-bar-wrap" style="width:100%;margin-top:4px;"><div class="sara-xp-bar-fill" style="width:${info.progress}%;height:4px;background:var(--teal);border-radius:2px;"></div></div>
         <div style="font-size:10px;color:var(--amber);margin-top:4px;">${title}</div>
       </div>
     </div>
     <div style="margin:8px 0 12px;">${effectsHtml}</div>
 
 
-    <div class="stat-grid-dcc">
-      <div class="stat-block"><div class="stat-block-label">Crawler Coins</div><div class="stat-block-val">${pixelIcon(ICON_COINS_STACK,18)} ${coins}</div></div>
-      <div class="stat-block"><div class="stat-block-label">Floors Survived</div><div class="stat-block-val">⚔ ${streak}</div></div>
-      <div class="stat-block"><div class="stat-block-label">Best Streak</div><div class="stat-block-val">🏆 ${bestStreak}</div></div>
-      <div class="stat-block"><div class="stat-block-label">Total XP</div><div class="stat-block-val">⚡ ${totalXP}</div></div>
-    </div>
 
     <div class="weekly-boss-card">
       <div class="boss-label">Weekly Boss</div>
@@ -2846,7 +2841,7 @@ ${renderStatBar(Math.min(100,(gymHistory?.sessions||[]).filter(s=>{const d=new D
     </div>
     <div style="margin:8px 0 12px;">${effectsHtml}</div>
 
-    
+
     <div style="display:flex;gap:8px;margin:0 0 16px 0;">
       <div style="flex:1;"><img src="${CHAR_EDNA_CARD}" style="width:100%;border-radius:6px;border:1px solid var(--border);" alt="Edna"></div>
       <div style="flex:1;"><img src="${CHAR_KRONK_CARD}" style="width:100%;border-radius:6px;border:1px solid var(--border);" alt="Kronk"></div>

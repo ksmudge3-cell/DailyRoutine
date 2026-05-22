@@ -3171,12 +3171,27 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 
 .sara-stat-bars .stat-label {
   font-family: var(--font-hotdog);
-  font-size: 7px;
-  letter-spacing: 0.05em;
-  width: 52px;
+  font-size: 6px;
+  letter-spacing: 0.04em;
+  width: 40px;
   flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
 }
 
 .sara-stat-bars .stat-bar-wrap {
   height: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Tagline — sits below stat bars, hint italic */
+.sara-card-tagline {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-style: italic;
+  color: var(--hint);
+  line-height: 1.4;
+  margin-top: 4px;
 }
