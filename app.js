@@ -2818,8 +2818,6 @@ function renderProfile(){
     </div>
 
 
-    <div style="margin:8px 0 12px;">${effectsHtml}</div>
-
 
     <div style="display:flex;gap:8px;margin:0 0 16px 0;">
       <div style="flex:1;"><img src="${CHAR_EDNA_CARD}" style="width:100%;border-radius:6px;border:1px solid var(--border);" alt="Edna"></div>
