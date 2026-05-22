@@ -3162,7 +3162,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   word-break: break-word;
 }
 .sara-dungeon-record .dr-gap {
-  height: 0;
+  height: 3px;
 }
 
 /* ── Name block at top of right panel ──────────────────────────────────── */
