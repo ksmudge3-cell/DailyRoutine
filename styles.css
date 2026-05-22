@@ -3117,8 +3117,8 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .sara-card-stats {
   position: absolute;
   top: 12%;
-  right: 2%;
-  width: 46%;
+  right: 1%;
+  width: 50%;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -3126,7 +3126,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 
 .sara-card-name {
   font-family: var(--font-title);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--amber);
@@ -3137,7 +3137,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .sara-card-class {
   font-family: var(--font-hotdog);
   font-size: 7px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--teal);
 }
@@ -3171,14 +3171,15 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 }
 
 .sara-stat-bars .stat-label {
-  font-family: var(--font-hotdog);
-  font-size: 6px;
-  letter-spacing: 0.04em;
-  width: 40px;
+  font-family: var(--font-game);
+  font-size: 8px;
+  letter-spacing: 0.02em;
+  width: 44px;
   flex-shrink: 0;
   overflow: hidden;
   text-overflow: clip;
   white-space: nowrap;
+  text-transform: uppercase;
 }
 
 .sara-stat-bars .stat-bar-wrap {
@@ -3200,7 +3201,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 /* ── XP bar — absolute, bottom strip inside card frame ──── */
 .sara-card-xp-bar {
   position: absolute;
-  bottom: 9%;
+  bottom: 13%;
   left: 4%;
   right: 4%;
   display: flex;
@@ -3215,15 +3216,21 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   width: 100%;
 }
 
-/* Override fill color to teal — mix-blend-mode:screen means teal asset
-   shows through; if using image asset it renders normally.
-   clip-path reads --fill set inline by renderBar on the img element. */
+/* Teal fill — hue-shift the image asset to teal */
 .sara-card-xp-bar .hero-bar-fill {
   mix-blend-mode: screen;
-  filter: hue-rotate(160deg) saturate(1.4); /* shift red asset to teal */
+  filter: hue-rotate(160deg) saturate(1.4);
 }
 
-/* Fallback if renderBar outputs a simple div fill instead of image */
+/* Direct bar-fill override — covers any fill div renderBar outputs */
+.sara-card-xp-bar .bar-fill {
+  background: linear-gradient(90deg, var(--teal), #2EF2E0) !important;
+  clip-path: inset(0 calc(100% - var(--fill, 0%)) 0 0);
+  height: 100%;
+  border-radius: 99px;
+}
+
+/* Fallback boss-hp div bar */
 .sara-card-xp-bar .boss-hp-bg {
   background: var(--surface2);
   border-radius: 99px;
