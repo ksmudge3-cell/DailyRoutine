@@ -3219,7 +3219,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .sara-dungeon-record .title-row {
   display: flex;
   align-items: baseline;
-  gap: 5px;
+  gap: 1px;
   font-family: var(--font-stat, 'Silkscreen', monospace);
   font-size: 7px;
   letter-spacing: 0.04em;
@@ -3256,12 +3256,12 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 /* ── XP slot — in-card, matches Weekly Boss bar dimensions ─────────────── */
 .sara-xp-slot {
   position: absolute;
-  left: 5%;
+  left: 3%;
   right: 5%;
   bottom: 11%;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 1px;
 }
 .sara-xp-slot .hero-bar-wrap {
   height: 44px; /* same as Weekly Boss HP bar default */
@@ -3282,7 +3282,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .sara-hp-slot {
   position: absolute;
   left: 16%;
-  right: 16%;
+  right: 18%;
   bottom: 3%;
 }
 .sara-hp-slot .hero-bar-wrap {
