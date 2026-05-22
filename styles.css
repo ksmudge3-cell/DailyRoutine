@@ -3186,7 +3186,6 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   height: 8px;
   flex: 1;
   min-width: 0;
-  width: calc(100% - 44px);
 }
 
 /* Tagline — sits below stat bars, hint italic */
@@ -3217,10 +3216,13 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   width: 100%;
 }
 
-/* Teal fill — hue-shift the image asset to teal */
+/* Teal fill — hue-shift the image asset to teal.
+   clip-path must be re-declared here (not inherited from .hero-bar-fill)
+   so it shares the same compositing layer as the filter. Default 0% = empty. */
 .sara-card-xp-bar .hero-bar-fill {
   mix-blend-mode: screen;
   filter: hue-rotate(160deg) saturate(1.4);
+  clip-path: inset(0 calc(100% - var(--fill, 0%)) 0 0);
 }
 
 /* Direct bar-fill override — covers any fill div renderBar outputs */
