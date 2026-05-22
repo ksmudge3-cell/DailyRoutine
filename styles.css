@@ -3485,6 +3485,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .scoreboard-panel {
   position: relative;
   flex: 1;
+  overflow: visible
 }
 
 .scoreboard-bg {
