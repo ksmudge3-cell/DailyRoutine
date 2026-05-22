@@ -3204,7 +3204,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   letter-spacing: 0.14em;
   color: var(--amber, #D49A00);
   text-align: center;
-  margin: 2px 0 4px;
+  margin: 0 0 4px;
 }
 
 /* ── Titles list — max 5 rows visible, locked overflow hidden ───────────── */
@@ -3212,8 +3212,8 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   display: flex;
   flex-direction: column;
   gap: 1px;
-  margin-top: 0px;
-  max-height: 101px; /* ~5 rows at 7px Silkscreen with line-height 1.55 */
+  margin-top: 0;
+  max-height: 88px; /* ~5 rows at 7px Silkscreen with line-height 1.55 */
   overflow: hidden;
 }
 .sara-dungeon-record .title-row {
