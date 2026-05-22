@@ -3217,6 +3217,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   padding: 2px 4px;
   max-height: 88px; /* ~5 rows at 7px Silkscreen with line-height 1.55 */
   overflow: hidden;
+  margin-top: 8px;
 }
 .sara-dungeon-record .title-row {
   display: flex;
