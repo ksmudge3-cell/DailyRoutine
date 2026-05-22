@@ -2821,6 +2821,7 @@ function checkCommTowerReset(){
   save('dr-comm-history',[]);
   save('dr-comm-pending',[]);
   saveLocal('dr-comm-reset-date',today);
+  syncToSupabase();
 }
 
 function checkDonutChatReset(){
