@@ -3169,6 +3169,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .sara-name-block {
   text-align: left;
   margin-bottom: 4px;
+  padding-left: 6px;
 }
 .sara-name-block .sara-name {
   font-family: var(--font-title, 'Cinzel', serif);
@@ -3204,12 +3205,14 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   margin: 2px 0 4px;
 }
 
-/* ── Titles list ───────────────────────────────────────────────────────── */
+/* ── Titles list — max 5 rows visible, locked overflow hidden ───────────── */
 .sara-dungeon-record .title-list {
   display: flex;
   flex-direction: column;
   gap: 1px;
   margin-top: 2px;
+  max-height: 70px; /* ~5 rows at 7px Silkscreen with line-height 1.55 */
+  overflow: hidden;
 }
 .sara-dungeon-record .title-row {
   display: flex;
