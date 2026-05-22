@@ -2240,6 +2240,8 @@ function executeCommAction(id){
       resultMsg=`LOG ENTRY: ${action.summary} — EXECUTED.`;
       break;
 
+  }
+
   commTowerHistory.push({role:'system',content:resultMsg,timestamp:Date.now()});
   commTowerPending=commTowerPending.filter(a=>a.id!==id);
   save('dr-comm-pending',commTowerPending);
