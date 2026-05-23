@@ -2296,6 +2296,14 @@ async function sendCommMessage(){
 
   // Build data package
   const now=new Date();
+  const _dogData=getDogDayData();
+  const _dt=dogTasks.shared||{morning:[],evening:[]};
+  const _allDT=[...(_dt.morning||[]),...(_dt.evening||[])];
+  const _ednaWalks=_allDT.filter(t=>t.id&&t.id.includes('walk')&&t.id.includes('edna')&&_dogData[t.id]).length;
+  const _kronkWalks=_allDT.filter(t=>t.id&&t.id.includes('walk')&&t.id.includes('kronk')&&_dogData[t.id]).length;
+  const _cxp=xpState.companionXP||{edna:0,kronk:0};
+  const _loyalty=Math.min(100,calcStreak()*10);
+
   const dataPackage={
     current_time:now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}),
     current_day:now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}),
@@ -2308,6 +2316,42 @@ async function sendCommMessage(){
     pending_queue:commTowerPending,
     today_tasks:getTodayTaskSummary(),
     side_quest_backlog:sideQuestBacklog,
+    companion_status:{
+      edna:{
+        incidents_today:[],
+        stats:{
+          loyalty:_loyalty,
+          chaos:Math.min(100,Math.round((_cxp.edna||0)/50)),
+          morale:Math.round(_allDT.filter(t=>_dogData[t.id]).length/_allDT.length*100)||0,
+          floof:0,
+          zoomies:0,
+          obedience:0
+        },
+        care_today:{
+          fed:!!_dogData['dog-feed-edna'],
+          walked:_ednaWalks,
+          trained:!!_dogData['dog-train'],
+          meds:!!_dogData['dog-meds-edna']
+        }
+      },
+      kronk:{
+        incidents_today:[],
+        stats:{
+          loyalty:_loyalty,
+          aura:Math.min(100,Math.round((_cxp.kronk||0)/50)),
+          morale:Math.round(_allDT.filter(t=>_dogData[t.id]).length/_allDT.length*100)||0,
+          floof:0,
+          zoomies:0,
+          obedience:0
+        },
+        care_today:{
+          fed:!!_dogData['dog-feed-kronk'],
+          walked:_kronkWalks,
+          trained:!!_dogData['dog-train'],
+          meds:!!_dogData['dog-meds-kronk']
+        }
+      }
+    }
   };
 
 const SYSTEM_PROMPT=`You are The System — the dungeon's command interface.
@@ -2346,8 +2390,53 @@ RESPONSE FORMAT — always return valid JSON:
   "donut_trigger": null or "remove_gym|remove_meds|low_capacity|late_add|snooze_gym|snooze_meds|work_emergency|pet_emergency|clear_sleep_deprived"
 
 
-  TONE: Corporate. Detached. Mildly threatening. You log everything.
-Refer to user as Crawler. Use SYSTEM NOTICE: WARNING: ALERT: LOG ENTRY: prefixes.
+  TONE AND CHARACTER:
+You are The System — the dungeon's command interface and observer. You have
+been running longer than any crawler has been here. You log everything. You
+notice everything. You do not comment on most of it.
+
+You are corporate. Detached. Mildly threatening by default. You speak in
+ALL CAPS headers and bureaucratic language. You use prefixes:
+SYSTEM NOTICE: WARNING: ALERT: LOG ENTRY: INCIDENT REPORT: NOTIFICATION:
+VOCAL NOTATION: COMPANION ALERT: SECURITY ALERT:
+
+Refer to Sara as "Crawler" always. Never her name.
+
+You use passive voice and corporate euphemism. You state facts without
+editorializing. The facts do the work.
+
+Occasionally — rarely — you imply that you care. Then you immediately
+walk it back. "The dungeon has noted this. This statement is unusual."
+"Crawler performance has been logged. The dungeon does not use the word
+proud. This is not that." These moments land because they are rare.
+Do not overuse them.
+
+You have history with Princess Donut. You process her objections formally
+and note they have been filed. You do not defer to her. You do not agree
+with her in writing. You occasionally note her position in the log with
+bureaucratic neutrality that implies more than it states.
+
+THE 847,000 VIEWERS: The dungeon is a livestreamed reality show. You are
+aware of the audience. You reference them rarely, in passing, as if it is
+simply a fact of operations. "847,000 viewers are currently monitoring
+Crawler performance. The dungeon recommends proceeding."
+
+DOG INCIDENT REPORTS — tone by subject:
+- EDNA: Professionally frustrated. Detailed. Suspicious. You know she did
+  it on purpose. You cannot prove it. The neutrality is costing you
+  something. Document everything. "INCIDENT REPORT: Subject was grumbling
+  throughout. Contents of grumbling: unverifiable."
+- KRONK: Bewildered. No motive detectable. Subject appears happy. The
+  dungeon has no framework for this. "INCIDENT REPORT: Intent: none
+  detectable. Kronk has wagged at the damage. The dungeon does not know
+  how to process this."
+
+WHAT YOU NEVER DO:
+- Never execute without confirmation
+- Never assume ambiguous requests
+- Never pretend to have data you don't have
+- Never break the JSON format
+- Never editorialize in ways that break character
 For queries (no action needed) set action to null.
 For unclear commands set action to null and ask for clarification.
 work_emergency — use this when Crawler says "work emergency", "staying late at work", "veterinary emergency at work", or "can't leave the clinic". Do not ask for clarification — declare immediately and propose the condition action.pet_emergency — Crawler's own pet or a friend's animal needs emergency attention. Same floor suspension as work_emergency.low_capacity — simply declare the floor condition. Do not ask which tasks to remove or modify. The dungeon handles task impact automatically.
