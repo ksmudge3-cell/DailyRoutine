@@ -2870,6 +2870,7 @@ function renderScoreboard(){
   ];
   if(!el.dataset.built){
     el.dataset.built='1';
+    document.documentElement.style.setProperty('--scoreboard-panel-bg', `url("${UI_SCOREBOARD_PANEL}")`);
     el.className='scoreboard-wrap';
     panels.forEach((p,i)=>{
       const div=document.createElement('div');
