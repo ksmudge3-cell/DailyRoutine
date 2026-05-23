@@ -2152,8 +2152,15 @@ function executeCommAction(id){
 
     case 'clear_debuff':{
       const p=action.params||{};
-      clearSlot(p.category||p.slot);
-      resultMsg=`LOG ENTRY: Debuff cleared — "${p.label||p.category}". The dungeon notes the cause has been addressed.`;
+      const lbl=(p.label||p.debuff_id||p.category||'').toLowerCase();
+      if(lbl.includes('collapse')||lbl.includes('total')){
+        delete collapseState.active;
+        save('dr-collapse',collapseState);
+        syncToSupabase();
+      } else {
+        clearSlot(p.category||p.slot||p.debuff_id);
+      }
+      resultMsg=`LOG ENTRY: Debuff cleared — "${p.label||p.category||p.debuff_id}". The dungeon notes the cause has been addressed.`;
       break;
     }
 
@@ -2187,7 +2194,7 @@ function executeCommAction(id){
   save('dr-comm-history',commTowerHistory);
 
   // Re-render affected screens
-  if(['add_task','remove_task','snooze_task'].includes(action.type))renderToday();
+  if(['add_task','remove_task','snooze_task','clear_debuff'].includes(action.type))renderToday();
   if(action.type==='declare_condition'){renderToday();renderCollapseEvent();}
 
   renderInbox();
