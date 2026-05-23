@@ -48,7 +48,7 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .nav-icon { font-size: 18px; line-height: 1; }
 .screen { display: none; padding: 0 16px; padding-top: env(safe-area-inset-top, 16px); overflow: hidden; }
 .screen.active { display: block; height: 100vh; max-height: 100vh; overflow-y: auto; }
-.page-header { padding: 24px 0 16px; }
+.page-header { padding: max(24px, env(safe-area-inset-top)) 0 16px; }
 .page-header h1 { font-family: var(--serif); font-size: 28px; font-weight: 300; color: var(--text); }
 .page-header p { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 0.05em; }
 .date-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 6px; scrollbar-width: none; }
@@ -2335,7 +2335,7 @@ body { font-family: var(--font-body); }
   bottom: 0;
   left: 0;
   right: 0;
-  height: 40px;
+  height: calc(40px + env(safe-area-inset-bottom));
   z-index: 100;
   padding-bottom: env(safe-area-inset-bottom);
   overflow: visible;
@@ -2958,7 +2958,6 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
    overflow: hidden on the screen prevents the container from expanding.
    DO NOT REMOVE — scroll will break without all three of these. */
 #screen-inbox {
-  display: flex;
   flex-direction: column;
   height: 100vh;
   max-height: 100vh;
@@ -3044,6 +3043,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
    global .page-header on every other screen is untouched. */
 #screen-coach.active .page-header {
   flex: 0 0 auto;
+  padding-top: 12px;
 }
 
 /* LINK 3 — #coach-content, THE intermediate wrapper.  *** REQUIRED ***
