@@ -2745,6 +2745,11 @@ function checkCommTowerReset(){
   const lastReset=loadLocal('dr-comm-reset-date',null);
   const today=todayStr();
   if(lastReset===today)return;
+  // SAFETY: if there are entries in memory from today, another device has already
+  // started today's comm tower. Adopt the date and do not wipe.
+  const todayDS=new Date().toDateString();
+  const hasTodayEntries=(commTowerHistory||[]).some(m=>m.timestamp&&new Date(m.timestamp).toDateString()===todayDS);
+  if(hasTodayEntries){saveLocal('dr-comm-reset-date',today);return;}
   commTowerHistory=[];
   commTowerPending=[];
   save('dr-comm-history',[]);
@@ -2756,6 +2761,11 @@ function checkDonutChatReset(){
   const lastReset=loadLocal('dr-donut-chat-reset-date',null);
   const today=todayStr();
   if(lastReset===today)return;
+  // SAFETY: if there are messages in memory from today, another device has already
+  // started today's conversation. Adopt the date and do not wipe.
+  const todayDS=new Date().toDateString();
+  const hasTodayMsgs=(donutChat||[]).some(m=>m.timestamp&&new Date(m.timestamp).toDateString()===todayDS);
+  if(hasTodayMsgs){saveLocal('dr-donut-chat-reset-date',today);return;}
   donutChat=[];
   save('dr-donut-chat',[]);
   saveLocal('dr-donut-chat-reset-date',today);
@@ -4724,19 +4734,21 @@ async function init(){
   const clb=document.getElementById('claim-loot-btn');
   if(clb)clb.innerHTML=pixelIcon(ICON_POTION,14)+' Claim loot ✓';
 
-  migrateDogTasks();
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkFloorCollapse();renderCollapseEvent();}});
-  migrateGymIntoSchedule();
   document.documentElement.style.setProperty('--tex-stone-wall', `url(${TEX_STONE_WALL})`);
-  checkCommTowerReset();
-  checkDonutChatReset();
-  checkDonutBiscuitExpiry();
+
+  // Initial render with whatever local data exists, so the UI shows something
+  // during the network round-trip to Supabase.
   renderToday();updateProjectDropdown();refreshWheel();renderTaskManager();
 
   setInterval(renderFloorCountdown, 60000);
 
   showRoom(loadLocal('dr-last-screen','today')||'today');
 
+  // Pull fresh state from Supabase BEFORE any reset/wipe checks.
+  // Previously, the reset functions ran first with stale local data, which could
+  // schedule a sync that uploaded the wipe to Supabase before the pull caught up —
+  // a race condition that lost cross-device chat history.
   const synced=await loadFromSupabase();
   if(synced){
     state=load('dr-state',{});
@@ -4756,14 +4768,20 @@ async function init(){
     xpState=load('dr-xp',{totalXP:0,level:1,equippedTitle:null,unlockedTitles:['Freshly Fallen Crawler'],companionXP:{edna:0,kronk:0}});
     archived=load('dr-archived',{tasks:[]});
     if(!archived.tasks)archived.tasks=[];
-    checkFloorCollapse();
-    checkCommTowerReset();
-    checkDonutChatReset();
-    if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;saveLocal('dr-floor-condition',null);}
-    migrateDogTasks();
-    migrateGymIntoSchedule();
-    showRoom(loadLocal('dr-last-screen','today')||'today');
   }
+
+  // Migrations and reset/expiry checks — now operating on freshest data.
+  // Run regardless of sync success so local-only sessions still get them.
+  migrateDogTasks();
+  migrateGymIntoSchedule();
+  checkCommTowerReset();
+  checkDonutChatReset();
+  checkDonutBiscuitExpiry();
+  checkFloorCollapse();
+  if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;saveLocal('dr-floor-condition',null);}
+
+  // Re-render with fresh data if Supabase pulled changes
+  if(synced)showRoom(loadLocal('dr-last-screen','today')||'today');
 
   if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
     (notifs||[]).filter(n=>n.on).forEach(n=>{
