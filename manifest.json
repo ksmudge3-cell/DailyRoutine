@@ -10,13 +10,13 @@
   "icons": [
   {
     "src": "/DailyRoutine/icons/icon-192.png",
-    "sizes": "390x390",
+    "sizes": "1254x1254",
     "type": "image/png",
     "purpose": "maskable any"
   },
   {
     "src": "/DailyRoutine/icons/icon-512.png",
-    "sizes": "390x390",
+    "sizes": "1254x1254",
     "type": "image/png",
     "purpose": "maskable any"
   }
