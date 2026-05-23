@@ -2865,7 +2865,7 @@ function renderScoreboard(){
     panels.forEach((p,i)=>{
       const div=document.createElement('div');
       div.id='scoreboard-panel-'+i;
-      div.style.cssText='flex:1;background:var(--surface2,#1a1a22);border:1px solid rgba(212,154,0,0.15);border-radius:6px;padding:8px 6px;text-align:center;';
+      div.style.cssText='flex:1;background-image:url("'+UI_SCOREBOARD_PANEL+'");background-size:100% 100%;background-repeat:no-repeat;border-radius:6px;padding:8px 6px;text-align:center;';
       div.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--muted,#888);letter-spacing:0.05em;margin-bottom:4px;">${p.label}</div>`
         +`<div id="scoreboard-val-${i}" style="font-family:'Silkscreen',monospace;font-size:20px;color:var(--gold-hi,#FFD43A);line-height:1;">${p.value}</div>`
         +`<div style="font-family:'Press Start 2P',monospace;font-size:6px;color:var(--muted,#666);margin-top:3px;">${p.suffix}</div>`;
