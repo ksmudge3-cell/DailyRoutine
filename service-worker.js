@@ -1,5 +1,5 @@
 const CACHE = 'dcc-v1';
-const OFFLINE_URL = '/daily-routine/offline.html';
+const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', e => {
   e.waitUntil(
