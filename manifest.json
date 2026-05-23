@@ -8,15 +8,15 @@
   "theme_color": "#0a0a0c",
   "orientation": "portrait",
   "icons": [
-    {
-      "src": "/DailyRoutine/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/DailyRoutine/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+  {
+    "src": "/DailyRoutine/icons/icon-192.png",
+    "sizes": "390x390",
+    "type": "image/png"
+  },
+  {
+    "src": "/DailyRoutine/icons/icon-512.png",
+    "sizes": "390x390",
+    "type": "image/png"
+  }
   ]
 }
