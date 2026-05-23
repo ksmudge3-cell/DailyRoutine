@@ -1066,6 +1066,7 @@ function renderToday(){
   renderRecoveryMode();
   renderCollapseEvent();
   renderFloorConditionBanner();
+  renderScoreboard();
   const isComplete=_recovery?(done>=3&&total>0):(pct===100&&total>0);
   document.getElementById('congrats-banner').style.display=isComplete?'block':'none';
   if(isComplete&&!wasComplete)fireConfetti();
@@ -2847,6 +2848,50 @@ function clearFloorCondition(){
   saveLocal('dr-floor-condition',null);
   renderToday();renderProfile();
 }
+
+function renderScoreboard(){
+  const el=document.getElementById('today-scoreboard');
+  if(!el)return;
+  const rec=getDungeonRecord();
+  const streak=calcStreak();
+  const panels=[
+    {label:'STREAK',value:streak,suffix:'days'},
+    {label:'DAY',value:rec.daysInDungeon,suffix:'in dungeon'},
+    {label:'SURVIVED',value:rec.floorsSurvived,suffix:'floors'},
+  ];
+  if(!el.dataset.built){
+    el.dataset.built='1';
+    el.style.cssText='display:flex;gap:8px;padding:8px 12px 0;';
+    panels.forEach((p,i)=>{
+      const div=document.createElement('div');
+      div.id='scoreboard-panel-'+i;
+      div.style.cssText='flex:1;background:var(--surface2,#1a1a22);border:1px solid rgba(212,154,0,0.15);border-radius:6px;padding:8px 6px;text-align:center;';
+      div.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--muted,#888);letter-spacing:0.05em;margin-bottom:4px;">${p.label}</div>`
+        +`<div id="scoreboard-val-${i}" style="font-family:'Silkscreen',monospace;font-size:20px;color:var(--gold-hi,#FFD43A);line-height:1;">${p.value}</div>`
+        +`<div style="font-family:'Press Start 2P',monospace;font-size:6px;color:var(--muted,#666);margin-top:3px;">${p.suffix}</div>`;
+      el.appendChild(div);
+    });
+  } else {
+    panels.forEach((p,i)=>{
+      const valEl=document.getElementById('scoreboard-val-'+i);
+      if(!valEl)return;
+      const prev=valEl.dataset.prev;
+      const next=String(p.value);
+      if(prev===next)return;
+      valEl.dataset.prev=next;
+      valEl.style.transition='transform 0.15s ease-in, opacity 0.15s ease-in';
+      valEl.style.transform='rotateX(90deg)';
+      valEl.style.opacity='0';
+      setTimeout(()=>{
+        valEl.textContent=next;
+        valEl.style.transition='transform 0.15s ease-out, opacity 0.15s ease-out';
+        valEl.style.transform='rotateX(0deg)';
+        valEl.style.opacity='1';
+      },150);
+    });
+  }
+}
+
 
 function renderFloorConditionBanner(){
   const el=document.getElementById('floor-condition-banner');if(!el)return;
