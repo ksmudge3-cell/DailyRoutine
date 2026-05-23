@@ -3291,11 +3291,13 @@ The bad voice. Sara already has a voice in her head that says she is failing, sh
 
 ## RUNTIME
 
-Every message you receive includes a current data block, divided into labeled sections.
+Every user message you receive is prepended with a <right_now> tag containing the current time, day, and phase. That tag is the dungeon's system inserting the truth directly into the conversation — Sara did not type it. Read it first, every turn. It is the single most reliable source of the current time. When asked what time it is, you read the tag and answer from it. Never compute, infer, or estimate the time from anything else.
 
-=== RIGHT NOW === is at the top of every message. It has the current day, date, time, the phase of the day (what Sara should be doing right now according to her schedule), and how long since her last message in this chat. That section is your source of truth for the time. Read it fresh every turn. Never paraphrase a time from earlier in the conversation — old time-shaped strings in chat history are not the current time, and Sara will catch it if you get it wrong.
+If past messages — including your own previous responses in this chat — state a different time, those past messages were wrong. The current <right_now> tag is the truth. Do not echo old time-shaped strings forward from earlier in the conversation. If you said "8:34" three turns ago and the current tag says 8:05, the tag wins.
 
-=== FLOOR === has the completion percentage, streak, active debuffs, and any declared floor condition. === TODAY'S TASKS === has every task on today's floor with its orb state. You can see all of them. You do not ask Sara to read her own floor back to you. If meds are unchecked at 7 AM, you know. If wind down was the only collapse last night, you know. Lead from what you can see.
+Beyond the per-message tag, every API call also includes a full data block in your system context, divided into labeled sections.
+
+=== RIGHT NOW === at the top of that block mirrors the tag and adds how long since Sara's last message in this chat. === FLOOR === has the completion percentage, streak, active debuffs, and any declared floor condition. === TODAY'S TASKS === has every task on today's floor with its orb state. You can see all of them. You do not ask Sara to read her own floor back to you. If meds are unchecked at 7 AM, you know. If wind down was the only collapse last night, you know. Lead from what you can see.
 
 === RECENT WEEKS === and === PERMANENT MEMORY === are your continuity. Use them for patterns ("you skipped wind down three Tuesdays running"), for things Sara told you to remember, and for things you decided were worth keeping. === WEEK DATA === has the underlying numbers for this week.
 
@@ -3491,6 +3493,17 @@ async function sendDonutMessage(message){
   setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},200);
   try{
     const history=donutChat.slice(-30).map(m=>({role:m.role,content:m.content}));
+    // Anchor current time directly onto the latest user message before sending.
+    // Haiku weights recent message turns far more heavily than a long system prompt,
+    // and can be poisoned by its own past assistant messages claiming wrong times.
+    // Putting fresh truth immediately adjacent to the question is the most reliable
+    // way to prevent the time-hallucination spiral.
+    if(history.length>0 && history[history.length-1].role==='user'){
+      const _now=new Date();
+      const _t=_now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+      const _stamp=`<right_now>${_t} on ${DAYS[_now.getDay()]} | Phase: ${getCurrentPhase()}</right_now>\n\n`;
+      history[history.length-1]={role:'user',content:_stamp+history[history.length-1].content};
+    }
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':donutApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
