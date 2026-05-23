@@ -1996,6 +1996,8 @@ function clearAllInbox(){if(!inbox.length)return;if(!confirm('Clear all inbox it
 
 function renderInbox(){
   const wrap=document.getElementById('comm-tower-content');if(!wrap)return;
+  const inboxScreen=document.getElementById('screen-inbox');
+  if(!inboxScreen||!inboxScreen.classList.contains('active'))return;
 
   // Pending queue
   const pendingHtml=commTowerPending.length?`
@@ -2868,32 +2870,27 @@ function renderScoreboard(){
   ];
   if(!el.dataset.built){
     el.dataset.built='1';
-    el.style.cssText='display:flex;gap:8px;padding:8px 12px 0;';
+    el.className='scoreboard-wrap';
     panels.forEach((p,i)=>{
       const div=document.createElement('div');
       div.id='scoreboard-panel-'+i;
-      div.style.cssText='flex:1;background-image:url("'+UI_SCOREBOARD_PANEL+'");background-size:100% 100%;background-repeat:no-repeat;border-radius:6px;padding:8px 6px;text-align:center;';
-      div.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--muted,#888);letter-spacing:0.05em;margin-bottom:4px;">${p.label}</div>`
-        +`<div id="scoreboard-val-${i}" style="font-family:'Silkscreen',monospace;font-size:20px;color:var(--gold-hi,#FFD43A);line-height:1;">${p.value}</div>`
-        +`<div style="font-family:'Press Start 2P',monospace;font-size:6px;color:var(--muted,#666);margin-top:3px;">${p.suffix}</div>`;
+      div.className='scoreboard-panel';
+      div.innerHTML=`<div class="scoreboard-label">${p.label}</div>`
+        +`<div class="scoreboard-val" id="scoreboard-val-${i}">${p.value}</div>`
+        +`<div class="scoreboard-suffix">${p.suffix}</div>`;
       el.appendChild(div);
     });
   } else {
     panels.forEach((p,i)=>{
       const valEl=document.getElementById('scoreboard-val-'+i);
       if(!valEl)return;
-      const prev=valEl.dataset.prev;
       const next=String(p.value);
-      if(prev===next)return;
+      if(valEl.dataset.prev===next)return;
       valEl.dataset.prev=next;
-      valEl.style.transition='transform 0.15s ease-in, opacity 0.15s ease-in';
-      valEl.style.transform='rotateX(90deg)';
-      valEl.style.opacity='0';
+      valEl.classList.add('scoreboard-flipping');
       setTimeout(()=>{
         valEl.textContent=next;
-        valEl.style.transition='transform 0.15s ease-out, opacity 0.15s ease-out';
-        valEl.style.transform='rotateX(0deg)';
-        valEl.style.opacity='1';
+        valEl.classList.remove('scoreboard-flipping');
       },150);
     });
   }
