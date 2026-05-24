@@ -3654,3 +3654,26 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 #edit-oneoff-date:focus {
   border-color: var(--teal);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   DRAG TO REORDER — Step 5
+═══════════════════════════════════════════════════════════ */
+
+.task-drag-handle {
+  color: var(--hint);
+  font-size: 14px;
+  padding: 0 8px 0 0;
+  cursor: grab;
+  flex-shrink: 0;
+  touch-action: none;
+}
+
+.task-drag-handle:active {
+  cursor: grabbing;
+}
+
+.task.dragging {
+  opacity: 0.3;
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
