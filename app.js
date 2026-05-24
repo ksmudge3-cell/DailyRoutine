@@ -2914,7 +2914,8 @@ function checkFloorCollapse(){
     if(unchecked>=5){type='total';label='Total Collapse';effectLabel='-25% coins, Recovery Mode active';duration='Complete 3 tasks to clear';}
     else if(unchecked>=3){type='heavy';label='Heavy Collapse';effectLabel='-20% coins + Sleep Deprived';duration='Clears after 3 tasks completed today';}
     else{type='structural';label='Structural Damage';effectLabel='-10% coins today';duration='Clears after first task completed today';}
-    collapseState.active={type,label,unchecked,effectLabel,duration,applyDate:todayStr()};
+    const unclearedNames=allTasks.filter(t=>!yData[t.id]&&yQ[t.id]!=='gray').map(t=>t.name);
+    collapseState.active={type,label,unchecked,effectLabel,duration,applyDate:todayStr(),unclearedNames};
     collapseLog.push({date:yDate,type,unchecked});
     save('dr-collapse-log',collapseLog);
   }
@@ -3028,10 +3029,11 @@ function renderCollapseEvent(){
   const donutLine=DCC.getRandom(donutLines[c.type]);
   el.innerHTML=`<div class="collapse-banner">
     <div class="collapse-title">⚠ FLOOR COLLAPSED</div>
-    <div class="collapse-body">${c.unchecked} room${c.unchecked!==1?'s':''} were uncleared at midnight. The dungeon has sealed this floor.</div>
-    <div class="collapse-debuff-line">DEBUFF APPLIED: ${c.label.toUpperCase()}</div>
-    <div class="collapse-effect-line">Effect: ${c.effectLabel}</div>
-    <div class="collapse-duration-line">Duration: ${c.duration}</div>
+    <div class=\"collapse-body\">${c.unchecked} room${c.unchecked!==1?'s':''} were uncleared at midnight. The dungeon has sealed this floor.</div>
+    ${c.unclearedNames&&c.unclearedNames.length?`<div class=\"collapse-uncleared-list\">UNCLEARED: ${c.unclearedNames.join(' · ')}</div>`:''}
+    <div class=\"collapse-debuff-line\">DEBUFF APPLIED: ${c.label.toUpperCase()}</div>
+    <div class=\"collapse-effect-line\">Effect: ${c.effectLabel}</div>
+    <div class=\"collapse-duration-line\">Duration: ${c.duration}</div>
     <div class="donut-msg-wrap" style="margin-top:8px;"><span class="donut-signature">Princess Donut:</span><p class="donut-msg">${donutLine}</p></div>
   </div>`;
 }
