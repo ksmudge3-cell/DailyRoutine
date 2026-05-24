@@ -697,18 +697,6 @@ let lpTimer=null, lpFired=false;
 function lpStart(fn){lpFired=false;lpTimer=setTimeout(()=>{lpFired=true;fn();},500);}
 function lpEnd(){clearTimeout(lpTimer);}
 
-// Inline editing
-function openEditOverlay(type,sectionIdx,taskIdx){
-  const sc=type==='weekday'?schedule.weekday:schedule.weekend;
-  const task=sc[sectionIdx].tasks[taskIdx];
-  editCtx={type,sectionIdx,taskIdx};
-  document.getElementById('edit-title').textContent='Edit task';
-  document.getElementById('edit-scope-label').textContent='Applies to: '+(type==='weekday'?'Weekdays':'Weekends');
-  document.getElementById('edit-name-input').value=task.name;
-  document.getElementById('edit-time-input').value=task.time||'';
-  document.getElementById('edit-overlay').style.display='flex';
-  setTimeout(()=>document.getElementById('edit-name-input').focus(),80);
-}
 
 // ── Edit sheet helpers ────────────────────────────────────────────────────
 
