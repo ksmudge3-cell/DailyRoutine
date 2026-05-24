@@ -2715,7 +2715,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 #recovery-mode-banner.active  { max-height: 160px; }
 
 /* Collapse and floor condition are shorter system messages */
-#collapse-event-banner.active  { max-height: 80px; }
+#collapse-event-banner.active  { max-height: 160px; }
 #floor-condition-banner.active { max-height: 80px; }
 
 /* ═══════════════════════════════════════════════════════════

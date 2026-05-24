@@ -2297,14 +2297,17 @@ async function sendCommMessage(){
 
   // Build data package
   const now=new Date();
+
+  const _cxp=xpState.companionXP||{edna:0,kronk:0};
+  const _loyalty=Math.min(100,calcStreak()*10);
   const _dogData=getDogDayData();
   const _dt=dogTasks.shared||{morning:[],evening:[]};
   const _allDT=[...(_dt.morning||[]),...(_dt.evening||[])];
-  const _ednaWalks=_allDT.filter(t=>t.id&&t.id.includes('walk')&&t.id.includes('edna')&&_dogData[t.id]).length;
-  const _kronkWalks=_allDT.filter(t=>t.id&&t.id.includes('walk')&&t.id.includes('kronk')&&_dogData[t.id]).length;
-  const _cxp=xpState.companionXP||{edna:0,kronk:0};
-  const _loyalty=Math.min(100,calcStreak()*10);
-
+  const _fedAm=!!_dogData['dogs-feed-am'];
+  const _fedPm=!!_dogData['dogs-feed-pm'];
+  const _walkedAm=!!_dogData['dogs-walk-am']||!!_dogData['dogs-walk-wknd'];
+  const _walkedPm=!!_dogData['dogs-walk-pm'];
+  const _walks=(_walkedAm?1:0)+(_walkedPm?1:0);
   const dataPackage={
     current_time:now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}),
     current_day:now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}),
@@ -2329,10 +2332,10 @@ async function sendCommMessage(){
           obedience:0
         },
         care_today:{
-          fed:!!_dogData['dog-feed-edna'],
-          walked:_ednaWalks,
-          trained:!!_dogData['dog-train'],
-          meds:!!_dogData['dog-meds-edna']
+          fed_am:_fedAm,
+          fed_pm:_fedPm,
+          walks:_walks,
+          trained:!!_dogData['dog-train']
         }
       },
       kronk:{
@@ -2346,10 +2349,10 @@ async function sendCommMessage(){
           obedience:0
         },
         care_today:{
-          fed:!!_dogData['dog-feed-kronk'],
-          walked:_kronkWalks,
-          trained:!!_dogData['dog-train'],
-          meds:!!_dogData['dog-meds-kronk']
+          fed_am:_fedAm,
+          fed_pm:_fedPm,
+          walks:_walks,
+          trained:!!_dogData['dog-train']
         }
       }
     }
