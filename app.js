@@ -710,6 +710,87 @@ function openEditOverlay(type,sectionIdx,taskIdx){
   setTimeout(()=>document.getElementById('edit-name-input').focus(),80);
 }
 
+// ── Edit sheet helpers ────────────────────────────────────────────────────
+
+function _editSelectSection(btn){
+  document.querySelectorAll('#edit-section-group .edit-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function _editSetRecurrence(mode){
+  document.getElementById('edit-rec-recurring').classList.toggle('active',mode==='recurring');
+  document.getElementById('edit-rec-oneoff').classList.toggle('active',mode==='one-off');
+  document.getElementById('edit-recurring-fields').style.display=mode==='recurring'?'block':'none';
+  document.getElementById('edit-oneoff-fields').style.display=mode==='one-off'?'block':'none';
+}
+function _editToggleDay(btn){btn.classList.toggle('active');}
+function _editSetFrequency(freq){
+  ['weekly','biweekly','monthly'].forEach(f=>{
+    document.getElementById('edit-freq-'+f).classList.toggle('active',f===freq);
+  });
+  document.getElementById('edit-monthly-fields').style.display=freq==='monthly'?'block':'none';
+  document.getElementById('edit-biweekly-fields').style.display=freq==='biweekly'?'block':'none';
+}
+function _editGetSelectedDays(){
+  return Array.from(document.querySelectorAll('#edit-days-group .edit-day-pill.active'))
+    .map(b=>parseInt(b.dataset.day));
+}
+function _editGetSelectedSection(){
+  const btn=document.querySelector('#edit-section-group .edit-pill.active');
+  return btn?btn.dataset.val:'Morning';
+}
+function _editGetFrequency(){
+  for(const f of['weekly','biweekly','monthly']){
+    if(document.getElementById('edit-freq-'+f).classList.contains('active'))return f;
+  }
+  return 'weekly';
+}
+function _editShowValidation(msg){
+  const el=document.getElementById('edit-validation-msg');
+  el.textContent='VALIDATION ERROR: '+msg+'. The dungeon requires complete data.';
+  el.style.display='block';
+}
+function _editHideValidation(){
+  document.getElementById('edit-validation-msg').style.display='none';
+}
+
+function _editPopulateForm(task, sectionName){
+  document.getElementById('edit-name-input').value=task.name||'';
+  document.getElementById('edit-time-input').value=task.time||'';
+  // Section
+  document.querySelectorAll('#edit-section-group .edit-pill').forEach(b=>{
+    b.classList.toggle('active',b.dataset.val===(sectionName||task.section||'Morning'));
+  });
+  // Recurrence
+  const rec=task.recurrence||'recurring';
+  _editSetRecurrence(rec);
+  if(rec==='recurring'){
+    const days=task.days||[1,2,3,4,5];
+    document.querySelectorAll('#edit-days-group .edit-day-pill').forEach(b=>{
+      b.classList.toggle('active',days.includes(parseInt(b.dataset.day)));
+    });
+    const freq=task.frequency||'weekly';
+    _editSetFrequency(freq);
+    if(freq==='monthly')document.getElementById('edit-monthly-date').value=task.monthly_date||new Date().getDate();
+    if(freq==='biweekly')document.getElementById('edit-biweekly-start').value=task.biweekly_start||new Date().toISOString().slice(0,10);
+  } else {
+    document.getElementById('edit-oneoff-date').value=task.date||new Date().toISOString().slice(0,10);
+  }
+  _editHideValidation();
+}
+
+// ── Edit sheet open functions ─────────────────────────────────────────────
+
+function openEditOverlay(type,sectionIdx,taskIdx){
+  const sc=type==='weekday'?schedule.weekday:schedule.weekend;
+  const task=sc[sectionIdx].tasks[taskIdx];
+  const sectionName=sc[sectionIdx].section;
+  editCtx={type,sectionIdx,taskIdx,isNew:false};
+  document.getElementById('edit-title').textContent='Edit task';
+  _editPopulateForm(task, sectionName);
+  document.getElementById('edit-overlay').style.display='flex';
+  setTimeout(()=>document.getElementById('edit-name-input').focus(),80);
+}
+
 function openEditOverlayById(type,taskId){
   const sc=type==='weekday'?schedule.weekday:schedule.weekend;
   let foundSection=-1,foundIdx=-1;
@@ -720,31 +801,96 @@ function openEditOverlayById(type,taskId){
 
 function openAddOverlay(type,sectionIdx){
   const sc=type==='weekday'?schedule.weekday:schedule.weekend;
-  const section=sc[sectionIdx];
-  const newTask={id:'t_'+Date.now(),name:'New task',time:''};
-  // Insert before the last task (usually "Lights out" or "Sleep") rather than appending
-  // Exception: if section has 0 or 1 tasks, just push
-  const insertIdx=section.tasks.length>1?section.tasks.length-1:section.tasks.length;
-  section.tasks.splice(insertIdx,0,newTask);
-  save('dr-schedule',schedule);
-  openEditOverlay(type,sectionIdx,insertIdx);
-  document.getElementById('edit-name-input').value='';
+  const sectionName=sc[sectionIdx].section;
+  const defaultDays=type==='weekday'?[1,2,3,4,5]:[0,6];
+  editCtx={type,sectionIdx,taskIdx:-1,isNew:true};
   document.getElementById('edit-title').textContent='Add task';
+  _editPopulateForm({
+    name:'',time:'',
+    recurrence:'recurring',days:defaultDays,frequency:'weekly',
+    date:null,monthly_date:null,biweekly_start:null,order:0
+  }, sectionName);
+  document.getElementById('edit-name-input').value='';
+  document.getElementById('edit-overlay').style.display='flex';
+  setTimeout(()=>document.getElementById('edit-name-input').focus(),80);
 }
+
+// ── Edit sheet save / delete ──────────────────────────────────────────────
 
 function saveTaskEdit(){
   if(!editCtx)return;
-  const sc=editCtx.type==='weekday'?schedule.weekday:schedule.weekend;
-  const task=sc[editCtx.sectionIdx].tasks[editCtx.taskIdx];
-  task.name=document.getElementById('edit-name-input').value.trim()||task.name;
-  task.time=document.getElementById('edit-time-input').value.trim();
+  const name=document.getElementById('edit-name-input').value.trim();
+  if(!name){_editShowValidation('Task name cannot be empty');return;}
+  const rec=document.getElementById('edit-rec-recurring').classList.contains('active')?'recurring':'one-off';
+  if(rec==='recurring'){
+    const days=_editGetSelectedDays();
+    if(!days.length){_editShowValidation('Recurring task must have at least one day selected');return;}
+  } else {
+    const dt=document.getElementById('edit-oneoff-date').value;
+    if(!dt){_editShowValidation('One-off task must have a date');return;}
+  }
+  _editHideValidation();
+
+  const section=_editGetSelectedSection();
+  const freq=rec==='recurring'?_editGetFrequency():null;
+  const days=rec==='recurring'?_editGetSelectedDays():null;
+  const monthlyDate=freq==='monthly'?parseInt(document.getElementById('edit-monthly-date').value)||null:null;
+  const biweeklyStart=freq==='biweekly'?document.getElementById('edit-biweekly-start').value||null:null;
+  const oneoffDate=rec==='one-off'?document.getElementById('edit-oneoff-date').value:null;
+
+  if(rec==='one-off'){
+    // One-off: store in schedule.oneOff
+    if(!schedule.oneOff)schedule.oneOff=[];
+    if(editCtx.isNew){
+      const newTask={
+        id:'t_'+Date.now(),name,time:document.getElementById('edit-time-input').value.trim(),
+        section,recurrence:'one-off',date:oneoffDate,days:null,frequency:null,
+        monthly_date:null,biweekly_start:null,order:schedule.oneOff.length
+      };
+      schedule.oneOff.push(newTask);
+    } else {
+      // Find task in current location, move to oneOff
+      const sc=editCtx.type==='weekday'?schedule.weekday:schedule.weekend;
+      const task=sc[editCtx.sectionIdx].tasks[editCtx.taskIdx];
+      Object.assign(task,{name,time:document.getElementById('edit-time-input').value.trim(),
+        section,recurrence:'one-off',date:oneoffDate,days:null,frequency:null,
+        monthly_date:null,biweekly_start:null});
+    }
+  } else {
+    // Recurring
+    const time=document.getElementById('edit-time-input').value.trim();
+    const taskData={name,time,section,recurrence:'recurring',days,frequency:freq,
+      monthly_date:monthlyDate,biweekly_start:biweeklyStart,date:null};
+    if(editCtx.isNew){
+      const sc=editCtx.type==='weekday'?schedule.weekday:schedule.weekend;
+      // Find the target section by name, fallback to editCtx.sectionIdx
+      let secIdx=sc.findIndex(s=>s.section===section);
+      if(secIdx===-1)secIdx=editCtx.sectionIdx;
+      const targetSec=sc[secIdx];
+      const insertIdx=targetSec.tasks.length>1?targetSec.tasks.length-1:targetSec.tasks.length;
+      const newTask={id:'t_'+Date.now(),...taskData,order:insertIdx};
+      targetSec.tasks.splice(insertIdx,0,newTask);
+    } else {
+      const sc=editCtx.type==='weekday'?schedule.weekday:schedule.weekend;
+      const task=sc[editCtx.sectionIdx].tasks[editCtx.taskIdx];
+      Object.assign(task,taskData);
+      // If section changed, move task
+      const newSecIdx=sc.findIndex(s=>s.section===section);
+      if(newSecIdx!==-1&&newSecIdx!==editCtx.sectionIdx){
+        sc[editCtx.sectionIdx].tasks.splice(editCtx.taskIdx,1);
+        const targetSec=sc[newSecIdx];
+        const insertIdx=targetSec.tasks.length>1?targetSec.tasks.length-1:targetSec.tasks.length;
+        targetSec.tasks.splice(insertIdx,0,task);
+      }
+    }
+  }
   save('dr-schedule',schedule);
   closeEditOverlay();
   renderToday();
 }
 
 function deleteTaskEdit(){
-  if(!editCtx)return;
+  if(!editCtx||editCtx.isNew)return;
   if(!confirm('Archive this task? Completion history is preserved and the task can be restored later.'))return;
   const sc=editCtx.type==='weekday'?schedule.weekday:schedule.weekend;
   const task=sc[editCtx.sectionIdx].tasks[editCtx.taskIdx];
