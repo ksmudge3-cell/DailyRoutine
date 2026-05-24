@@ -2375,15 +2375,39 @@ function executeCommAction(id){
     case 'add_task':{
       const p=action.params||{};
       const taskId='ct_'+Date.now();
-      const newTask={id:taskId,name:p.name||p.task_name||action.summary,time:p.time||''};
-      const day=p.day||(isWeekend(new Date().getDay())?'weekend':'weekday');
-      const sc=day==='weekend'?schedule.weekend:schedule.weekday;
-      
-      // Find section by name if provided, otherwise use Evening as default
+      const taskName=p.name||p.task_name||action.summary||'New task';
       const sectionName=p.section||p.target_section||'Evening';
-      const target=sc.find(s=>s.section.toLowerCase()===sectionName.toLowerCase())||sc[sc.length-1];
-      if(target){target.tasks.push(newTask);save('dr-schedule',schedule);}
-      resultMsg=`LOG ENTRY: Task added — "${newTask.name}" → ${target?.section}. Schedule updated.`;
+      const rec=p.recurrence||'recurring';
+
+      if(rec==='one-off'){
+        // One-off: goes to schedule.oneOff
+        if(!schedule.oneOff)schedule.oneOff=[];
+        const oneoffDate=p.date||todayStr();
+        const newTask={id:taskId,name:taskName,time:p.time||'',section:sectionName,
+          recurrence:'one-off',date:oneoffDate,days:null,frequency:null,
+          monthly_date:null,biweekly_start:null,order:schedule.oneOff.length};
+        schedule.oneOff.push(newTask);
+        save('dr-schedule',schedule);
+        resultMsg=`LOG ENTRY: One-off task added — "${taskName}" → ${oneoffDate}. Appears on floor that day only.`;
+      } else {
+        // Recurring: goes to weekday and/or weekend depending on days
+        const days=p.days||(isWeekend(new Date().getDay())?[0,6]:[1,2,3,4,5]);
+        const freq=p.frequency||'weekly';
+        const newTask={id:taskId,name:taskName,time:p.time||'',section:sectionName,
+          recurrence:'recurring',days,frequency:freq,
+          monthly_date:p.monthly_date||null,biweekly_start:p.biweekly_start||null,
+          date:null,order:999};
+        const hasWeekday=days.some(d=>d>=1&&d<=5);
+        const hasWeekend=days.some(d=>d===0||d===6);
+        const addToSchedule=(sc)=>{
+          const target=sc.find(s=>s.section.toLowerCase()===sectionName.toLowerCase())||sc[sc.length-1];
+          if(target){const ins=target.tasks.length>1?target.tasks.length-1:target.tasks.length;target.tasks.splice(ins,0,{...newTask});}
+        };
+        if(hasWeekday||freq==='monthly'||freq==='biweekly')addToSchedule(schedule.weekday);
+        if(hasWeekend)addToSchedule(schedule.weekend);
+        save('dr-schedule',schedule);
+        resultMsg=`LOG ENTRY: Recurring task added — "${taskName}" → ${sectionName}. Days: ${days.join(',')}. Schedule updated.`;
+      }
       break;
     }
 
