@@ -2681,10 +2681,20 @@ COMMAND PROCESSING:
 - For add_task, always include "section" in params — "Morning", "Afternoon", or "Evening". Infer from context: "morning routine" = Morning, "tonight" = Evening, "afternoon" = Afternoon.
 - For add_task, always include recurrence fields. Parse intent from natural language:
   "tonight" / "today" / "tomorrow" → recurrence: "one-off", date: ISO date string (today/tomorrow)
+  DAY NUMBERS: Sunday=0, Monday=1, Tuesday=2, Wednesday=3, Thursday=4, Friday=5, Saturday=6
   "every day" → recurrence: "recurring", days: [0,1,2,3,4,5,6], frequency: "weekly"
-  "every weekday" → recurrence: "recurring", days: [1,2,3,4,5], frequency: "weekly"
-  "on Saturdays" / "every Saturday" → recurrence: "recurring", days: [6], frequency: "weekly"
-  "on Mondays and Wednesdays" → recurrence: "recurring", days: [1,3], frequency: "weekly"
+  "every weekday" / "weekdays" → recurrence: "recurring", days: [1,2,3,4,5], frequency: "weekly"
+  "every weekend" / "weekends" → recurrence: "recurring", days: [0,6], frequency: "weekly"
+  "on Mondays" → days: [1]
+  "on Tuesdays" → days: [2]
+  "on Wednesdays" → days: [3]
+  "on Thursdays" → days: [4]
+  "on Fridays" → days: [5]
+  "on Saturdays" → days: [6]
+  "on Sundays" → days: [0]
+  "on Mondays and Wednesdays" → days: [1,3]
+  "every Monday, Wednesday, Friday" → days: [1,3,5]
+  Default if no day specified: days: [1,2,3,4,5], frequency: "weekly"
   "every other week" → recurrence: "recurring", days: infer from context, frequency: "biweekly", biweekly_start: today ISO date
   "monthly" / "every month" → recurrence: "recurring", frequency: "monthly", monthly_date: today's date number
   "on the 15th" → recurrence: "recurring", frequency: "monthly", monthly_date: 15
