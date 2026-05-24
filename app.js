@@ -1310,7 +1310,6 @@ function _renderWeekPanel(){
     btn.onclick=()=>{
       selectedDay=dow;
       _selectedWeekOffset=_lastWeekExpanded?-1:1;
-      _lastWeekExpanded=false;_nextWeekExpanded=false;
       renderToday();
     };
     panel.appendChild(btn);
