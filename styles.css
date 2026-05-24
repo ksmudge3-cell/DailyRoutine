@@ -3680,3 +3680,117 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   transform: scale(1.02);
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   DATE PILL SYSTEM — Redesign
+═══════════════════════════════════════════════════════════ */
+
+/* ── Sub-elements inside each pill ──────────────────────── */
+.dp-day {
+  font-family: var(--font-hotdog);
+  font-size: 7px;
+  display: block;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dp-date {
+  font-family: var(--font-game);
+  font-size: 11px;
+  display: block;
+  line-height: 1.2;
+}
+
+.dp-pct {
+  font-family: var(--font-game);
+  font-size: 8px;
+  color: var(--muted);
+  display: block;
+  margin-top: 1px;
+}
+
+/* ── Pill state variants ─────────────────────────────────── */
+.date-pill-today {
+  background: var(--teal);
+  color: #0a0a0c;
+  border-color: var(--amber);
+  border-width: 1px;
+}
+
+.date-pill-cleared {
+  border-color: var(--teal);
+  color: var(--muted);
+}
+
+.date-pill-partial {
+  border-color: var(--amber);
+  color: var(--muted);
+}
+
+.date-pill-past {
+  border-color: var(--border);
+  color: var(--hint);
+}
+
+.date-pill-future {
+  border-color: var(--border);
+  color: var(--amber);
+  opacity: 0.5;
+}
+
+/* ── Week label pill ─────────────────────────────────────── */
+.date-pill-week {
+  color: var(--muted);
+  font-family: var(--font-hotdog);
+  font-size: 7px;
+  padding: 4px 8px;
+  letter-spacing: 0.08em;
+}
+
+/* ── Smaller pill variant ────────────────────────────────── */
+.date-pill-sm {
+  padding: 4px 8px;
+  font-size: 9px;
+}
+
+/* ── Week expand panel ───────────────────────────────────── */
+.week-expand-panel {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--surface2);
+  border: 0.5px solid rgba(212,154,0,0.25);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.2s ease;
+}
+
+.week-expand-panel.open {
+  max-height: 120px;
+  opacity: 1;
+  padding: 6px 12px;
+}
+
+/* ── Return to today banner ──────────────────────────────── */
+.return-to-today-banner {
+  width: 100%;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--teal-dim);
+  border-left: 2px solid var(--teal);
+  font-family: var(--font-system);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--teal);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.return-to-today-banner:hover {
+  background: rgba(0,122,122,0.2);
+}
