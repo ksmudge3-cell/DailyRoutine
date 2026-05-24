@@ -484,14 +484,7 @@ function getScheduleFor(dayIdx, date){
   });
 
   // Inject Sunday pill task
-  if(isSunday(dow)){
-    const eve=base.find(s=>s.section==='Evening');
-    if(eve&&!eve.tasks.find(t=>t.id===SUNDAY_PILL_TASK.id)){
-      const lightsIdx=eve.tasks.findIndex(t=>t.id==='sleep');
-      if(lightsIdx>-1)eve.tasks.splice(lightsIdx,0,{...SUNDAY_PILL_TASK});
-      else eve.tasks.push({...SUNDAY_PILL_TASK});
-    }
-  }
+  // Sunday pill box injection disabled — add as a recurring task manually
 
   // Inject one-off tasks for the date
   const dateStr=d.toISOString().slice(0,10);
