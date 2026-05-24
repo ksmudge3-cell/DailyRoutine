@@ -448,7 +448,7 @@ let editCtx=null; // {type:'weekday'|'weekend', sectionIdx, taskIdx}
 
 /* ─── HELPERS ───────────────────────────────────────────────────────────── */
 function dayKey(idx){const t=new Date(),d=new Date(t);d.setDate(t.getDate()+(idx-t.getDay()));return`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}
-function todayStr(){const d=new Date();return`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}
+function todayStr(){return new Date().toISOString().slice(0,10);}
 function isWeekend(idx){return idx===0||idx===6;}
 function isSunday(idx){
   // Map idx to actual date day
