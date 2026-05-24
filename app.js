@@ -458,18 +458,47 @@ function isSunday(idx){
 function getBaseSchedule(idx){return isWeekend(idx)?schedule.weekend:schedule.weekday;}
 
 // Returns a deep-cloned schedule for the given day index, injecting Sunday tasks as needed
-function getScheduleFor(idx){
-  const base=JSON.parse(JSON.stringify(getBaseSchedule(idx)));
-  if(isSunday(idx)){
-    // Inject pill box into Evening section
+function getScheduleFor(dayIdx, date){
+  const d=date||new Date();
+  const dow=date?date.getDay():dayIdx;
+  const base=JSON.parse(JSON.stringify(getBaseSchedule(dow)));
+
+  // Filter recurring tasks by recurrence rules
+  base.forEach(sec=>{
+    sec.tasks=sec.tasks.filter(t=>{
+      if(!t.recurrence||t.recurrence==='recurring'){
+        if(t.frequency==='monthly') return d.getDate()===(t.monthly_date||d.getDate());
+        if(t.frequency==='biweekly'){
+          if(!t.biweekly_start)return false;
+          const start=new Date(t.biweekly_start);
+          const weeksDiff=Math.round((d-start)/(7*24*60*60*1000));
+          return weeksDiff>=0&&weeksDiff%2===0&&(t.days||[]).includes(dow);
+        }
+        // weekly (default)
+        return (t.days||[]).includes(dow);
+      }
+      return true; // one-offs handled separately
+    });
+    sec.tasks.sort((a,b)=>(a.order??0)-(b.order??0));
+  });
+
+  // Inject Sunday pill task
+  if(isSunday(dow)){
     const eve=base.find(s=>s.section==='Evening');
     if(eve&&!eve.tasks.find(t=>t.id===SUNDAY_PILL_TASK.id)){
-      // Insert before "Lights out" if present, otherwise push
       const lightsIdx=eve.tasks.findIndex(t=>t.id==='sleep');
       if(lightsIdx>-1)eve.tasks.splice(lightsIdx,0,{...SUNDAY_PILL_TASK});
       else eve.tasks.push({...SUNDAY_PILL_TASK});
     }
   }
+
+  // Inject one-off tasks for the date
+  const dateStr=d.toISOString().slice(0,10);
+  const oneOffs=(schedule.oneOff||[]).filter(t=>t.date===dateStr);
+  if(oneOffs.length){
+    base.push({section:'Today Only',tasks:oneOffs.sort((a,b)=>(a.order??0)-(b.order??0))});
+  }
+
   return base;
 }
 
