@@ -2505,8 +2505,9 @@ function executeCommAction(id){
 function getTodayTaskSummary(){
   const sc=getScheduleFor(new Date().getDay());
   const all=sc.reduce((a,s)=>a.concat(s.tasks),[]);
-  const ds=state[todayStr()]||{};
-  const dq=qualityState[todayStr()]||{};
+  const todayIdx=new Date().getDay();
+  const ds=getDayData(todayIdx);
+  const dq=qualityState[dayKey(todayIdx)]||{};
   return all.map(t=>({
     id:t.id,
     name:t.name,
