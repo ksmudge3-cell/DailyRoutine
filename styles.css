@@ -3490,7 +3490,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   flex: 1;
   background-image: var(--ui-scoreboard-panel, none);
   background-color: transparent;
-  background-size: 100% 100%;
+  background-size: 100% 120%;
   border: none;
   border-radius: var(--radius-sm);
   padding: 18px 10px 12px;
@@ -3515,7 +3515,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .scoreboard-val {
   font-family: var(--font-game);
   font-size: 20px;
-  color: var(--neon-gold, #D49A00);
+  color: var(--neon-gold-core, #D49A00);
   line-height: 1;
   transform: rotateX(0deg);
   opacity: 1;
