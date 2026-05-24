@@ -93,57 +93,57 @@ const FLOOR_CONDITIONS=[
 const DEFAULT_SCHEDULE={
   weekday:[
     {section:'Morning',tasks:[
-      {id:'meds-am',name:'Morning medications',time:'5:30 AM'},
-      {id:'wakeup',name:'Wake up at 5:30 AM',time:'5:30 AM'},
-      {id:'gym',name:'Gym (40 min)',time:'5:35–6:15 AM'},
-      {id:'shower',name:'Shower',time:'6:15 AM'},
-      {id:'facewash',name:'Face wash',time:'In shower'},
-      {id:'moisturize',name:'Moisturize + sunscreen',time:'After shower'},
-      {id:'teeth',name:'Brush teeth + floss',time:'At sink'},
-      {id:'deodorant',name:'Deodorant',time:'At sink'},
-      {id:'breakfast',name:'Eat breakfast',time:'6:40 AM'},
-      {id:'intentions',name:'Set 3 daily intentions',time:'6:55 AM'},
-      {id:'leave',name:'Leave for work',time:'7:15 AM'},
+      {id:'meds-am',name:'Morning medications',time:'5:30 AM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:0},
+      {id:'wakeup',name:'Wake up at 5:30 AM',time:'5:30 AM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:1},
+      {id:'gym',name:'Gym (40 min)',time:'5:35–6:15 AM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:2},
+      {id:'shower',name:'Shower',time:'6:15 AM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:3},
+      {id:'facewash',name:'Face wash',time:'In shower',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:4},
+      {id:'moisturize',name:'Moisturize + sunscreen',time:'After shower',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:5},
+      {id:'teeth',name:'Brush teeth + floss',time:'At sink',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:6},
+      {id:'deodorant',name:'Deodorant',time:'At sink',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:7},
+      {id:'breakfast',name:'Eat breakfast',time:'6:40 AM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:8},
+      {id:'intentions',name:'Set 3 daily intentions',time:'6:55 AM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:9},
+      {id:'leave',name:'Leave for work',time:'7:15 AM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:10},
     ]},
     {section:'Workday',tasks:[
-      {id:'work',name:'Work + real lunch break',time:'8 AM–4:30 PM'},
+      {id:'work',name:'Work + real lunch break',time:'8 AM–4:30 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:0},
     ]},
     {section:'Evening',tasks:[
-      {id:'home',name:'Home — change clothes',time:'Before 5 PM'},
-      {id:'dinner',name:'Dinner + downtime',time:'5–6:30 PM'},
-      {id:'personal',name:'Personal time',time:'6:30–8:30 PM'},
-      {id:'nightprep',name:'Night prep (bag, outfit, lunch)',time:'8:30 PM'},
-      {id:'nightwash',name:'Evening face wash',time:'9:00 PM'},
-      {id:'nightteeth',name:'Brush + floss + mouthwash',time:'9:10 PM'},
-      {id:'meds-pm',name:'Evening medications',time:'9:10 PM'},
-      {id:'winddown',name:'No screens — wind down',time:'9:15 PM'},
-      {id:'sleep',name:'Lights out',time:'9:30–10 PM'},
+      {id:'home',name:'Home — change clothes',time:'Before 5 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:0},
+      {id:'dinner',name:'Dinner + downtime',time:'5–6:30 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:1},
+      {id:'personal',name:'Personal time',time:'6:30–8:30 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:2},
+      {id:'nightprep',name:'Night prep (bag, outfit, lunch)',time:'8:30 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:3},
+      {id:'nightwash',name:'Evening face wash',time:'9:00 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:4},
+      {id:'nightteeth',name:'Brush + floss + mouthwash',time:'9:10 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:5},
+      {id:'meds-pm',name:'Evening medications',time:'9:10 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:6},
+      {id:'winddown',name:'No screens — wind down',time:'9:15 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:7},
+      {id:'sleep',name:'Lights out',time:'9:30–10 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:8},
     ]}
   ],
   weekend:[
     {section:'Morning',tasks:[
-      {id:'meds-am',name:'Morning medications',time:'Morning'},
-      {id:'wakeup',name:'Wake up by 6:30 AM',time:'6:30 AM'},
-      {id:'shower',name:'Shower',time:'Morning'},
-      {id:'facewash',name:'Face wash',time:'In shower'},
-      {id:'moisturize',name:'Moisturize + sunscreen',time:'After shower'},
-      {id:'teeth',name:'Brush teeth + floss',time:'At sink'},
-      {id:'deodorant',name:'Deodorant',time:'At sink'},
-      {id:'breakfast',name:'Proper breakfast',time:'Morning'},
+      {id:'meds-am',name:'Morning medications',time:'Morning',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:0},
+      {id:'wakeup',name:'Wake up by 6:30 AM',time:'6:30 AM',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:1},
+      {id:'shower',name:'Shower',time:'Morning',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:2},
+      {id:'facewash',name:'Face wash',time:'In shower',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:3},
+      {id:'moisturize',name:'Moisturize + sunscreen',time:'After shower',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:4},
+      {id:'teeth',name:'Brush teeth + floss',time:'At sink',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:5},
+      {id:'deodorant',name:'Deodorant',time:'At sink',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:6},
+      {id:'breakfast',name:'Proper breakfast',time:'Morning',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:7},
     ]},
     {section:'Daytime',tasks:[
-      {id:'gym',name:'Gym or active activity',time:'Morning/afternoon'},
-      {id:'dogs-walk-wknd',name:'Walk Edna & Kronk',time:'Morning/afternoon'},
-      {id:'errands',name:'Errands or meal prep',time:'Afternoon'},
-      {id:'personal',name:'Personal time',time:'Afternoon'},
+      {id:'gym',name:'Gym or active activity',time:'Morning/afternoon',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:0},
+      {id:'dogs-walk-wknd',name:'Walk Edna & Kronk',time:'Morning/afternoon',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:1},
+      {id:'errands',name:'Errands or meal prep',time:'Afternoon',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:2},
+      {id:'personal',name:'Personal time',time:'Afternoon',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:3},
     ]},
     {section:'Evening',tasks:[
-      {id:'dinner',name:'Dinner',time:'Evening'},
-      {id:'nightwash',name:'Evening face wash',time:'9:00 PM'},
-      {id:'nightteeth',name:'Brush + floss + mouthwash',time:'9:10 PM'},
-      {id:'meds-pm',name:'Evening medications',time:'9:10 PM'},
-      {id:'nightprep',name:'Night prep',time:'8:30 PM'},
-      {id:'sleep',name:'Lights out',time:'9:30–10 PM'},
+      {id:'dinner',name:'Dinner',time:'Evening',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:0},
+      {id:'nightwash',name:'Evening face wash',time:'9:00 PM',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:1},
+      {id:'nightteeth',name:'Brush + floss + mouthwash',time:'9:10 PM',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:2},
+      {id:'meds-pm',name:'Evening medications',time:'9:10 PM',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:3},
+      {id:'nightprep',name:'Night prep',time:'8:30 PM',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:4},
+      {id:'sleep',name:'Lights out',time:'9:30–10 PM',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:5},
     ]}
   ]
 };
@@ -1186,6 +1186,31 @@ function migrateGymIntoSchedule(){
     wdMorn.tasks.splice(insertIdx,0,{id:'gym',name:'Gym (40 min)',time:'5:35–6:15 AM'});
     saveLocal('dr-schedule',schedule);
   }
+}
+function migrateScheduleToRecurrence(){
+  let changed=false;
+  const allSections=[
+    ...(schedule.weekday||[]).map(s=>({...s,_days:[1,2,3,4,5]})),
+    ...(schedule.weekend||[]).map(s=>({...s,_days:[0,6]}))
+  ];
+  allSections.forEach(sec=>{
+    (sec.tasks||[]).forEach((t,i)=>{
+      if(!t.recurrence){
+        t.recurrence='recurring';
+        t.days=sec._days;
+        t.frequency='weekly';
+        t.date=null;
+        t.monthly_date=null;
+        t.biweekly_start=null;
+        t.order=t.order!=null?t.order:i;
+        changed=true;
+      }
+    });
+  });
+  // Also handle one-off tasks array if it exists
+  if(!schedule.oneOff)schedule.oneOff=[];
+  if(changed){saveLocal('dr-schedule',schedule);return true;}
+  return false;
 }
 
 function renderDogs(){
@@ -4929,6 +4954,7 @@ async function init(){
   // Run regardless of sync success so local-only sessions still get them.
   migrateDogTasks();
   migrateGymIntoSchedule();
+  migrateScheduleToRecurrence();
   checkCommTowerReset();
   checkDonutChatReset();
   checkDonutBiscuitExpiry();
