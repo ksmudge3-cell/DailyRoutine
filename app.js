@@ -1288,8 +1288,8 @@ function _renderWeekPanel(){
     const strip=document.getElementById('date-strip');
     strip.insertAdjacentElement('afterend',panel);
   }
-  if(!_lastWeekExpanded&&!_nextWeekExpanded){panel.style.display='none';panel.innerHTML='';return;}
-  panel.style.display='flex';
+  if(!_lastWeekExpanded&&!_nextWeekExpanded){panel.classList.remove('open');panel.innerHTML='';return;}
+  panel.classList.add('open');
   panel.innerHTML='';
   const now=new Date();
   const todayDow=now.getDay();
