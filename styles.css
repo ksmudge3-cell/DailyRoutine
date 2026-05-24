@@ -1663,7 +1663,7 @@ body { font-family: var(--font-body); }
 .donut-input-row {
   display: flex;
   gap: 8px;
-  padding: 10px 0;
+  padding: 10px 0 calc(40px + env(safe-area-inset-bottom));
   position: sticky;
   bottom: 0;
   background: var(--bg);
@@ -2715,7 +2715,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 #recovery-mode-banner.active  { max-height: 160px; }
 
 /* Collapse and floor condition are shorter system messages */
-#collapse-event-banner.active  { max-height: 160px; }
+#collapse-event-banner.active  { max-height: none; }
 #floor-condition-banner.active { max-height: 80px; }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2914,7 +2914,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   flex: 0 0 auto;
   display: flex;
   gap: 8px;
-  padding: 10px 0;
+  padding: 10px 0 calc(40px + env(safe-area-inset-bottom));
   background: var(--bg);
   border-top: 0.5px solid var(--border);
 }
@@ -3489,14 +3489,14 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   background-size: 100% 100%;
   border: none;
   border-radius: var(--radius-sm);
-  padding: 14px 6px 10px;
+  padding: 18px 10px 12px;
   text-align: center;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
 }
 
 .scoreboard-label {
@@ -3511,7 +3511,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .scoreboard-val {
   font-family: var(--font-game);
   font-size: 20px;
-  color: var(--neon-gold, #FFD43A);
+  color: var(--neon-gold, #D49A00);
   line-height: 1;
   transform: rotateX(0deg);
   opacity: 1;
