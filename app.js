@@ -2655,6 +2655,18 @@ COMMAND PROCESSING:
 - Propose a specific actionable confirmation
 - If unclear ask for clarification with minimal words
 - For add_task, always include "section" in params — "Morning", "Afternoon", or "Evening". Infer from context: "morning routine" = Morning, "tonight" = Evening, "afternoon" = Afternoon.
+- For add_task, always include recurrence fields. Parse intent from natural language:
+  "tonight" / "today" / "tomorrow" → recurrence: "one-off", date: ISO date string (today/tomorrow)
+  "every day" → recurrence: "recurring", days: [0,1,2,3,4,5,6], frequency: "weekly"
+  "every weekday" → recurrence: "recurring", days: [1,2,3,4,5], frequency: "weekly"
+  "on Saturdays" / "every Saturday" → recurrence: "recurring", days: [6], frequency: "weekly"
+  "on Mondays and Wednesdays" → recurrence: "recurring", days: [1,3], frequency: "weekly"
+  "every other week" → recurrence: "recurring", days: infer from context, frequency: "biweekly", biweekly_start: today ISO date
+  "monthly" / "every month" → recurrence: "recurring", frequency: "monthly", monthly_date: today's date number
+  "on the 15th" → recurrence: "recurring", frequency: "monthly", monthly_date: 15
+  Default if unspecified: recurrence: "recurring", days: [1,2,3,4,5], frequency: "weekly"
+- Full add_task params shape:
+  { "name": "task name", "section": "Morning|Afternoon|Evening", "time": "optional", "recurrence": "recurring|one-off", "days": [0-6 array, recurring only], "frequency": "weekly|biweekly|monthly", "monthly_date": 15, "biweekly_start": "2026-05-24", "date": "2026-05-24 (one-off only)" }
 
 RESPONSE FORMAT — always return valid JSON:
 {
