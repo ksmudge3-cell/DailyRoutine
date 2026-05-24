@@ -3569,3 +3569,87 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   background: linear-gradient(90deg, transparent, rgba(212,154,0,0.5), transparent);
   margin: 3px 0;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   EDIT SHEET — RECURRING / ONE-OFF FIELDS (Step 4)
+═══════════════════════════════════════════════════════════ */
+
+.edit-pill-group {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 6px 0 12px;
+}
+
+.edit-pill {
+  background: var(--surface2);
+  border: 1px solid rgba(212,154,0,0.3);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-family: var(--font-game);
+  font-size: 8px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.edit-pill.active {
+  background: rgba(212,154,0,0.15);
+  border-color: var(--gold-hi, #FFD43A);
+  color: var(--gold-hi, #FFD43A);
+}
+
+.edit-day-pill {
+  background: var(--surface2);
+  border: 1px solid rgba(212,154,0,0.3);
+  border-radius: 20px;
+  padding: 6px 10px;
+  min-width: 32px;
+  text-align: center;
+  font-family: var(--font-game);
+  font-size: 8px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.edit-day-pill.active {
+  background: rgba(212,154,0,0.15);
+  border-color: var(--gold-hi, #FFD43A);
+  color: var(--gold-hi, #FFD43A);
+}
+
+#edit-recurring-fields,
+#edit-oneoff-fields {
+  margin-top: 4px;
+}
+
+#edit-monthly-fields,
+#edit-biweekly-fields {
+  margin-top: 8px;
+}
+
+/* Date inputs — dark color scheme for native picker */
+#edit-monthly-date,
+#edit-biweekly-start,
+#edit-oneoff-date {
+  width: 100%;
+  background: var(--surface2);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  outline: none;
+  color-scheme: dark;
+}
+
+#edit-monthly-date:focus,
+#edit-biweekly-start:focus,
+#edit-oneoff-date:focus {
+  border-color: var(--teal);
+}
