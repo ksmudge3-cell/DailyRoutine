@@ -3111,7 +3111,7 @@ function isComplianceRisk(){
 /* ─── BUFFS & DEBUFFS ENGINE ─────────────────────────────────────────────── */
 function getActiveBuffs(){
   const todayIdx=new Date().getDay();
-  const tKey=todayStr();
+  const tKey=dayKey(todayIdx);
   const qState=qualityState[tKey]||{};
   const slots={};
 
