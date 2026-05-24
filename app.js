@@ -709,6 +709,10 @@ function _editSetRecurrence(mode){
   document.getElementById('edit-rec-oneoff').classList.toggle('active',mode==='one-off');
   document.getElementById('edit-recurring-fields').style.display=mode==='recurring'?'block':'none';
   document.getElementById('edit-oneoff-fields').style.display=mode==='one-off'?'block':'none';
+  if(mode==='one-off'){
+    const el=document.getElementById('edit-oneoff-date');
+    if(!el.value)el.value=new Date().toISOString().slice(0,10);
+  }
 }
 function _editToggleDay(btn){btn.classList.toggle('active');}
 function _editSetFrequency(freq){
