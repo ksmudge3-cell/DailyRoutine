@@ -3493,7 +3493,7 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   flex: 1;
   background-image: var(--ui-scoreboard-panel, none);
   background-color: transparent;
-  background-size: 100% 135%;
+  background-size: 80% 140%;
   background-position: center -8px;
   border: none;
   border-radius: var(--radius-sm);
