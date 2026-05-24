@@ -380,6 +380,7 @@ async function pullFromSupabase(){
       checkFloorCollapse();
       checkCommTowerReset();
       checkDonutChatReset();
+      checkOneOffCleanup();
       if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;saveLocal('dr-floor-condition',null);}
       // Re-render whichever screen is currently showing
       showRoom(loadLocal('dr-last-screen','today')||'today');
@@ -2938,6 +2939,18 @@ function checkDonutChatReset(){
   saveLocal('dr-donut-chat-reset-date',today);
 }
 
+function checkOneOffCleanup(){
+  const today=todayStr();
+  if(!schedule.oneOff||!schedule.oneOff.length)return;
+  const before=schedule.oneOff.length;
+  // Remove any one-off tasks whose date is before today
+  schedule.oneOff=schedule.oneOff.filter(t=>t.date>=today);
+  if(schedule.oneOff.length!==before){
+    saveLocal('dr-schedule',schedule);
+    syncToSupabase();
+  }
+}
+
 function writeDonutPermanentMemory(note,source='sara'){
   donutPermanentMemory.push({savedOn:todayStr(),source,note});
   save('dr-donut-permanent',donutPermanentMemory);
@@ -4986,6 +4999,7 @@ async function init(){
   migrateScheduleToRecurrence();
   checkCommTowerReset();
   checkDonutChatReset();
+  checkOneOffCleanup();
   checkDonutBiscuitExpiry();
   checkFloorCollapse();
   if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;saveLocal('dr-floor-condition',null);}
