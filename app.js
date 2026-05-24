@@ -1104,20 +1104,28 @@ function cycleQuality(dayIdx, taskId){
   }
 
   save('dr-quality',qualityState);
-  window._skipGreeting=true;
-  const _scroll=document.documentElement.scrollTop||document.body.scrollTop;
-  renderToday();
-  window._skipGreeting=false;
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      document.documentElement.scrollTop=_scroll;
-      document.body.scrollTop=_scroll;
-    });
-  });
+
+  // Surgical orb update — no full re-render, no scroll jump
+  const orbTap=document.querySelector(`.q-orb-tap[data-taskid="${taskId}"]`);
+  if(orbTap){
+    orbTap.innerHTML=renderOrb(next||null,taskId)
+      +(isGrayLocked(taskId)&&next==='gray'?'<span class="gray-warn-badge locked">🔒</span>':
+        !next&&false?'':'');
+    orbTap.title=orbLabel(next||null)+(isGrayLocked(taskId)?' — gray LOCKED':'');
+  }
+
+  // Update task row done state
+  const taskRow=document.querySelector(`.task[data-task-id="${taskId}"]`);
+  if(taskRow){
+    const isDone=next==='purple'||next==='green'||next==='yellow'||next==='gray';
+    const isNA=next==='gray';
+    taskRow.classList.toggle('done',isDone&&!isNA);
+    taskRow.classList.toggle('task-na',isNA);
+  }
+
   renderStatusBar();
   renderRecoveryMode();
 }
-
 function orbLabel(q){
   return {purple:'Legendary Execution',green:'Done',yellow:'Done poorly',gray:'N/A',red:'Skipped'}[q]||'Rate quality';
 }
@@ -1471,7 +1479,7 @@ function renderToday(){
         <div class="check"><span class="check-mark">✓</span></div>
         <div style="flex:1;"><div class="task-name">${task.name}</div>
         <div class="task-time">${task.time}${_isDone&&data[task.id+'_ts']?' · done '+fmtTime(data[task.id+'_ts']):''}</div></div>
-        ${_qCfg?`<div class="q-orb-tap" onclick="event.stopPropagation();cycleQuality(${selectedDay},'${task.id}')" title="${orbLabel(_q)}${_grayWarn?' — gray '+(_grayWarn==='locked'?'LOCKED':'warning'):''}">
+        ${_qCfg?`<div class=\"q-orb-tap\" data-taskid=\"${task.id}\" onclick=\"event.stopPropagation();cycleQuality(${selectedDay},'${task.id}')\" title=\"${orbLabel(_q)}${_grayWarn?' — gray '+(_grayWarn==='locked'?'LOCKED':'warning'):''}\">\n
         ${renderOrb(_q,task.id)}
         ${_grayWarn?`<span class="gray-warn-badge ${_grayWarn}">${_grayWarn==='locked'?'🔒':'⚠'}</span>`:''}
 
