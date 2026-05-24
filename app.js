@@ -421,6 +421,7 @@ if(!dogTasks.shared)dogTasks.shared=DEFAULT_DOG_TASKS.shared;
 if(!dogTasks.mental)dogTasks.mental=DEFAULT_DOG_TASKS.mental;
 
 let shopCat='all', spinCat='clean', spinProject='all', selectedDay=new Date().getDay(), spinDuration=5;
+let _selectedWeekOffset=0, _lastWeekExpanded=false, _nextWeekExpanded=false;
 let timerInterval=null, timerSeconds=0, timerRunning=false;
 let qualityState=load('dr-quality',{});
 let collapseState=load('dr-collapse',{});
@@ -1272,20 +1273,143 @@ function _dragEnd(){
   _dragEl=null;_dragSectionEl=null;
 }
 
+function _toggleWeekPanel(which){
+  if(which==='last'){_lastWeekExpanded=!_lastWeekExpanded;_nextWeekExpanded=false;}
+  else{_nextWeekExpanded=!_nextWeekExpanded;_lastWeekExpanded=false;}
+  _renderWeekPanel();
+}
+
+function _renderWeekPanel(){
+  let panel=document.getElementById('week-expand-panel');
+  if(!panel){
+    panel=document.createElement('div');
+    panel.id='week-expand-panel';
+    panel.className='week-expand-panel';
+    const strip=document.getElementById('date-strip');
+    strip.insertAdjacentElement('afterend',panel);
+  }
+  if(!_lastWeekExpanded&&!_nextWeekExpanded){panel.style.display='none';panel.innerHTML='';return;}
+  panel.style.display='flex';
+  panel.innerHTML='';
+  const now=new Date();
+  const todayDow=now.getDay();
+  const monday=new Date(now);
+  monday.setDate(now.getDate()-((todayDow+6)%7));
+  const offset=_lastWeekExpanded?-7:7;
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);d.setDate(monday.getDate()+offset+i);
+    const dow=d.getDay();
+    const isPast=d<=now;
+    const pct=isPast?dayPct(dow):null;
+    const taskCount=!isPast?getScheduleFor(dow).reduce((a,s)=>a+s.tasks.length,0):null;
+    const btn=document.createElement('button');
+    btn.className='date-pill date-pill-sm'+(_lastWeekExpanded?' date-pill-past':' date-pill-future');
+    btn.innerHTML=`<span class="dp-day">${['S','M','T','W','T','F','S'][dow]}</span>`
+      +`<span class="dp-date">${d.getDate()}</span>`
+      +`<span class="dp-pct">${isPast?(pct||0)+'%':(taskCount||0)+'t'}</span>`;
+    btn.onclick=()=>{
+      selectedDay=dow;
+      _selectedWeekOffset=_lastWeekExpanded?-1:1;
+      _lastWeekExpanded=false;_nextWeekExpanded=false;
+      renderToday();
+    };
+    panel.appendChild(btn);
+  }
+}
+
+function _renderReturnToToday(){
+  let banner=document.getElementById('return-to-today');
+  if(!banner){
+    banner=document.createElement('div');
+    banner.id='return-to-today';
+    banner.className='return-to-today-banner';
+    banner.onclick=()=>{
+      selectedDay=new Date().getDay();
+      _selectedWeekOffset=0;
+      _lastWeekExpanded=false;
+      _nextWeekExpanded=false;
+      renderToday();
+    };
+    const list=document.getElementById('task-list');
+    if(list)list.insertAdjacentElement('beforebegin',banner);
+  }
+  const isToday=selectedDay===new Date().getDay()&&_selectedWeekOffset===0;
+  banner.style.display=isToday?'none':'block';
+  if(!isToday){
+    const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const now=new Date();
+    const monday=new Date(now);monday.setDate(now.getDate()-((now.getDay()+6)%7));
+    const offset=(_selectedWeekOffset||0)*7;
+    const d=new Date(monday);
+    d.setDate(monday.getDate()+offset+((selectedDay+6)%7));
+    banner.textContent=`VIEWING ${days[selectedDay].toUpperCase()}, ${d.toLocaleDateString('en-US',{month:'long',day:'numeric'}).toUpperCase()} — TAP TO RETURN TO TODAY`;
+  }
+}
+
 function renderToday(){
   const ti=new Date().getDay();
   document.getElementById('today-heading').textContent=DAYS[ti];
   document.getElementById('today-sub').textContent=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}).toUpperCase();
 
   const strip=document.getElementById('date-strip');strip.innerHTML='';
-  const todayDowOffset=(new Date().getDay()+6)%7; // 0=Mon, 6=Sun
-  for(let i=0;i<=todayDowOffset;i++){
-    const btn=document.createElement('button');const p=dayPct(i);
-    btn.className='date-pill'+(i===selectedDay?' active':'')+(p===100&&i!==selectedDay?' done':'');
-    btn.textContent=SHORT[i]+(p>0&&i!==selectedDay?' '+p+'%':'');
-    btn.onclick=()=>{selectedDay=i;renderToday();};
+  const now=new Date();
+  const todayDow=now.getDay(); // 0=Sun
+  // Build Mon–Sun of current week
+  const monday=new Date(now);
+  monday.setDate(now.getDate()-((todayDow+6)%7));
+
+  // LAST WEEK pill
+  const lwBtn=document.createElement('button');
+  lwBtn.className='date-pill date-pill-week';
+  lwBtn.innerHTML='◂ LAST<br>WEEK';
+  lwBtn.onclick=()=>_toggleWeekPanel('last');
+  strip.appendChild(lwBtn);
+
+  // Current week pills Mon–Sun
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    const dow=d.getDay();
+    const isToday=d.toDateString()===now.toDateString();
+    const isPast=d<now&&!isToday;
+    const isFuture=d>now&&!isToday;
+    const isSelected=selectedDay===dow&&_selectedWeekOffset===0;
+    const pct=isPast||isToday?dayPct(dow):null;
+    const taskCount=isFuture?getScheduleFor(dow).reduce((a,s)=>a+s.tasks.length,0):null;
+
+    const btn=document.createElement('button');
+    let cls='date-pill';
+    if(isToday)cls+=' date-pill-today';
+    else if(isSelected)cls+=' active';
+    else if(isPast&&pct===100)cls+=' date-pill-cleared';
+    else if(isPast&&pct>0)cls+=' date-pill-partial';
+    else if(isPast)cls+=' date-pill-past';
+    else if(isFuture)cls+=' date-pill-future';
+    btn.className=cls;
+    btn.dataset.dow=dow;
+    btn.dataset.weekOffset=0;
+    btn.innerHTML=`<span class="dp-day">${['S','M','T','W','T','F','S'][dow]}</span>`
+      +`<span class="dp-date">${d.getDate()}</span>`
+      +(isToday?'':isPast?`<span class="dp-pct">${pct||0}%</span>`
+        :isFuture?`<span class="dp-pct">${taskCount}t</span>`:'');
+    btn.onclick=()=>{selectedDay=dow;_selectedWeekOffset=0;renderToday();};
     strip.appendChild(btn);
   }
+
+  // NEXT WEEK pill
+  const nwBtn=document.createElement('button');
+  nwBtn.className='date-pill date-pill-week';
+  nwBtn.innerHTML='NEXT<br>WEEK ▸';
+  nwBtn.onclick=()=>_toggleWeekPanel('next');
+  strip.appendChild(nwBtn);
+
+  // Expand panels
+  _renderWeekPanel();
+
+  // Scroll today into view
+  setTimeout(()=>{
+    const todayPill=strip.querySelector('.date-pill-today');
+    if(todayPill)todayPill.scrollIntoView({inline:'center',behavior:'smooth'});
+  },50);
 
   const sc=getScheduleFor(selectedDay);
   const allT=sc.reduce((a,s)=>a.concat(s.tasks),[]);
@@ -1307,8 +1431,9 @@ function renderToday(){
   renderFloorCountdown();
   renderRecoveryMode();
   renderCollapseEvent();
-  renderFloorConditionBanner();
   renderScoreboard();
+  _renderReturnToToday();
+  renderFloorConditionBanner();
   const isComplete=_recovery?(done>=3&&total>0):(pct===100&&total>0);
   document.getElementById('congrats-banner').style.display=isComplete?'block':'none';
   if(isComplete&&!wasComplete)fireConfetti();
