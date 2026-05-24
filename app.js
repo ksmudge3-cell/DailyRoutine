@@ -1109,8 +1109,10 @@ function cycleQuality(dayIdx, taskId){
   renderToday();
   window._skipGreeting=false;
   requestAnimationFrame(()=>{
-    document.documentElement.scrollTop=_scroll;
-    document.body.scrollTop=_scroll;
+    requestAnimationFrame(()=>{
+      document.documentElement.scrollTop=_scroll;
+      document.body.scrollTop=_scroll;
+    });
   });
   renderStatusBar();
   renderRecoveryMode();
