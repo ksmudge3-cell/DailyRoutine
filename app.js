@@ -1194,6 +1194,86 @@ function isRecoveryMode(){
   return countDebuffs()>=4;
 }
 
+// ── Drag to reorder ───────────────────────────────────────────────────────
+let _dragEl=null,_dragGhost=null,_dragSectionEl=null,_dragOrigIdx=null,_dragSchedType=null,_dragSectionIdx=null;
+
+function _dragStart(el,e){
+  _dragEl=el;
+  _dragSectionEl=el.parentElement;
+  _dragSectionIdx=parseInt(el.dataset.sectionIdx);
+  _dragSchedType=el.closest('[data-schedtype]')?.dataset.schedtype||
+    (isWeekend(selectedDay)?'weekend':'weekday');
+
+  // Ghost
+  const r=el.getBoundingClientRect();
+  _dragGhost=el.cloneNode(true);
+  _dragGhost.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;
+    pointer-events:none;opacity:0.85;z-index:9999;transform:scale(1.02);
+    box-shadow:0 4px 16px rgba(0,0,0,0.5);transition:none;`;
+  document.body.appendChild(_dragGhost);
+
+  el.classList.add('dragging');
+  el.style.opacity='0.3';
+  _dragOrigIdx=_getTaskNodes(_dragSectionEl).indexOf(el);
+
+  document.addEventListener('pointermove',_dragMove,{passive:false});
+  document.addEventListener('pointerup',_dragEnd);
+  document.addEventListener('pointercancel',_dragEnd);
+}
+
+function _getTaskNodes(sectionEl){
+  return Array.from(sectionEl.querySelectorAll('.task'));
+}
+
+function _dragMove(e){
+  if(!_dragEl||!_dragGhost)return;
+  e.preventDefault();
+  const cy=e.clientY||e.touches?.[0]?.clientY||0;
+  const cx=e.clientX||e.touches?.[0]?.clientX||0;
+  _dragGhost.style.top=(cy-30)+'px';
+  _dragGhost.style.left=(cx-40)+'px';
+
+  // Find task we're hovering over in the same section
+  const nodes=_getTaskNodes(_dragSectionEl);
+  let target=null;
+  for(const n of nodes){
+    if(n===_dragEl)continue;
+    const r=n.getBoundingClientRect();
+    if(cy>r.top&&cy<r.bottom){target=n;break;}
+  }
+  if(!target)return;
+  const r=target.getBoundingClientRect();
+  const insertBefore=cy<r.top+r.height/2;
+  if(insertBefore){
+    _dragSectionEl.insertBefore(_dragEl,target);
+  } else {
+    target.insertAdjacentElement('afterend',_dragEl);
+  }
+}
+
+function _dragEnd(){
+  document.removeEventListener('pointermove',_dragMove);
+  document.removeEventListener('pointerup',_dragEnd);
+  document.removeEventListener('pointercancel',_dragEnd);
+
+  if(_dragGhost){_dragGhost.remove();_dragGhost=null;}
+  if(!_dragEl)return;
+
+  _dragEl.classList.remove('dragging');
+  _dragEl.style.opacity='';
+
+  // Persist new order
+  const nodes=_getTaskNodes(_dragSectionEl);
+  const sc=_dragSchedType==='weekday'?schedule.weekday:schedule.weekend;
+  const section=sc[_dragSectionIdx];
+  if(section){
+    const newOrder=nodes.map(n=>n.dataset.taskId);
+    section.tasks.sort((a,b)=>newOrder.indexOf(a.id)-newOrder.indexOf(b.id));
+    newOrder.forEach((id,i)=>{const t=section.tasks.find(t=>t.id===id);if(t)t.order=i;});
+    save('dr-schedule',schedule);
+  }
+  _dragEl=null;_dragSectionEl=null;
+}
 
 function renderToday(){
   const ti=new Date().getDay();
@@ -1262,7 +1342,10 @@ function renderToday(){
       // Gray-checked = N/A: show checked but dimmed
       const _isNA=_q==='gray';
       div.className='task'+(_isDone&&!_isNA?' done':'')+(_q==='yellow'?' quality-low':'')+(_isNA?' task-na':'');
-      div.innerHTML=`<div class="check"><span class="check-mark">✓</span></div>
+      div.dataset.taskId=task.id;
+      div.dataset.sectionIdx=sectionIdx;
+      div.innerHTML=`${!isSundayInjected?'<div class="task-drag-handle" title="Hold to reorder">⠿</div>':''}
+        <div class="check"><span class="check-mark">✓</span></div>
         <div style="flex:1;"><div class="task-name">${task.name}</div>
         <div class="task-time">${task.time}${_isDone&&data[task.id+'_ts']?' · done '+fmtTime(data[task.id+'_ts']):''}</div></div>
         ${_qCfg?`<div class="q-orb-tap" onclick="event.stopPropagation();cycleQuality(${selectedDay},'${task.id}')" title="${orbLabel(_q)}${_grayWarn?' — gray '+(_grayWarn==='locked'?'LOCKED':'warning'):''}">
@@ -1272,11 +1355,16 @@ function renderToday(){
         </div>` : (!isSundayInjected?'<span class="task-edit-hint">hold to edit</span>':'')}`;
 
       // Tap = toggle, long press = edit
-      div.addEventListener('pointerdown',()=>{
+      div.addEventListener('pointerdown',(e)=>{
+        // If pointer is on the drag handle, start drag instead
+        if(e.target.classList.contains('task-drag-handle')){
+          e.preventDefault();
+          _dragStart(div,e);
+          return;
+        }
         if(!isSundayInjected){
-          // For Sunday injected tasks, find real taskIdx in base schedule
           let realTaskIdx=taskIdx;
-          if(isSunday(selectedDay)&&sectionIdx===0)realTaskIdx=Math.max(0,taskIdx-1); // adjust for injected task
+          if(isSunday(selectedDay)&&sectionIdx===0)realTaskIdx=Math.max(0,taskIdx-1);
           lpStart(()=>{if(!isSundayInjected)openEditOverlayById(schedType,task.id);});
         }
       });
