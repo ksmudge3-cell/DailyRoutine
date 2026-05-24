@@ -88,7 +88,7 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .btn-ghost { background: none; color: var(--muted); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 8px 16px; font-family: var(--mono); font-size: 12px; cursor: pointer; }
 /* Edit overlay */
 .edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 300; display: flex; align-items: flex-end; backdrop-filter: blur(4px); }
-.edit-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 24px 20px; padding-bottom: calc(60px + env(safe-area-inset-bottom)); border-top: 0.5px solid var(--border2); }
+.edit-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 24px 20px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); border-top: 0.5px solid var(--border2); }
 .edit-sheet h3 { font-family: var(--serif); font-size: 18px; font-weight: 300; margin-bottom: 16px; }
 .edit-sheet label { font-size: 10px; color: var(--hint); letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 5px; margin-top: 12px; }
 .edit-sheet input { width: 100%; background: var(--surface2); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text); font-family: var(--mono); font-size: 13px; outline: none; }
@@ -481,7 +481,7 @@ body::after { content: ''; position: fixed; inset: 0; background: var(--scanline
 /* ── PHASE 2: RANDOM ENCOUNTER OVERLAY ────────────────── */
 .encounter-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; /* MUST stay 1000 — must sit above bottom-nav(100), edit-overlay(300) & toasts(500). Do NOT lower. */ display: none; align-items: flex-end; backdrop-filter: blur(6px); }
 .encounter-overlay.show, .encounter-overlay.active { display: flex; }
-.encounter-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 24px 20px; padding-bottom: calc(60px + env(safe-area-inset-bottom)); border-top: 0.5px solid var(--border2); max-height: 85vh; overflow-y: auto; }
+.encounter-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 24px 20px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); border-top: 0.5px solid var(--border2); max-height: 85vh; overflow-y: auto; }
 .encounter-type { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; }
 .encounter-title { font-family: var(--serif); font-size: 24px; font-weight: 300; color: var(--text); margin-bottom: 4px; }
 .encounter-flavor { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 16px; font-family: var(--font-body); }
@@ -1663,9 +1663,9 @@ body { font-family: var(--font-body); }
 .donut-input-row {
   display: flex;
   gap: 8px;
-  padding: 10px 0 calc(40px + env(safe-area-inset-bottom));
+  padding: 10px 0;
   position: sticky;
-  bottom: 0;
+  bottom: calc(40px + env(safe-area-inset-bottom));
   background: var(--bg);
   border-top: 0.5px solid var(--border);
 }
@@ -2911,10 +2911,11 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 
 /* ── Input row ───────────────────────────────────────────── */
 .comm-input-row {
-  flex: 0 0 auto;
   display: flex;
   gap: 8px;
-  padding: 10px 0 calc(40px + env(safe-area-inset-bottom));
+  padding: 10px 0;
+  position: sticky;
+  bottom: calc(40px + env(safe-area-inset-bottom));
   background: var(--bg);
   border-top: 0.5px solid var(--border);
 }
