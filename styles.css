@@ -2697,11 +2697,9 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 
 
 #system-greeting {
-  height: 72px;
-  overflow-y: auto;
-  scrollbar-width: none;
+  height: auto;
+  overflow-y: visible;
 }
-#system-greeting::-webkit-scrollbar { display: none; }
 
 #recovery-mode-banner,
 #collapse-event-banner,
