@@ -1665,12 +1665,12 @@ body { font-family: var(--font-body); }
   gap: 8px;
   padding: 10px 16px;
   position: fixed;
-  bottom: calc(56px + env(safe-area-inset-bottom));
+  bottom: calc(40px + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
   background: var(--bg);
   border-top: 0.5px solid var(--border);
-  z-index: 50;
+  z-index: 101;
 }
 .donut-input {
   flex: 1;
