@@ -566,8 +566,21 @@ function calcStreak(){
     const idSet=new Set(ids);
     const done=Object.entries(state[k]||{}).filter(([key,v])=>v&&idSet.has(key)).length;
     if(i===0&&done===0)continue;
-    // Recovery Mode (today only): 3 tasks cleared the floor → streak protected
-    if(i===0&&isRecoveryMode()&&done>=3){s++;continue;}
+    // Recovery Mode (today only): 3 tasks cleared the floor → streak protected.
+    // Inline the recovery-mode check to avoid the cycle:
+    //   calcStreak → isRecoveryMode → countDebuffs → getActiveBuffs → calcStreak
+    // getActiveBuffs computes a streak-buff slot via calcStreak, so calling
+    // isRecoveryMode from inside calcStreak recurses indefinitely. We cover the
+    // two non-recursing recovery sources here: declared recovery-mode conditions
+    // (Chronic Flare, Low Capacity Day) and total-collapse recovery. The
+    // countDebuffs >= 4 branch of isRecoveryMode is intentionally NOT checked
+    // here — if Sara wants streak protection from debuff overload, she can
+    // declare Low Capacity Day, which routes through the condition branch.
+    if(i===0&&done>=3){
+      const _collapseTotal=collapseState.active&&collapseState.active.type==='total'&&collapseState.active.applyDate===todayStr();
+      const _fcRecovery=getActiveFloorCondition()?.effect==='recovery-mode';
+      if(_collapseTotal||_fcRecovery){s++;continue;}
+    }
     if(ids.length>0&&done>=Math.ceil(ids.length*0.8))s++;
     else if(i>0)break;
   }
