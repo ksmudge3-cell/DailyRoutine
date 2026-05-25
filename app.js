@@ -1556,6 +1556,12 @@ function _renderReturnToToday(){
 }
 
 function renderToday(){
+  // Scroll preservation: renderToday wipes #date-strip and #task-list innerHTML,
+  // which momentarily shrinks the page. The browser clamps scrollTop to the
+  // (now-tiny) max and doesn't restore once content rebuilds — that's why every
+  // task tap was scrolling to the top. Snapshot before any wipe, restore via
+  // rAF so it lands after layout settles with the rebuilt list.
+  const _scrollY=window.scrollY||document.documentElement.scrollTop||document.body.scrollTop||0;
   const ti=new Date().getDay();
   document.getElementById('today-heading').textContent=DAYS[ti];
   document.getElementById('today-sub').textContent=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}).toUpperCase();
@@ -1741,6 +1747,13 @@ function renderToday(){
   }
 
   renderBonusToday(selectedDay);
+
+  // Restore scroll after layout settles (see snapshot at top of function).
+  // Only restore if there was a meaningful scroll position — avoids fighting
+  // legitimate scroll-to-top behavior on init or fresh tab switches.
+  if(_scrollY>0){
+    requestAnimationFrame(()=>{window.scrollTo(0,_scrollY);});
+  }
 }
 
 /* ─── DOGS ──────────────────────────────────────────────────────────────── */
