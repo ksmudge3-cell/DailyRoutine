@@ -391,7 +391,7 @@ function load(k,d){return loadLocal(k,d);}
 // Pull fresh state from Supabase when the device becomes visible again.
 // Skips if a local write is pending (the pending write will sync and propagate).
 let pulling=false;
-async function pullFromSupabase(){
+async function pullFromSupabase(opts){
   if(pulling||syncTimer)return; // active local write pending: let it sync first
   pulling=true;
   try{
@@ -402,15 +402,19 @@ async function pullFromSupabase(){
       checkDonutChatReset();
       checkOneOffCleanup();
       if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;saveLocal('dr-floor-condition',null);}
-      // Re-render whichever screen is currently showing
-      showRoom(loadLocal('dr-last-screen','today')||'today');
+      // Re-render only when caller asks for it. Visibility-triggered pulls pass
+      // rerender:true (user just refocused, fresh render is expected). Background
+      // 30s polls pass nothing — data lands in memory + localStorage and the next
+      // user interaction renders it naturally, without flickering the screen
+      // every 30s while the user is actively tapping.
+      if(opts&&opts.rerender)showRoom(loadLocal('dr-last-screen','today')||'today');
     }
   }catch(e){console.warn('Pull failed',e);}
   finally{pulling=false;}
 }
 
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible')pullFromSupabase();
+  if(document.visibilityState==='visible')pullFromSupabase({rerender:true});
 });
 
 /* ─── STATE ─────────────────────────────────────────────────────────────── */
