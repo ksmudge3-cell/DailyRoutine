@@ -310,14 +310,60 @@
 
 <script src="assets.js"></script>
 <script src="app.js?v=4"></script>
-<script>
-if('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/DailyRoutine/service-worker.js')
-      .then(r => console.log('SW registered'))
-      .catch(e => console.log('SW failed:', e));
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+  import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAzaMjUmpAsvzNg3ZbZ9br2Y8a6IzADELg",
+    authDomain: "daily-crawler-chronicles.firebaseapp.com",
+    projectId: "daily-crawler-chronicles",
+    storageBucket: "daily-crawler-chronicles.firebasestorage.app",
+    messagingSenderId: "127370266508",
+    appId: "1:127370266508:web:59cc8d93482e897c9478a9"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const messaging = getMessaging(app);
+  let swReg = null;
+
+  window.addEventListener('load', async () => {
+    if ('serviceWorker' in navigator) {
+      try {
+        swReg = await navigator.serviceWorker.register('/DailyRoutine/service-worker.js');
+        console.log('SW registered');
+      } catch (e) {
+        console.log('SW failed:', e);
+      }
+    }
   });
-}
+
+  // Called by app.js when user taps Allow in the Donut permission sheet
+  window.initPushNotifications = async function() {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return false;
+      const token = await getToken(messaging, {
+        vapidKey: 'BERHIHgTQl16AzAcNXTwZOGsGbBmXE3gSHYSDpWpguPhiUDuPG58Uqevx2Q0TEIRgmCeTXc-idj3AZjNTd7VkfU',
+        serviceWorkerRegistration: swReg
+      });
+      if (token && window.saveFCMToken) window.saveFCMToken(token);
+      return !!token;
+    } catch (err) {
+      console.log('Push setup failed:', err);
+      return false;
+    }
+  };
+
+  // Foreground: show as in-app Donut message instead of system notification
+  onMessage(messaging, (payload) => {
+    if (window.showDonutPushMessage) {
+      window.showDonutPushMessage(
+        payload.notification.title,
+        payload.notification.body
+      );
+    }
+  });
 </script>
 </body>
 </html>
