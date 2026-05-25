@@ -117,7 +117,8 @@ const DEFAULT_SCHEDULE={
       {id:'nightteeth',name:'Brush + floss + mouthwash',time:'9:10 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:5},
       {id:'meds-pm',name:'Evening medications',time:'9:10 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:6},
       {id:'winddown',name:'No screens — wind down',time:'9:15 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:7},
-      {id:'sleep',name:'Lights out',time:'9:30–10 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:8},
+      {id:'evening-log',name:'Evening Log',time:'9:20 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:8},
+      {id:'sleep',name:'Lights out',time:'9:30–10 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:9},
     ]}
   ],
   weekend:[
@@ -143,7 +144,8 @@ const DEFAULT_SCHEDULE={
       {id:'nightteeth',name:'Brush + floss + mouthwash',time:'9:10 PM',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:2},
       {id:'meds-pm',name:'Evening medications',time:'9:10 PM',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:3},
       {id:'nightprep',name:'Night prep',time:'8:30 PM',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:4},
-      {id:'sleep',name:'Lights out',time:'9:30–10 PM',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:5},
+      {id:'evening-log',name:'Evening Log',time:'9:20 PM',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:5},
+      {id:'sleep',name:'Lights out',time:'9:30–10 PM',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:6},
     ]}
   ]
 };
@@ -256,7 +258,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -289,6 +291,9 @@ async function loadFromSupabase(){
         if(wdEve&&!wdEve.tasks.find(t=>t.id==='meds-pm')){const si=wdEve.tasks.findIndex(t=>t.id==='sleep');si>-1?wdEve.tasks.splice(si,0,{id:'meds-pm',name:'Evening medications',time:'9:10 PM'}):wdEve.tasks.push({id:'meds-pm',name:'Evening medications',time:'9:10 PM'});}
         if(weMorn&&!weMorn.tasks.find(t=>t.id==='meds-am'))weMorn.tasks.unshift({id:'meds-am',name:'Morning medications',time:'Morning'});
         if(weEve&&!weEve.tasks.find(t=>t.id==='meds-pm')){const si=weEve.tasks.findIndex(t=>t.id==='sleep');si>-1?weEve.tasks.splice(si,0,{id:'meds-pm',name:'Evening medications',time:'9:10 PM'}):weEve.tasks.push({id:'meds-pm',name:'Evening medications',time:'9:10 PM'});}
+        // MIGRATION: ensure evening-log exists in Evening sections
+        if(wdEve&&!wdEve.tasks.find(t=>t.id==='evening-log')){const si=wdEve.tasks.findIndex(t=>t.id==='sleep');si>-1?wdEve.tasks.splice(si,0,{id:'evening-log',name:'Evening Log',time:'9:20 PM'}):wdEve.tasks.push({id:'evening-log',name:'Evening Log',time:'9:20 PM'});}
+        if(weEve&&!weEve.tasks.find(t=>t.id==='evening-log')){const si=weEve.tasks.findIndex(t=>t.id==='sleep');si>-1?weEve.tasks.splice(si,0,{id:'evening-log',name:'Evening Log',time:'9:20 PM'}):weEve.tasks.push({id:'evening-log',name:'Evening Log',time:'9:20 PM'});}
         // MIGRATION: ensure gym task exists in weekday morning (insert before shower)
         if(wdMorn&&!wdMorn.tasks.find(t=>t.id==='gym')){
           const showerIdx=wdMorn.tasks.findIndex(t=>t.id==='shower');
@@ -356,6 +361,7 @@ async function loadFromSupabase(){
         else if(d.floorCondition===null)floorCondition=null;
         saveLocal('dr-floor-condition',floorCondition);
       }
+      if(d.moodCheckins)moodCheckins=d.moodCheckins;
       // Explicit save list — keys must match what init() re-loads (line ~4400).
       // Auto camelCase→kebab conversion was lossy (xpState→dr-xp-state, but actual key is dr-xp).
       saveLocal('dr-state',state);
@@ -375,6 +381,7 @@ async function loadFromSupabase(){
       saveLocal('dr-rewards',rewardsState);
       saveLocal('dr-xp',xpState);
       saveLocal('dr-quality',qualityState);
+      saveLocal('dr-mood-checkins',moodCheckins);
       // Read-only load. Removed the previous auto-sync-back (setTimeout syncToSupabase 2000)
       // — it was the mechanism that propagated the wipe across devices.
       return true;
@@ -474,6 +481,7 @@ let donutBiscuitState=load('dr-donut-biscuit',{active:false,expiresAt:null});
 let fcmToken=loadLocal('dr-fcm-token',null);
 let pushEnabled=load('dr-push-enabled',null); // null=never asked, true=on, false=declined
 let pushDeclinedAt=load('dr-push-declined',null);
+let moodCheckins=loadLocal('dr-mood-checkins',{});
 let donutView='donut',donutLoading=false;
 let currentSpinTask=null, reSpinsLeft=3;
 
@@ -1782,6 +1790,7 @@ function renderToday(){
   }
 
   renderBonusToday(selectedDay);
+  renderApothecarySection();
 
   // Restore scroll after layout settles (see snapshot at top of function).
   // Only restore if there was a meaningful scroll position — avoids fighting
@@ -1789,6 +1798,100 @@ function renderToday(){
   if(_scrollY>0){
     requestAnimationFrame(()=>{window.scrollTo(0,_scrollY);});
   }
+}
+
+/* ─── APOTHECARY ─────────────────────────────────────────────────────────── */
+
+function renderApothecarySection(){
+  // Apothecary bonus section on the floor — only shows for today
+  if(selectedDay!==new Date().getDay())return;
+  const list=document.getElementById('task-list');
+  if(!list)return;
+
+  const dk=_dateKey(selectedDate||new Date());
+  const checkins=(moodCheckins[dk])||{};
+
+  const VITALS=[
+    {id:'vitals-10am',label:'Vitals — 10 AM',slot:'10am'},
+    {id:'vitals-2pm', label:'Vitals — 2 PM',  slot:'2pm'},
+    {id:'vitals-5pm', label:'Vitals — 5 PM',  slot:'5pm'},
+  ];
+
+  const sectionWrap=document.createElement('div');
+  sectionWrap.className='task-section-group';
+
+  // Section label — green accent
+  const lbl=document.createElement('div');
+  lbl.className='section-label';
+  lbl.style.cssText='color:var(--green);border-left:2px solid rgba(184,217,38,0.5);padding-left:8px;';
+  lbl.innerHTML=`<span>Apothecary</span><button class="section-add-btn" onclick="showRoom('apothecary')" title="Open Apothecary" style="font-size:11px;color:var(--green);">→</button>`;
+  sectionWrap.appendChild(lbl);
+
+  VITALS.forEach(v=>{
+    const done=!!(checkins[v.slot]?.loggedAt);
+    const div=document.createElement('div');
+    div.className='task'+(done?' done':'');
+    div.style.cssText='cursor:pointer;';
+    div.innerHTML=`<div class="check"><span class="check-mark">✓</span></div>
+      <div style="flex:1;">
+        <div class="task-name"><span style="color:var(--amber-hi);margin-right:4px;">⭐</span>${v.label}</div>
+        <div class="task-time" style="color:rgba(184,217,38,0.7);">BONUS · +2🪙 +5⚡</div>
+      </div>
+      <span style="font-family:var(--font-pixel);font-size:6px;color:var(--hint);letter-spacing:0.05em;padding:2px 5px;border:1px solid rgba(255,255,255,0.1);border-radius:3px;align-self:center;">BONUS</span>`;
+    div.onclick=()=>showRoom('apothecary');
+    sectionWrap.appendChild(div);
+  });
+
+  list.appendChild(sectionWrap);
+}
+
+function renderApothecaryRoom(){
+  const wrap=document.getElementById('apothecary-content');
+  if(!wrap)return;
+  const dk=_dateKey(new Date());
+  const checkins=(moodCheckins[dk])||{};
+
+  const VITALS=[
+    {slot:'10am',label:'10 AM Check-in'},
+    {slot:'2pm', label:'2 PM Check-in'},
+    {slot:'5pm', label:'5 PM Check-in'},
+  ];
+
+  const todayEntries=VITALS.map(v=>{
+    const entry=checkins[v.slot];
+    if(!entry?.loggedAt) return `<div class="task" style="opacity:0.5;cursor:default;">
+      <div class="check"></div>
+      <div style="flex:1;"><div class="task-name">${v.label}</div>
+      <div class="task-time" style="color:rgba(184,217,38,0.5);">PENDING</div></div>
+      <span style="font-family:var(--font-pixel);font-size:6px;color:var(--hint);padding:2px 5px;border:1px solid rgba(255,255,255,0.08);border-radius:3px;align-self:center;">BONUS</span></div>`;
+    const icons=(entry.icons||[]).join(' ');
+    const time=new Date(entry.loggedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+    return `<div class="task done">
+      <div class="check"><span class="check-mark">✓</span></div>
+      <div style="flex:1;"><div class="task-name">${v.label}</div>
+      <div class="task-time">${time}${icons?' · '+icons:''}${entry.overall?' · Overall: '+entry.overall+'/5':''}</div></div></div>`;
+  }).join('');
+
+  const eveningCheckin=checkins.evening;
+  const eveningHtml=eveningCheckin?.loggedAt
+    ? `<div class="task done"><div class="check"><span class="check-mark">✓</span></div>
+        <div style="flex:1;"><div class="task-name">Evening Log</div>
+        <div class="task-time">Submitted · Mood: ${eveningCheckin.mood}/5 · Energy: ${eveningCheckin.energy}/5</div></div></div>`
+    : `<div class="task" style="opacity:0.5;cursor:default;"><div class="check"></div>
+        <div style="flex:1;"><div class="task-name">Evening Log</div>
+        <div class="task-time">Not yet submitted</div></div></div>`;
+
+  wrap.innerHTML=`
+    <div style="padding:0 16px 24px;">
+      <div class="section-label" style="color:var(--green);margin-top:16px;">Today's Vitals</div>
+      ${todayEntries}
+      <div class="section-label" style="color:var(--green);margin-top:20px;">Evening Debrief</div>
+      ${eveningHtml}
+      <div style="margin-top:24px;padding:16px;background:var(--surface);border:1px solid rgba(184,217,38,0.15);border-radius:10px;text-align:center;">
+        <div style="font-family:var(--font-pixel);font-size:8px;color:var(--hint);letter-spacing:0.05em;margin-bottom:8px;">COMING SOON</div>
+        <div style="font-family:var(--font-body);font-size:14px;color:var(--pearl);opacity:0.6;">Check-in UI and evening debrief<br>coming in the next build.</div>
+      </div>
+    </div>`;
 }
 
 /* ─── DOGS ──────────────────────────────────────────────────────────────── */
@@ -5367,10 +5470,11 @@ const ROOMS={
   rewards:{name:'The Vault',       label:'VAULT',    door:()=>ENV_DOOR_GOLD_CLOSED,header:'THE VAULT',       color:'var(--amber)'},
   profile:{name:'The War Room',    label:'WAR ROOM', door:()=>ENV_DOOR_TEAL_CROSS, header:'THE WAR ROOM',    color:'var(--teal)'},
   coach:  {name:"Donut's Chamber", label:'DONUT',    door:()=>ENV_DOOR_ROYAL,      header:"DONUT'S CHAMBER", color:'var(--purple)'},
+  apothecary:{name:'The Apothecary',label:'APOTH',  door:()=>typeof ENV_DOOR_APOTHECARY!=='undefined'?ENV_DOOR_APOTHECARY:ENV_DOOR_TEAL_LOCKED, header:'THE APOTHECARY', color:'var(--green)'},
 };
 
 const ROOM_ADJ={
-  today:  ['dogs','gym'],
+  today:  ['dogs','gym','apothecary'],
   dogs:   ['today','coach'],
   spin:   ['today','gym'],
   gym:    ['today','spin','profile'],
@@ -5378,6 +5482,7 @@ const ROOM_ADJ={
   rewards:['profile'],
   profile:['gym','rewards','inbox'],
   coach:  ['dogs','today'],
+  apothecary:['today'],
 };
 
 
@@ -5391,10 +5496,10 @@ const MAP_POS={
   profile:{x:28, y:63},  // The War Room
   rewards:{x:73, y:65},  // The Vault
   inbox:  {x:47, y:75},  // The Comm Tower
+  apothecary:{x:17,y:15},// The Apothecary
 };
 
 const SEALED_ROOMS=[
-  {id:'apothecary',      label:'The Apothecary',     x:17,  y:15},
   {id:'mess-hall',       label:'The Mess Hall',       x:83, y:15},
   {id:'archive',         label:'The Archive',         x:23,  y:87},
   {id:'shrine',          label:'The Shrine',          x:47, y:88},
@@ -5460,6 +5565,7 @@ function showRoom(name){
     else if(name==='profile')renderProfile();
     else if(name==='coach')renderCoach();
     else if(name==='gym')renderGym();
+    else if(name==='apothecary')renderApothecaryRoom();
   },150);
 }
 
