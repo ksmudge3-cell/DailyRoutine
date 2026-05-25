@@ -256,15 +256,25 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
 
 async function loadFromSupabase(){
   try{
+    // Race guard: snapshot write counter before the fetch. If a local write
+    // happens during the network roundtrip, abort the apply — the in-flight
+    // syncTimer will push local changes up shortly. Without this guard, the
+    // load overwrites the freshly-modified in-memory state at line ~270 and
+    // the 1.5s syncTimer then writes the clobbered state back to Supabase.
+    const _writesAtStart=_writeCounter;
     const res=await fetch(`${SUPABASE_URL}/rest/v1/routine_data?id=eq.${SYNC_ID}&select=data`,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     const rows=await res.json();
+    if(_writeCounter!==_writesAtStart){
+      console.warn('Sync pull aborted: local write landed during fetch');
+      return false;
+    }
     if(rows&&rows.length&&rows[0].data){
       const d=rows[0].data;
       if(d.state)state=d.state;
@@ -337,6 +347,12 @@ async function loadFromSupabase(){
       if(d.collapseLog)collapseLog=d.collapseLog;
       if(d.collapseState)collapseState=d.collapseState;
       if(d.archived){archived=d.archived;if(!archived.tasks)archived.tasks=[];}
+      if(d.floorCondition!==undefined){
+        // Today-scoped: only adopt if it's for today; otherwise leave local null
+        if(d.floorCondition&&d.floorCondition.date===todayStr())floorCondition=d.floorCondition;
+        else if(d.floorCondition===null)floorCondition=null;
+        saveLocal('dr-floor-condition',floorCondition);
+      }
       // Explicit save list — keys must match what init() re-loads (line ~4400).
       // Auto camelCase→kebab conversion was lossy (xpState→dr-xp-state, but actual key is dr-xp).
       saveLocal('dr-state',state);
@@ -365,7 +381,11 @@ async function loadFromSupabase(){
 }
 
 let syncTimer=null;
-function save(k,v){saveLocal(k,v);clearTimeout(syncTimer);syncTimer=setTimeout(()=>{syncToSupabase();syncTimer=null;},1500);}
+// Monotonic counter: bumped on every local save(). loadFromSupabase snapshots
+// it before the network fetch and aborts the apply if it changed during the
+// roundtrip (i.e. a local write happened that we'd otherwise clobber).
+let _writeCounter=0;
+function save(k,v){saveLocal(k,v);_writeCounter++;clearTimeout(syncTimer);syncTimer=setTimeout(()=>{syncToSupabase();syncTimer=null;},1500);}
 function load(k,d){return loadLocal(k,d);}
 
 // Pull fresh state from Supabase when the device becomes visible again.
@@ -508,11 +528,23 @@ function dayPct(idx, date){
   const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
   const ds=state[k]||{};
   const dq=qualityState[k]||{};
-  const sc=getScheduleFor(idx);
+  const sc=getScheduleFor(idx,d);
   const all=sc.reduce((a,s)=>a.concat(s.tasks),[]);
   const naSet=new Set(all.filter(t=>dq[t.id]==='gray').map(t=>t.id));
-  const total=all.filter(t=>!naSet.has(t.id)).length;
-  const done=all.filter(t=>!naSet.has(t.id)&&ds[t.id]).length;
+  // Floor condition: today only — exclude recovering/reconfigured tasks from total + done.
+  // Condition state is today-scoped (single object, midnight cleanup), so no retroactive apply.
+  const isToday=d.toDateString()===new Date().toDateString();
+  const recoveringSet=new Set();
+  if(isToday){
+    const fc=getActiveFloorCondition();
+    if(fc&&(fc.effect==='recovering'||fc.effect==='reconfigured')){
+      if(fc.tasks==='all')all.forEach(t=>recoveringSet.add(t.id));
+      else (fc.tasks||[]).forEach(id=>recoveringSet.add(id));
+    }
+  }
+  const eligible=all.filter(t=>!naSet.has(t.id)&&!recoveringSet.has(t.id));
+  const total=eligible.length;
+  const done=eligible.filter(t=>ds[t.id]).length;
   return total>0?Math.round(done/total*100):0;
 }
 
@@ -521,11 +553,21 @@ function calcStreak(){
   for(let i=0;i<60;i++){
     const d=new Date(t);d.setDate(t.getDate()-i);
     const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    const sc=getScheduleFor(d.getDay()); // uses actual day not selectedDay
-    const ids=sc.reduce((a,sec)=>a.concat(sec.tasks.map(t=>t.id)),[]);
+    const sc=getScheduleFor(d.getDay(),d);
+    let ids=sc.reduce((a,sec)=>a.concat(sec.tasks.map(t=>t.id)),[]);
+    // Today only: respect active floor condition + Recovery Mode for streak protection
+    if(i===0){
+      const fc=getActiveFloorCondition();
+      if(fc&&(fc.effect==='recovering'||fc.effect==='reconfigured')){
+        const rec=fc.tasks==='all'?new Set(ids):new Set(fc.tasks||[]);
+        ids=ids.filter(id=>!rec.has(id));
+      }
+    }
     const idSet=new Set(ids);
     const done=Object.entries(state[k]||{}).filter(([key,v])=>v&&idSet.has(key)).length;
     if(i===0&&done===0)continue;
+    // Recovery Mode (today only): 3 tasks cleared the floor → streak protected
+    if(i===0&&isRecoveryMode()&&done>=3){s++;continue;}
     if(ids.length>0&&done>=Math.ceil(ids.length*0.8))s++;
     else if(i>0)break;
   }
@@ -537,7 +579,7 @@ function calcBestStreak(){
   for(let i=59;i>=0;i--){
     const d=new Date(t);d.setDate(t.getDate()-i);
     const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    const sc=getScheduleFor(d.getDay());
+    const sc=getScheduleFor(d.getDay(),d);
     const ids=sc.reduce((a,s)=>a.concat(s.tasks.map(t=>t.id)),[]);
     const idSet=new Set(ids);
     const done=Object.entries(state[k]||{}).filter(([key,v])=>v&&idSet.has(key)).length;
@@ -578,7 +620,7 @@ function getDungeonRecord(){
   allKeys.forEach(k=>{
     const d=parseKey(k);if(isNaN(d))return;
     const dow=d.getDay();
-    const sc=getScheduleFor(dow);
+    const sc=getScheduleFor(dow,d);
     const ids=sc.reduce((a,s)=>a.concat(s.tasks.map(t=>t.id)),[]);
     const idSet=new Set(ids);
     const ds=state[k]||{};
@@ -1161,7 +1203,9 @@ function renderStatBar(pct, fillImg, label, labelClass=''){
 }
 
 function setQuality(dayIdx, taskId, level){
-  const k=dayKey(dayIdx);
+  // Note: dayIdx param is legacy. We key by selectedDate to stay consistent with
+  // cycleQuality / getQuality / toggleTask, which all key on selectedDate.
+  const k=_dateKey(selectedDate);
   if(!qualityState[k])qualityState[k]={};
   if(qualityState[k][taskId]===level) delete qualityState[k][taskId];
   else qualityState[k][taskId]=level;
@@ -1388,7 +1432,7 @@ function renderToday(){
     const isPast=d<now&&!isToday;
     const isFuture=d>now&&!isToday;
     const isSelected=selectedDay===dow&&_selectedWeekOffset===0;
-    const pct=isPast||isToday?dayPct(dow):null;
+    const pct=isPast||isToday?dayPct(dow,d):null;
     const taskCount=isFuture?getScheduleFor(dow,d).reduce((a,s)=>a+s.tasks.length,0):null;
     const btn=document.createElement('button');
     let cls='date-pill';
@@ -1425,12 +1469,27 @@ function renderToday(){
     if(todayPill)todayPill.scrollIntoView({inline:'center',behavior:'smooth'});
   },50);
 
-  const sc=getScheduleFor(selectedDay);
+  const sc=getScheduleFor(selectedDay,selectedDate);
   const allT=sc.reduce((a,s)=>a.concat(s.tasks),[]);
-  const data=getDayData(selectedDay);
-  const done=allT.filter(t=>data[t.id]).length;
-  const total=allT.length;
+  const _dk=_dateKey(selectedDate);
+  if(!state[_dk])state[_dk]={};
+  const data=state[_dk];
+  // Floor condition: exclude recovering/reconfigured tasks from the visible floor
+  // percentage (today only). Mirrors dayPct so ring and pill stay consistent.
+  const _viewingToday=selectedDate.toDateString()===new Date().toDateString();
+  const _fc=_viewingToday?getActiveFloorCondition():null;
+  const _recSet=new Set();
+  if(_fc&&(_fc.effect==='recovering'||_fc.effect==='reconfigured')){
+    if(_fc.tasks==='all')allT.forEach(t=>_recSet.add(t.id));
+    else (_fc.tasks||[]).forEach(id=>_recSet.add(id));
+  }
+  const _q=qualityState[_dk]||{};
+  const _eligible=allT.filter(t=>!_recSet.has(t.id)&&_q[t.id]!=='gray');
+  const done=_eligible.filter(t=>data[t.id]).length;
+  const total=_eligible.length;
   const pct=total?Math.round(done/total*100):0;
+  // Recovery Mode 3-task check: any 3 tasks count (raw allT)
+  const _doneRaw=allT.filter(t=>data[t.id]).length;
 
   const _recovery=isRecoveryMode();
   const wasComplete=document.getElementById('congrats-banner').style.display==='block';
@@ -1448,7 +1507,7 @@ function renderToday(){
   renderScoreboard();
   _renderReturnToToday();
   renderFloorConditionBanner();
-  const isComplete=_recovery?(done>=3&&total>0):(pct===100&&total>0);
+  const isComplete=_recovery?(_doneRaw>=3&&allT.length>0):(pct===100&&total>0);
   document.getElementById('congrats-banner').style.display=isComplete?'block':'none';
   if(isComplete&&!wasComplete)fireConfetti();
 
@@ -1469,6 +1528,8 @@ function renderToday(){
     section.tasks.forEach((task,taskIdx)=>{
       // For Sunday pill box (injected, not in base schedule), skip edit
       const isSundayInjected=(task.id===SUNDAY_PILL_TASK.id&&isSunday(selectedDay));
+      // Floor condition: only flag tasks as recovering when viewing today
+      const _recovering=_viewingToday&&isTaskRecovering(task.id);
 
       const div=document.createElement('div');
       const _isDone=!!data[task.id];
@@ -1477,12 +1538,14 @@ function renderToday(){
       const _grayWarn=getGrayWarning(task.id);
       // Gray-checked = N/A: show checked but dimmed
       const _isNA=_q==='gray';
-      div.className='task'+(_isDone&&!_isNA?' done':'')+(_q==='yellow'?' quality-low':'')+(_isNA?' task-na':'');
+      div.className='task'+(_isDone&&!_isNA?' done':'')+(_q==='yellow'?' quality-low':'')+(_isNA?' task-na':'')+(_recovering?' task-recovering':'');
       div.dataset.taskId=task.id;
       div.dataset.sectionIdx=sectionIdx;
+      // Inline fallback styling so the badge shows even before styles.css adds .task-recovering
+      const _recoveringBadge=_recovering?`<span style="display:inline-block;margin-left:6px;padding:1px 5px;font-family:var(--font-game,monospace);font-size:7px;letter-spacing:0.08em;color:var(--teal,#2EF2E0);border:1px solid rgba(46,242,224,0.4);border-radius:3px;vertical-align:middle;">RECOVERING</span>`:'';
       div.innerHTML=`${!isSundayInjected?'<div class="task-drag-handle" title="Hold to reorder">⠿</div>':''}
         <div class="check"><span class="check-mark">✓</span></div>
-        <div style="flex:1;"><div class="task-name">${task.name}</div>
+        <div style="flex:1;"><div class="task-name"${_recovering?' style="opacity:0.65;"':''}>${task.name}${_recoveringBadge}</div>
         <div class="task-time">${task.time}${_isDone&&data[task.id+'_ts']?' · done '+fmtTime(data[task.id+'_ts']):''}</div></div>
         ${_qCfg?`<div class=\"q-orb-tap\" data-taskid=\"${task.id}\" onclick=\"event.stopPropagation();cycleQuality(${selectedDay},'${task.id}')\" title=\"${orbLabel(_q)}${_grayWarn?' — gray '+(_grayWarn==='locked'?'LOCKED':'warning'):''}\">\n
         ${renderOrb(_q,task.id)}
@@ -2583,10 +2646,13 @@ function executeCommAction(id){
       case 'declare_condition':{
     const p=action.params||{};
     const condType=p.condition||p.type||'';
-    floorCondition={type:condType,date:todayStr(),declared:Date.now()};
-    saveLocal('dr-floor-condition',floorCondition);
+    // Just show the confirmation overlay. DO NOT pre-write a broken-shape
+    // floorCondition here — if Sara dismisses the overlay, the bad object
+    // (missing id/name/tasks/effect) persists and silently kills isTaskRecovering.
+    // The user confirming the overlay triggers confirmFloorCondition() which writes
+    // the correct shape.
     if(typeof declareFloorCondition==='function')declareFloorCondition(condType);
-    resultMsg=`FLOOR CONDITION DECLARED: ${condType}. Affected tasks set to Recovering. Expires midnight.`;
+    resultMsg=`FLOOR CONDITION REQUESTED: ${condType}. Awaiting confirmation. Affected tasks will be set to Recovering on declare.`;
     break;
     }
 
@@ -3106,22 +3172,12 @@ function awardXP(xp,label){
 function getEquippedTitle(){return xpState.equippedTitle||getLevelInfo(xpState.totalXP||0).title;}
 
 function isComplianceRisk(){
-  const today=new Date();
-  const todayDay=today.getDay();
-  // If today IS Sunday and pill box already done → cleared
-  if(todayDay===0){
-    const tk=`${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
-    if(state[tk]?.['sunday-pillbox']) return false;
-  }
-  // Find most recent past Sunday
-  const days=todayDay===0?7:todayDay;
-  const ls=new Date(today);ls.setDate(today.getDate()-days);
-  const lk=`${ls.getFullYear()}-${ls.getMonth()}-${ls.getDate()}`;
-  const lsData=state[lk]||{};
-  // Only apply risk if there was app activity that Sunday
-  const hasActivity=Object.keys(lsData).some(k=>!k.endsWith('_ts'));
-  if(!hasActivity)return false;
-  return !lsData['sunday-pillbox'];
+  // RETIRED: the hardcoded 'sunday-pillbox' task no longer exists in the schedule
+  // (Sunday injection at ~line 491 was commented out). Pill box is now a user-defined
+  // recurring task and gets handled by the general completion/streak machinery.
+  // If a missed-pill-box debuff is wanted in the future, build it generically via
+  // the QUALITY_TASKS / effectMap system rather than a hardcoded id check.
+  return false;
 }
 /* ─── BUFFS & DEBUFFS ENGINE ─────────────────────────────────────────────── */
 function getActiveBuffs(){
@@ -3264,6 +3320,11 @@ function renderSystemGreeting(){
 /* ─── CRAWLER PROFILE RENDERER ───────────────────────────────────────────── */
 function renderFloorCountdown(){
   const el=document.getElementById('floor-condition-banner');if(!el)return;
+  // If a floor condition is active, renderFloorConditionBanner owns this element.
+  // (Both functions previously wrote to #floor-condition-banner — and the 60s
+  // setInterval on this function was wiping the condition banner every minute.)
+  if(getActiveFloorCondition()){return;}
+  // No active condition: behave as the standalone countdown.
   const active=!!(floorCondition);
   el.classList.toggle('active', active);
   if(!active){el.innerHTML='';return;}
@@ -3380,7 +3441,7 @@ function checkFloorCollapse(){
   const yDate=`${y.getFullYear()}-${y.getMonth()}-${y.getDate()}`;
   if(collapseState.checked===yDate)return;
   collapseState.checked=yDate;
-  const sc=getScheduleFor(y.getDay());
+  const sc=getScheduleFor(y.getDay(),y);
   const allTasks=sc.reduce((a,s)=>a.concat(s.tasks),[]);
   const yData=state[yDate]||{};
   const yQ=qualityState[yDate]||{};
@@ -3536,7 +3597,7 @@ function renderProfile(){
   const coins=getPoints();
   const title=getEquippedTitle();
   const weeklyBoss=DCC.getWeeklyBoss();
-  const wp=(() => {let wt=0,wd=0;for(let i=0;i<7;i++){const s=getScheduleFor(i),ids=s.reduce((a,sec)=>a.concat(sec.tasks.map(t=>t.id)),[]),idSet=new Set(ids);wt+=ids.length;wd+=Object.entries(state[dayKey(i)]||{}).filter(([k,v])=>v&&idSet.has(k)).length;}return wt?Math.round(wd/wt*100):0;})();
+  const wp=(() => {let wt=0,wd=0;const _now=new Date();const _mon=new Date(_now);_mon.setDate(_now.getDate()-((_now.getDay()+6)%7));for(let i=0;i<7;i++){const _d=new Date(_mon);_d.setDate(_mon.getDate()+((i+6)%7));const s=getScheduleFor(i,_d),ids=s.reduce((a,sec)=>a.concat(sec.tasks.map(t=>t.id)),[]),idSet=new Set(ids);wt+=ids.length;wd+=Object.entries(state[dayKey(i)]||{}).filter(([k,v])=>v&&idSet.has(k)).length;}return wt?Math.round(wd/wt*100):0;})();
   const bossHP=Math.max(0,100-wp);
   const rec=getDungeonRecord();
 
@@ -4004,7 +4065,7 @@ function buildWeekData(){
     const d=new Date(monday);d.setDate(monday.getDate()+i);
     const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     const ds=state[k]||{};const dq=qualityState[k]||{};
-    const sc=getScheduleFor(d.getDay());
+    const sc=getScheduleFor(d.getDay(),d);
     const all=sc.reduce((a,s)=>a.concat(s.tasks),[]);
     const naSet=new Set(all.filter(t=>dq[t.id]==='gray').map(t=>t.id));
     const total=all.length-naSet.size;
@@ -5371,6 +5432,10 @@ async function init(){
   renderToday();updateProjectDropdown();refreshWheel();renderTaskManager();
 
   setInterval(renderFloorCountdown, 60000);
+  // Poll Supabase periodically so two-devices-both-open stays in sync without
+  // requiring a visibility toggle. pullFromSupabase guards against running
+  // when a local write is pending, so this is safe to fire-and-forget.
+  setInterval(pullFromSupabase, 30000);
 
   showRoom(loadLocal('dr-last-screen','today')||'today');
 
