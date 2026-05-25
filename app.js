@@ -516,7 +516,10 @@ function getScheduleFor(dayIdx, date){
 
   // Inject one-off tasks for the date
   const dateStr=_localDateStr(d);
-  const oneOffs=(schedule.oneOff||[]).filter(t=>t.date===dateStr);
+  // keepUntilDone one-offs appear every day until marked complete (toggleTask
+  // splices them from schedule.oneOff on completion). Date-specific one-offs
+  // appear only on their dated day.
+  const oneOffs=(schedule.oneOff||[]).filter(t=>t.keepUntilDone||t.date===dateStr);
   if(oneOffs.length){
     base.push({section:'Today Only',tasks:oneOffs.sort((a,b)=>(a.order??0)-(b.order??0))});
   }
@@ -743,7 +746,27 @@ function toggleTask(dayIdx,taskId){
   else delete state[k][taskId+'_ts'];
   save('dr-state',state);
   maybeAwardTaskPoints(taskId,dayIdx);
+  _maybeRemoveKeepUntilDone(taskId);
   renderToday();
+}
+
+// Auto-remove a keepUntilDone one-off from schedule.oneOff once it's been
+// marked done. Called after toggleTask and after cycleQuality's "done" branches.
+// "Done" = state[_dateKey][taskId] truthy AND quality is not 'gray' (N/A means
+// the task doesn't apply today, so it should remain for future days). Red
+// (intentional skip) doesn't reach here because cycleQuality sets state to
+// false on red, so the truthy-state guard already filters it.
+function _maybeRemoveKeepUntilDone(taskId){
+  if(!schedule.oneOff||!schedule.oneOff.length)return;
+  const idx=schedule.oneOff.findIndex(t=>t.id===taskId&&t.keepUntilDone);
+  if(idx<0)return;
+  const k=_dateKey(selectedDate);
+  const isDone=!!(state[k]&&state[k][taskId]);
+  if(!isDone)return;
+  const q=qualityState[k]&&qualityState[k][taskId];
+  if(q==='gray')return; // N/A: task remains for future days
+  schedule.oneOff.splice(idx,1);
+  save('dr-schedule',schedule);
 }
 
 function resetToday(){state[dayKey(new Date().getDay())]={};save('dr-state',state);renderToday();}
@@ -771,6 +794,17 @@ function _editSetRecurrence(mode){
   }
 }
 function _editToggleDay(btn){btn.classList.toggle('active');}
+function _editToggleKeepUntilDone(){
+  const btn=document.getElementById('edit-keep-until-done');if(!btn)return;
+  btn.classList.toggle('active');
+  // Visually dim the date input when keep-until-done is on, since the date is ignored.
+  const dateEl=document.getElementById('edit-oneoff-date');
+  if(dateEl)dateEl.style.opacity=btn.classList.contains('active')?'0.4':'';
+}
+function _editIsKeepUntilDone(){
+  const btn=document.getElementById('edit-keep-until-done');
+  return !!(btn&&btn.classList.contains('active'));
+}
 function _editSetFrequency(freq){
   ['weekly','biweekly','monthly'].forEach(f=>{
     document.getElementById('edit-freq-'+f).classList.toggle('active',f===freq);
@@ -808,6 +842,13 @@ function _editPopulateForm(task, sectionName){
   document.querySelectorAll('#edit-section-group .edit-pill').forEach(b=>{
     b.classList.toggle('active',b.dataset.val===(sectionName||task.section||'Morning'));
   });
+  // Reset keep-until-done pill — default off; will be set on below if applicable
+  const kudBtn=document.getElementById('edit-keep-until-done');
+  if(kudBtn){
+    kudBtn.classList.toggle('active',!!task.keepUntilDone);
+    const dateEl=document.getElementById('edit-oneoff-date');
+    if(dateEl)dateEl.style.opacity=task.keepUntilDone?'0.4':'';
+  }
   // Recurrence
   const rec=task.recurrence||'recurring';
   _editSetRecurrence(rec);
@@ -885,12 +926,13 @@ function saveTaskEdit(){
   const name=document.getElementById('edit-name-input').value.trim();
   if(!name){_editShowValidation('Task name cannot be empty');return;}
   const rec=document.getElementById('edit-rec-recurring').classList.contains('active')?'recurring':'one-off';
+  const keepUntilDone=rec==='one-off'&&_editIsKeepUntilDone();
   if(rec==='recurring'){
     const days=_editGetSelectedDays();
     if(!days.length){_editShowValidation('Recurring task must have at least one day selected');return;}
-  } else {
+  } else if(!keepUntilDone){
     const dt=document.getElementById('edit-oneoff-date').value;
-    if(!dt){_editShowValidation('One-off task must have a date');return;}
+    if(!dt){_editShowValidation('One-off task must have a date (or enable Keep until done)');return;}
   }
   _editHideValidation();
 
@@ -899,7 +941,9 @@ function saveTaskEdit(){
   const days=rec==='recurring'?_editGetSelectedDays():null;
   const monthlyDate=freq==='monthly'?parseInt(document.getElementById('edit-monthly-date').value)||null:null;
   const biweeklyStart=freq==='biweekly'?document.getElementById('edit-biweekly-start').value||null:null;
-  const oneoffDate=rec==='one-off'?document.getElementById('edit-oneoff-date').value:null;
+  // When keepUntilDone is on, date is irrelevant — store null so the filter
+  // doesn't accidentally match an old date if the flag is later turned off.
+  const oneoffDate=rec==='one-off'?(keepUntilDone?null:document.getElementById('edit-oneoff-date').value):null;
 
   if(editCtx.type==='oneoff'){
     // Editing an existing one-off — it lives in schedule.oneOff, NOT in weekday/weekend
@@ -911,7 +955,8 @@ function saveTaskEdit(){
     if(rec==='one-off'){
       // Stay as one-off — update in place
       Object.assign(task,{name,time,section,date:oneoffDate,
-        days:null,frequency:null,monthly_date:null,biweekly_start:null});
+        days:null,frequency:null,monthly_date:null,biweekly_start:null,
+        keepUntilDone});
     } else {
       // Convert one-off → recurring: remove from schedule.oneOff, push to weekday/weekend
       const allWeekend=days.every(d=>d===0||d===6);
@@ -923,7 +968,8 @@ function saveTaskEdit(){
       schedule.oneOff.splice(idx,1);
       targetSec.tasks.push({
         id:task.id,name,time,section,recurrence:'recurring',days,frequency:freq,
-        monthly_date:monthlyDate,biweekly_start:biweeklyStart,date:null,order:targetSec.tasks.length
+        monthly_date:monthlyDate,biweekly_start:biweeklyStart,date:null,
+        keepUntilDone:false,order:targetSec.tasks.length
       });
     }
     save('dr-schedule',schedule);
@@ -939,7 +985,7 @@ function saveTaskEdit(){
       const newTask={
         id:'t_'+Date.now(),name,time:document.getElementById('edit-time-input').value.trim(),
         section,recurrence:'one-off',date:oneoffDate,days:null,frequency:null,
-        monthly_date:null,biweekly_start:null,order:schedule.oneOff.length
+        monthly_date:null,biweekly_start:null,keepUntilDone,order:schedule.oneOff.length
       };
       schedule.oneOff.push(newTask);
     } else {
@@ -953,7 +999,7 @@ function saveTaskEdit(){
         ...task,name,time:document.getElementById('edit-time-input').value.trim(),
         section,recurrence:'one-off',date:oneoffDate,
         days:null,frequency:null,monthly_date:null,biweekly_start:null,
-        order:schedule.oneOff.length
+        keepUntilDone,order:schedule.oneOff.length
       };
       sc[editCtx.sectionIdx].tasks.splice(editCtx.taskIdx,1);
       schedule.oneOff.push(updatedTask);
@@ -1240,6 +1286,7 @@ function cycleQuality(dayIdx, taskId){
   }
 
   save('dr-quality',qualityState);
+  _maybeRemoveKeepUntilDone(taskId);
 
   // Surgical orb update — no full re-render, no scroll jump
   const orbTap=document.querySelector(`.q-orb-tap[data-taskid="${taskId}"]`);
@@ -1631,11 +1678,10 @@ function renderToday(){
       div.className='task'+(_isDone&&!_isNA?' done':'')+(_q==='yellow'?' quality-low':'')+(_isNA?' task-na':'')+(_recovering?' task-recovering':'');
       div.dataset.taskId=task.id;
       div.dataset.sectionIdx=sectionIdx;
-      // Inline fallback styling so the badge shows even before styles.css adds .task-recovering
-      const _recoveringBadge=_recovering?`<span style="display:inline-block;margin-left:6px;padding:1px 5px;font-family:var(--font-game,monospace);font-size:7px;letter-spacing:0.08em;color:var(--teal,#2EF2E0);border:1px solid rgba(46,242,224,0.4);border-radius:3px;vertical-align:middle;">RECOVERING</span>`:'';
+      const _recoveringBadge=_recovering?'<span class="task-recovering-badge">RECOVERING</span>':'';
       div.innerHTML=`${!isSundayInjected?'<div class="task-drag-handle" title="Hold to reorder">⠿</div>':''}
         <div class="check"><span class="check-mark">✓</span></div>
-        <div style="flex:1;"><div class="task-name"${_recovering?' style="opacity:0.65;"':''}>${task.name}${_recoveringBadge}</div>
+        <div style="flex:1;"><div class="task-name">${task.name}${_recoveringBadge}</div>
         <div class="task-time">${task.time}${_isDone&&data[task.id+'_ts']?' · done '+fmtTime(data[task.id+'_ts']):''}</div></div>
         ${_qCfg?`<div class=\"q-orb-tap\" data-taskid=\"${task.id}\" onclick=\"event.stopPropagation();cycleQuality(${selectedDay},'${task.id}')\" title=\"${orbLabel(_q)}${_grayWarn?' — gray '+(_grayWarn==='locked'?'LOCKED':'warning'):''}\">\n
         ${renderOrb(_q,task.id)}
@@ -3501,8 +3547,10 @@ function checkOneOffCleanup(){
   const today=todayStr();
   if(!schedule.oneOff||!schedule.oneOff.length)return;
   const before=schedule.oneOff.length;
-  // Remove any one-off tasks whose date is before today
-  schedule.oneOff=schedule.oneOff.filter(t=>t.date>=today);
+  // Remove dated one-offs whose date is before today.
+  // KEEP: keep-until-done tasks (no date — they persist until completed)
+  // KEEP: tasks with date >= today (still upcoming or for today)
+  schedule.oneOff=schedule.oneOff.filter(t=>t.keepUntilDone||(t.date&&t.date>=today));
   if(schedule.oneOff.length!==before){
     saveLocal('dr-schedule',schedule);
     syncToSupabase();
@@ -3757,7 +3805,10 @@ function renderProfile(){
       <img src="${CHAR_SARA_CARD}" class="sara-card-portrait" alt="Sara">
       <div class="sara-dungeon-record">
         <div class="sara-name-block">
-          <div class="sara-name">SARA</div>
+          <div class="sara-name-row">
+            <div class="sara-name">SARA</div>
+            <span class="sara-name-level">LVL ${info.level}</span>
+          </div>
           <div class="sara-class-title">BEAST KEEPER · ${equippedTitle}</div>
           <div class="sara-passive">Stubborn Survivor</div>
         </div>

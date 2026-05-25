@@ -265,6 +265,11 @@
     <div id="edit-oneoff-fields" style="display:none;">
       <label>DATE</label>
       <input type="date" id="edit-oneoff-date" />
+      <label>PERSISTENCE</label>
+      <div class="edit-pill-group">
+        <button class="edit-pill" id="edit-keep-until-done" onclick="_editToggleKeepUntilDone()">Keep until done</button>
+      </div>
+      <div id="edit-keep-until-done-hint" style="font-size:10px;opacity:0.6;margin:-4px 0 4px;font-family:var(--font-system,'Share Tech Mono'),monospace;letter-spacing:0.04em;">Off: task appears only on the selected date. On: task appears every day until completed, then auto-removes. Date is ignored when on.</div>
     </div>
     <div id="edit-validation-msg" style="display:none;font-size:11px;color:var(--teal-hi,#2EF2E0);margin:8px 0;font-family:var(--font-system,'Share Tech Mono'),monospace;"></div>
     <div class="edit-actions">

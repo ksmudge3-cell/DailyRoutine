@@ -75,6 +75,25 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .task.task-na { opacity: 0.5; }
 .task.task-na .task-name { text-decoration: line-through; color: var(--hint); font-style: italic; }
 .task.task-na .check-mark { display: block !important; opacity: 0.4; }
+/* Recovering: task is excluded from the floor due to an active floor condition
+   (Sick Day, Injury, Working Late, etc.). Still tappable — if Sara does it
+   anyway, the tap counts via the Recovery Mode raw count. Dimmed and badged
+   to signal "doesn't count toward today's floor." */
+.task.task-recovering { opacity: 0.85; border-color: rgba(46,242,224,0.18); }
+.task.task-recovering .task-name { color: var(--muted, #94a3b8); }
+.task-recovering-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  font-family: var(--font-game, 'Press Start 2P', monospace);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  color: var(--teal-hi, #2EF2E0);
+  border: 1px solid rgba(46,242,224,0.4);
+  border-radius: 3px;
+  vertical-align: middle;
+  background: rgba(46,242,224,0.05);
+}
 
 .check { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid rgba(251,191,36,0.3); background: transparent; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
 .task.done .check { background: transparent; border-color: var(--teal); }
@@ -3171,6 +3190,26 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   margin-bottom: 4px;
   margin-top: 6px;
   padding-left: 8px;
+}
+.sara-name-block .sara-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sara-name-block .sara-name-level {
+  background: #0a0a0c;
+  color: var(--gold, #FFD43A);
+  border: 1px solid rgba(251,191,36,0.5);
+  font-family: var(--font-stat, 'Silkscreen', monospace);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  border-radius: 4px;
+  padding: 3px 7px;
+  line-height: 1;
+  flex-shrink: 0;
+  position: relative;
+  top: -2px;
 }
 .sara-name-block .sara-name {
   font-family: var(--font-title, 'Cinzel', serif);
@@ -3863,6 +3902,25 @@ body { font-family: var(--mono); background: var(--bg); color: var(--text); min-
 .task.task-na { opacity: 0.5; }
 .task.task-na .task-name { text-decoration: line-through; color: var(--hint); font-style: italic; }
 .task.task-na .check-mark { display: block !important; opacity: 0.4; }
+/* Recovering: task is excluded from the floor due to an active floor condition
+   (Sick Day, Injury, Working Late, etc.). Still tappable — if Sara does it
+   anyway, the tap counts via the Recovery Mode raw count. Dimmed and badged
+   to signal "doesn't count toward today's floor." */
+.task.task-recovering { opacity: 0.85; border-color: rgba(46,242,224,0.18); }
+.task.task-recovering .task-name { color: var(--muted, #94a3b8); }
+.task-recovering-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  font-family: var(--font-game, 'Press Start 2P', monospace);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  color: var(--teal-hi, #2EF2E0);
+  border: 1px solid rgba(46,242,224,0.4);
+  border-radius: 3px;
+  vertical-align: middle;
+  background: rgba(46,242,224,0.05);
+}
 
 .check { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid rgba(251,191,36,0.3); background: transparent; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
 .task.done .check { background: transparent; border-color: var(--teal); }
@@ -6959,6 +7017,26 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   margin-bottom: 4px;
   margin-top: 6px;
   padding-left: 8px;
+}
+.sara-name-block .sara-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sara-name-block .sara-name-level {
+  background: #0a0a0c;
+  color: var(--gold, #FFD43A);
+  border: 1px solid rgba(251,191,36,0.5);
+  font-family: var(--font-stat, 'Silkscreen', monospace);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  border-radius: 4px;
+  padding: 3px 7px;
+  line-height: 1;
+  flex-shrink: 0;
+  position: relative;
+  top: -2px;
 }
 .sara-name-block .sara-name {
   font-family: var(--font-title, 'Cinzel', serif);
