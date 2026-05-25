@@ -423,6 +423,7 @@ if(!dogTasks.mental)dogTasks.mental=DEFAULT_DOG_TASKS.mental;
 let shopCat='all', spinCat='clean', spinProject='all', selectedDay=new Date().getDay(), spinDuration=5;
 let selectedDate=new Date();
 function _dateKey(date){return`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;}
+function _localDateStr(date){const d=date||new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 let _selectedWeekOffset=0, _lastWeekExpanded=false, _nextWeekExpanded=false;
 let timerInterval=null, timerSeconds=0, timerRunning=false;
 let qualityState=load('dr-quality',{});
@@ -451,7 +452,7 @@ let editCtx=null; // {type:'weekday'|'weekend', sectionIdx, taskIdx}
 
 /* ─── HELPERS ───────────────────────────────────────────────────────────── */
 function dayKey(idx){const t=new Date(),d=new Date(t);d.setDate(t.getDate()+(idx-t.getDay()));return`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}
-function todayStr(){return new Date().toISOString().slice(0,10);}
+function todayStr(){return _localDateStr();}
 function isWeekend(idx){return idx===0||idx===6;}
 function isSunday(idx){
   // Map idx to actual date day
@@ -490,7 +491,7 @@ function getScheduleFor(dayIdx, date){
   // Sunday pill box injection disabled — add as a recurring task manually
 
   // Inject one-off tasks for the date
-  const dateStr=d.toISOString().slice(0,10);
+  const dateStr=_localDateStr(d);
   const oneOffs=(schedule.oneOff||[]).filter(t=>t.date===dateStr);
   if(oneOffs.length){
     base.push({section:'Today Only',tasks:oneOffs.sort((a,b)=>(a.order??0)-(b.order??0))});
@@ -707,7 +708,7 @@ function _editSetRecurrence(mode){
   document.getElementById('edit-oneoff-fields').style.display=mode==='one-off'?'block':'none';
   if(mode==='one-off'){
     const el=document.getElementById('edit-oneoff-date');
-    if(!el.value)el.value=new Date().toISOString().slice(0,10);
+    if(!el.value)el.value=_localDateStr();
   }
 }
 function _editToggleDay(btn){btn.classList.toggle('active');}
@@ -759,7 +760,8 @@ function _editPopulateForm(task, sectionName){
     const freq=task.frequency||'weekly';
     _editSetFrequency(freq);
     if(freq==='monthly')document.getElementById('edit-monthly-date').value=task.monthly_date||new Date().getDate();
-    if(freq==='biweekly')document.getElementById('edit-biweekly-start').value=task.biweekly_start||new Date().toISOString().slice(0,10);
+    if(freq==='biweekly')document.getElementById('edit-biweekly-start').value=task.biweekly_start||_localDateStr();
+    document.getElementById('edit-oneoff-date').value=task.date||_localDateStr();
   } else {
     document.getElementById('edit-oneoff-date').value=task.date||new Date().toISOString().slice(0,10);
   }
