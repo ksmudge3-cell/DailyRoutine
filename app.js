@@ -1802,6 +1802,175 @@ function renderToday(){
 
 /* ─── APOTHECARY ─────────────────────────────────────────────────────────── */
 
+const VITALS_ICONS=[
+  {id:'frustrated',emoji:'😤',label:'Frustrated',negative:true},
+  {id:'annoyed',   emoji:'😠',label:'Annoyed',   negative:true},
+  {id:'anxious',   emoji:'😰',label:'Anxious',   negative:true},
+  {id:'low',       emoji:'😔',label:'Low',       negative:true},
+  {id:'numb',      emoji:'😶',label:'Numb',      negative:true},
+  {id:'calm',      emoji:'😌',label:'Calm',      negative:false},
+  {id:'good',      emoji:'🙂',label:'Good',      negative:false},
+  {id:'energized', emoji:'⚡',label:'Energized', negative:false},
+  {id:'grateful',  emoji:'🫶',label:'Grateful',  negative:false},
+  {id:'dog-joy',   emoji:'🐾',label:'Dog Joy',   negative:false},
+  {id:'laughing',  emoji:'😂',label:'Laughing',  negative:false},
+];
+
+const OVERALL_ICONS=['😫','😔','😐','🙂','😊'];
+
+const SLOT_LABELS={'10am':'10 AM','2pm':'2 PM','5pm':'5 PM'};
+
+// Check-in sheet state
+let _vitalsSlot=null;
+let _vitalsSelectedIcons=new Set();
+let _vitalsOverall=null;
+
+function openVitalsCheckin(slot){
+  _vitalsSlot=slot;
+  _vitalsSelectedIcons=new Set();
+  _vitalsOverall=null;
+  _renderVitalsSheet();
+  document.getElementById('apothecary-overlay').classList.add('show');
+}
+
+function closeVitalsCheckin(){
+  document.getElementById('apothecary-overlay').classList.remove('show');
+  _vitalsSlot=null;
+}
+
+function handleApothecaryOverlayClick(e){
+  if(e.target===document.getElementById('apothecary-overlay'))closeVitalsCheckin();
+}
+
+function toggleVitalsIcon(id){
+  if(_vitalsSelectedIcons.has(id))_vitalsSelectedIcons.delete(id);
+  else _vitalsSelectedIcons.add(id);
+  // Update icon button states without full re-render
+  document.querySelectorAll('.vitals-icon-btn').forEach(btn=>{
+    const selected=_vitalsSelectedIcons.has(btn.dataset.id);
+    btn.classList.toggle('vitals-icon-selected',selected);
+  });
+}
+
+function selectVitalsOverall(n){
+  _vitalsOverall=n;
+  document.querySelectorAll('.vitals-overall-btn').forEach((btn,i)=>{
+    btn.classList.toggle('vitals-overall-selected',i+1===n);
+  });
+  document.getElementById('vitals-done-btn').disabled=false;
+  document.getElementById('vitals-done-btn').style.opacity='1';
+}
+
+function submitVitalsCheckin(){
+  if(!_vitalsOverall||!_vitalsSlot)return;
+  const dk=_dateKey(new Date());
+  if(!moodCheckins[dk])moodCheckins[dk]={};
+  moodCheckins[dk][_vitalsSlot]={
+    icons:Array.from(_vitalsSelectedIcons),
+    overall:_vitalsOverall,
+    note:document.getElementById('vitals-note')?.value.trim()||null,
+    loggedAt:Date.now()
+  };
+  save('dr-mood-checkins',moodCheckins);
+
+  // Award bonus coins + XP
+  awardPoints(2,'Vitals check-in','vitals-checkin');
+  awardXP(5,'Vitals check-in');
+
+  // Negative icon check → Donut message
+  const negatives=Array.from(_vitalsSelectedIcons).filter(id=>VITALS_ICONS.find(v=>v.id===id&&v.negative));
+  if(negatives.length>=2){
+    const msg=`SARA. THAT IS A LOT OF THINGS AT ONCE. I AM HERE IF YOU WANT TO UNPACK ANY OF IT.`;
+    donutChat.push({role:'assistant',content:msg,timestamp:Date.now(),week_number:getWeekNumber()});
+    save('dr-donut-chat',donutChat);
+  } else if(negatives.length===1){
+    const label=VITALS_ICONS.find(v=>v.id===negatives[0])?.label.toUpperCase()||negatives[0].toUpperCase();
+    const msg=`YOU CHECKED ${label}. I NOTICED. THE APOTHECARY IS OPEN IF YOU WANT TO TALK.`;
+    donutChat.push({role:'assistant',content:msg,timestamp:Date.now(),week_number:getWeekNumber()});
+    save('dr-donut-chat',donutChat);
+  }
+
+  closeVitalsCheckin();
+  renderToday();
+
+  // System confirmation toast
+  const slotLabel=SLOT_LABELS[_vitalsSlot]||_vitalsSlot;
+  _showApothecaryToast(`VITALS LOGGED: ${slotLabel} check-in recorded. The dungeon has noted your status.`);
+}
+
+function _showApothecaryToast(msg){
+  let toast=document.getElementById('apothecary-toast');
+  if(!toast){
+    toast=document.createElement('div');
+    toast.id='apothecary-toast';
+    toast.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid rgba(184,217,38,0.3);color:var(--pearl);font-family:var(--font-system,monospace);font-size:10px;letter-spacing:0.05em;padding:10px 16px;border-radius:6px;z-index:9999;max-width:320px;text-align:center;opacity:0;transition:opacity 0.3s;pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent=msg;
+  toast.style.opacity='1';
+  setTimeout(()=>{toast.style.opacity='0';},3000);
+}
+
+function _renderVitalsSheet(){
+  const slot=_vitalsSlot;
+  const label=SLOT_LABELS[slot]||slot;
+  const row1=VITALS_ICONS.slice(0,6);
+  const row2=VITALS_ICONS.slice(6);
+
+  const iconBtn=(v)=>`<button class="vitals-icon-btn${_vitalsSelectedIcons.has(v.id)?' vitals-icon-selected':''}"
+    data-id="${v.id}" onclick="toggleVitalsIcon('${v.id}')"
+    style="display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--surface2);border:1.5px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 6px;cursor:pointer;transition:border-color 0.15s,transform 0.1s;min-width:44px;">
+    <span style="font-size:26px;line-height:1;">${v.emoji}</span>
+    <span style="font-family:var(--font-pixel,monospace);font-size:5px;color:var(--hint);letter-spacing:0.03em;text-align:center;">${v.label.toUpperCase()}</span>
+  </button>`;
+
+  const overallBtn=(emoji,i)=>`<button class="vitals-overall-btn${_vitalsOverall===i+1?' vitals-overall-selected':''}"
+    onclick="selectVitalsOverall(${i+1})"
+    style="font-size:28px;background:var(--surface2);border:1.5px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;cursor:pointer;transition:border-color 0.15s,transform 0.1s;line-height:1;">
+    ${emoji}
+  </button>`;
+
+  document.getElementById('apothecary-sheet-content').innerHTML=`
+    <div style="padding:20px 16px 24px;">
+      <div style="font-family:var(--font-system,monospace);font-size:10px;color:rgba(184,217,38,0.8);letter-spacing:0.08em;margin-bottom:4px;">VITALS CHECK — ${label}</div>
+      <div style="font-family:var(--font-title,serif);font-size:16px;color:var(--pearl);margin-bottom:4px;">How are you right now?</div>
+      <div style="font-family:var(--font-body,serif);font-size:12px;color:var(--hint);margin-bottom:16px;">Select any that apply — or none.</div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        ${row1.map(iconBtn).join('')}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">
+        ${row2.map(iconBtn).join('')}
+      </div>
+
+      <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--hint);letter-spacing:0.06em;margin-bottom:8px;">OVERALL</div>
+      <div style="display:flex;gap:8px;margin-bottom:20px;">
+        ${OVERALL_ICONS.map(overallBtn).join('')}
+      </div>
+
+      <textarea id="vitals-note" placeholder="anything on your mind?"
+        style="width:100%;min-height:44px;max-height:120px;background:var(--surface2);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--pearl);font-family:var(--font-body,serif);font-size:14px;padding:10px 12px;resize:vertical;box-sizing:border-box;margin-bottom:16px;"
+        rows="2"></textarea>
+
+      <button id="vitals-done-btn" onclick="submitVitalsCheckin()"
+        disabled style="opacity:0.4;width:100%;padding:14px;background:var(--green,#B8D926);color:#0a0a0c;font-family:var(--font-pixel,monospace);font-size:9px;letter-spacing:0.1em;border:none;border-radius:8px;cursor:pointer;transition:opacity 0.2s;">
+        DONE
+      </button>
+    </div>`;
+
+  // Inject selected/hover styles if not already present
+  if(!document.getElementById('vitals-styles')){
+    const s=document.createElement('style');
+    s.id='vitals-styles';
+    s.textContent=`
+      .vitals-icon-selected{border-color:var(--teal,#007A7A)!important;transform:scale(1.08);}
+      .vitals-icon-selected span:last-child{color:var(--teal-hi,#2EF2E0)!important;}
+      .vitals-overall-selected{border-color:var(--green,#B8D926)!important;transform:scale(1.1);}
+    `;
+    document.head.appendChild(s);
+  }
+}
+
 function renderApothecarySection(){
   // Apothecary bonus section on the floor — only shows for today
   if(selectedDay!==new Date().getDay())return;
@@ -1828,17 +1997,21 @@ function renderApothecarySection(){
   sectionWrap.appendChild(lbl);
 
   VITALS.forEach(v=>{
-    const done=!!(checkins[v.slot]?.loggedAt);
+    const entry=checkins[v.slot];
+    const done=!!(entry?.loggedAt);
     const div=document.createElement('div');
     div.className='task'+(done?' done':'');
     div.style.cssText='cursor:pointer;';
+    const detail=done&&entry.overall
+      ?`Overall ${entry.overall}/5${entry.icons?.length?' · '+entry.icons.map(id=>VITALS_ICONS.find(vi=>vi.id===id)?.emoji||'').join(''):''}` 
+      :'BONUS · +2🪙 +5⚡';
     div.innerHTML=`<div class="check"><span class="check-mark">✓</span></div>
       <div style="flex:1;">
         <div class="task-name"><span style="color:var(--amber-hi);margin-right:4px;">⭐</span>${v.label}</div>
-        <div class="task-time" style="color:rgba(184,217,38,0.7);">BONUS · +2🪙 +5⚡</div>
+        <div class="task-time" style="color:rgba(184,217,38,0.7);">${detail}</div>
       </div>
       <span style="font-family:var(--font-pixel);font-size:6px;color:var(--hint);letter-spacing:0.05em;padding:2px 5px;border:1px solid rgba(255,255,255,0.1);border-radius:3px;align-self:center;">BONUS</span>`;
-    div.onclick=()=>showRoom('apothecary');
+    div.onclick=()=>{ if(!done)openVitalsCheckin(v.slot); else showRoom('apothecary'); };
     sectionWrap.appendChild(div);
   });
 
@@ -1859,10 +2032,10 @@ function renderApothecaryRoom(){
 
   const todayEntries=VITALS.map(v=>{
     const entry=checkins[v.slot];
-    if(!entry?.loggedAt) return `<div class="task" style="opacity:0.5;cursor:default;">
+    if(!entry?.loggedAt) return `<div class="task" style="opacity:0.7;cursor:pointer;" onclick="openVitalsCheckin('${v.slot}')">
       <div class="check"></div>
       <div style="flex:1;"><div class="task-name">${v.label}</div>
-      <div class="task-time" style="color:rgba(184,217,38,0.5);">PENDING</div></div>
+      <div class="task-time" style="color:rgba(184,217,38,0.5);">TAP TO LOG</div></div>
       <span style="font-family:var(--font-pixel);font-size:6px;color:var(--hint);padding:2px 5px;border:1px solid rgba(255,255,255,0.08);border-radius:3px;align-self:center;">BONUS</span></div>`;
     const icons=(entry.icons||[]).join(' ');
     const time=new Date(entry.loggedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
