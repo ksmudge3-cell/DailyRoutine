@@ -421,6 +421,8 @@ if(!dogTasks.shared)dogTasks.shared=DEFAULT_DOG_TASKS.shared;
 if(!dogTasks.mental)dogTasks.mental=DEFAULT_DOG_TASKS.mental;
 
 let shopCat='all', spinCat='clean', spinProject='all', selectedDay=new Date().getDay(), spinDuration=5;
+let selectedDate=new Date();
+function _dateKey(date){return`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;}
 let _selectedWeekOffset=0, _lastWeekExpanded=false, _nextWeekExpanded=false;
 let timerInterval=null, timerSeconds=0, timerRunning=false;
 let qualityState=load('dr-quality',{});
@@ -674,7 +676,7 @@ function findWheelTask(id){return getAllWheelTasks().find(t=>t.id===id);}
 
 /* ─── TODAY RENDER ──────────────────────────────────────────────────────── */
 function toggleTask(dayIdx,taskId){
-  const k=dayKey(dayIdx);
+  const k=_dateKey(selectedDate);
   if(!state[k])state[k]={};
   state[k][taskId]=!state[k][taskId];
   if(state[k][taskId])state[k][taskId+'_ts']=Date.now();
@@ -1055,7 +1057,7 @@ function getGrayWarning(taskId){
 }
 
 function cycleQuality(dayIdx, taskId){
-  const k=dayKey(dayIdx);
+  const k=_dateKey(selectedDate);
   if(!qualityState[k])qualityState[k]={};
   const cur=qualityState[k][taskId];
   const canPurple=PURPLE_ELIGIBLE.has(taskId);
@@ -1173,7 +1175,7 @@ function setQuality(dayIdx, taskId, level){
   renderStatusBar();
 }
 function getQuality(dayIdx, taskId){
-  return qualityState[dayKey(dayIdx)]?.[taskId]||null;
+  return qualityState[_dateKey(selectedDate)]?.[taskId]||null;
 }
 function getQualityDebuffs(dayIdx){
   const data=state[dayKey(dayIdx)]||{};
@@ -1318,6 +1320,7 @@ function _renderWeekPanel(){
       +`<span class="dp-date">${d.getDate()}</span>`
       +`<span class="dp-pct">${isPast?(pct||0)+'%':(taskCount||0)+'t'}</span>`;
     btn.onclick=()=>{
+      selectedDate=d;
       selectedDay=dow;
       _selectedWeekOffset=_lastWeekExpanded?-1:1;
       renderToday();
@@ -1333,6 +1336,7 @@ function _renderReturnToToday(){
     banner.id='return-to-today';
     banner.className='return-to-today-banner';
     banner.onclick=()=>{
+      selectedDate=new Date();
       selectedDay=new Date().getDay();
       _selectedWeekOffset=0;
       _lastWeekExpanded=false;
@@ -1342,7 +1346,7 @@ function _renderReturnToToday(){
     const list=document.getElementById('task-list');
     if(list)list.insertAdjacentElement('beforebegin',banner);
   }
-  const isToday=selectedDay===new Date().getDay()&&_selectedWeekOffset===0;
+  const isToday=selectedDate.toDateString()===new Date().toDateString();
   banner.style.display=isToday?'none':'block';
   if(!isToday){
     const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -1399,7 +1403,7 @@ function renderToday(){
       +`<span class="dp-date">${d.getDate()}</span>`
       +(isToday?'':isPast?`<span class="dp-pct">${pct||0}%</span>`
         :isFuture?`<span class="dp-pct">${taskCount}t</span>`:'');
-    btn.onclick=()=>{selectedDay=dow;_selectedWeekOffset=0;renderToday();};
+    btn.onclick=()=>{selectedDate=d;selectedDay=dow;_selectedWeekOffset=0;renderToday();};
     strip.appendChild(btn);
   }
 
@@ -3261,13 +3265,15 @@ function renderFloorCountdown(){
   const active=!!(floorCondition);
   el.classList.toggle('active', active);
   if(!active){el.innerHTML='';return;}
-  const sc=getScheduleFor(selectedDay);
-  const data=getDayData(selectedDay);
+  const sc=getScheduleFor(selectedDay,selectedDate);
+  const _dk=_dateKey(selectedDate);
+  if(!state[_dk])state[_dk]={};
+  const data=state[_dk];
   const allT=sc.reduce((a,s)=>a.concat(s.tasks),[]);
   const unchecked=allT.filter(t=>!data[t.id]).length;
   if(unchecked===0){el.textContent='';el.className='floor-countdown';return;}
   // Only show countdown for today
-  if(selectedDay!==new Date().getDay()){el.textContent='';return;}
+  if(selectedDate.toDateString()!==new Date().toDateString()){el.textContent='';return;}
   const now=new Date();
   const midnight=new Date(now);midnight.setHours(24,0,0,0);
   const msLeft=midnight-now;
