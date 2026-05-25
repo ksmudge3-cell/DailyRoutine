@@ -20,7 +20,9 @@ messaging.onBackgroundMessage((payload) => {
     badge: '/DailyRoutine/icons/icon-192.png',
     data: payload.data,
     vibrate: [200, 100, 200],
-    requireInteraction: false
+    requireInteraction: false,
+    tag: 'dcc-notification',
+    renotify: false
   });
 });
 
