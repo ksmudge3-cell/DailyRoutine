@@ -1820,6 +1820,18 @@ const OVERALL_ICONS=['😫','😔','😐','🙂','😊'];
 
 const SLOT_LABELS={'10am':'10 AM','2pm':'2 PM','5pm':'5 PM'};
 
+const EVENING_DIMS=[
+  {id:'mood',     label:'Mood',                icons:['😫','😔','😐','🙂','😊']},
+  {id:'energy',   label:'Energy',              icons:['🪫','😴','😐','🙂','⚡']},
+  {id:'anxiety',  label:'Anxiety',             icons:['😌','🙂','😐','😰','😨']},
+  {id:'focus',    label:'Focus',               icons:['🌫️','😶','😐','🎯','💡']},
+  {id:'physical', label:'Physical Exhaustion', icons:['💪','🙂','😐','😓','😣']},
+  {id:'emotional',label:'Emotional Exhaustion',icons:['🧘','🙂','😐','😔','🫠']},
+];
+
+// Evening debrief state
+let _eveningSelections={};
+
 // Check-in sheet state
 let _vitalsSlot=null;
 let _vitalsSelectedIcons=new Set();
@@ -1973,6 +1985,108 @@ function _renderVitalsSheet(){
   }
 }
 
+function selectEveningDim(dim, val){
+  _eveningSelections[dim]=val;
+  // Update button states for this row only
+  document.querySelectorAll(`.eve-dim-btn[data-dim="${dim}"]`).forEach((btn,i)=>{
+    btn.classList.toggle('eve-dim-selected',i+1===val);
+  });
+  // Enable submit if all 6 selected
+  const allSelected=EVENING_DIMS.every(d=>_eveningSelections[d.id]!=null);
+  const btn=document.getElementById('eve-submit-btn');
+  if(btn){btn.disabled=!allSelected;btn.style.opacity=allSelected?'1':'0.4';}
+}
+
+async function submitEveningLog(){
+  const allSelected=EVENING_DIMS.every(d=>_eveningSelections[d.id]!=null);
+  if(!allSelected)return;
+
+  const dk=_dateKey(new Date());
+  if(!moodCheckins[dk])moodCheckins[dk]={};
+
+  const eveningData={
+    mood:_eveningSelections.mood,
+    energy:_eveningSelections.energy,
+    anxiety:_eveningSelections.anxiety,
+    focus:_eveningSelections.focus,
+    physical:_eveningSelections.physical,
+    emotional:_eveningSelections.emotional,
+    note:document.getElementById('eve-note')?.value.trim()||null,
+    loggedAt:Date.now()
+  };
+  moodCheckins[dk].evening=eveningData;
+  save('dr-mood-checkins',moodCheckins);
+
+  // Auto-check evening-log floor task
+  const tdayKey=_dateKey(new Date());
+  if(!state[tdayKey])state[tdayKey]={};
+  state[tdayKey]['evening-log']=Date.now();
+  save('dr-state',state);
+
+  // System notice
+  _showApothecaryToast('EVENING LOG COMPLETE: Vitals archived. Floor task cleared.');
+
+  // Reset form state
+  _eveningSelections={};
+
+  // Re-render
+  renderToday();
+  renderApothecaryRoom();
+
+  // Donut response (async — runs after render)
+  if(donutApiKey&&!donutLoading){
+    await _sendEveningLogToDonut(eveningData, moodCheckins[dk]);
+  }
+}
+
+async function _sendEveningLogToDonut(eveningData, todayCheckins){
+  if(!donutApiKey)return;
+  const wn=getWeekNumber();
+
+  // Build mood context string for Donut
+  const checkinSummary=(['10am','2pm','5pm']).map(slot=>{
+    const c=todayCheckins[slot];
+    if(!c?.loggedAt)return`${SLOT_LABELS[slot]}: not logged`;
+    return`${SLOT_LABELS[slot]}: overall ${c.overall}/5${c.icons?.length?' | '+c.icons.join(', '):''}${c.note?' | note: "'+c.note+'"':''}`;
+  }).join('\n');
+
+  const eveningSummary=EVENING_DIMS.map(d=>`${d.label}: ${eveningData[d.id]}/5`).join(' · ')+(eveningData.note?` | note: "${eveningData.note}"`:'');
+
+  // Synthetic user turn that feeds Donut the data without polluting the visible chat
+  const syntheticMsg=`[SYSTEM: Evening log submitted]\n\nToday's vitals:\n${checkinSummary}\n\nEvening debrief:\n${eveningSummary}\n\nRespond briefly as Donut. Read the data. One to three sentences. In character.`;
+
+  donutLoading=true;
+  try{
+    const history=donutChat.slice(-20).map(m=>({role:m.role,content:m.content}));
+    history.push({role:'user',content:syntheticMsg});
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':donutApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:donutBiscuitState?.active&&donutBiscuitState?.expiresAt>Date.now()?'claude-sonnet-4-6':'claude-haiku-4-5-20251001',
+        max_tokens:300,
+        system:DONUT_SYSTEM_CHAT
+          +`\n\n=== RIGHT NOW ===\nDay: ${DAYS[new Date().getDay()]}, ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}\nTime: ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}\nPhase: end of day`
+          +`\n\n=== FLOOR ===\nCompletion: ${dayPct(new Date().getDay())}% | Streak: ${calcStreak()} days | Active debuffs: ${getActiveDebuffNames().join(', ')||'none'}`
+          +`\n\n=== EVENING LOG JUST SUBMITTED ===\n${eveningSummary}\n\nToday's check-ins:\n${checkinSummary}`
+          +(donutPermanentMemory.length?`\n\n=== PERMANENT MEMORY ===\n${donutPermanentMemory.map(m=>`[${m.savedOn}] ${m.note}`).join('\n')}`:``),
+        messages:history
+      })
+    });
+    const data=await resp.json();
+    const text=data.content?.[0]?.text||'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference.';
+    // Push only the assistant reply — not the synthetic user turn
+    donutChat.push({role:'assistant',content:text,timestamp:Date.now(),week_number:wn});
+  }catch(e){
+    console.error('Evening log Donut error:',e);
+    donutChat.push({role:'assistant',content:'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference.',timestamp:Date.now(),week_number:wn});
+  }
+  save('dr-donut-chat',donutChat);
+  donutLoading=false;
+  // Navigate to Donut's Chamber to show the response
+  showRoom('coach');
+}
+
 function renderApothecarySection(){
   // Apothecary bonus section on the floor — only shows for today
   if(selectedDay!==new Date().getDay())return;
@@ -2039,7 +2153,7 @@ function renderApothecaryRoom(){
       <div style="flex:1;"><div class="task-name">${v.label}</div>
       <div class="task-time" style="color:rgba(184,217,38,0.5);">TAP TO LOG</div></div>
       <span style="font-family:var(--font-pixel);font-size:6px;color:var(--hint);padding:2px 5px;border:1px solid rgba(255,255,255,0.08);border-radius:3px;align-self:center;">BONUS</span></div>`;
-    const icons=(entry.icons||[]).join(' ');
+    const icons=(entry.icons||[]).map(id=>VITALS_ICONS.find(vi=>vi.id===id)?.emoji||'').join('');
     const time=new Date(entry.loggedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
     return `<div class="task done">
       <div class="check"><span class="check-mark">✓</span></div>
@@ -2048,24 +2162,60 @@ function renderApothecaryRoom(){
   }).join('');
 
   const eveningCheckin=checkins.evening;
-  const eveningHtml=eveningCheckin?.loggedAt
-    ? `<div class="task done"><div class="check"><span class="check-mark">✓</span></div>
-        <div style="flex:1;"><div class="task-name">Evening Log</div>
-        <div class="task-time">Submitted · Mood: ${eveningCheckin.mood}/5 · Energy: ${eveningCheckin.energy}/5</div></div></div>`
-    : `<div class="task" style="opacity:0.5;cursor:default;"><div class="check"></div>
-        <div style="flex:1;"><div class="task-name">Evening Log</div>
-        <div class="task-time">Not yet submitted</div></div></div>`;
+
+  // Evening debrief: show summary if done, form if not
+  const eveningFormOrSummary=eveningCheckin?.loggedAt
+    ? `<div class="task done" style="margin-bottom:16px;">
+        <div class="check"><span class="check-mark">✓</span></div>
+        <div style="flex:1;">
+          <div class="task-name">Evening Log</div>
+          <div class="task-time">Submitted · ${EVENING_DIMS.map(d=>`${d.label.split(' ')[0]}: ${eveningCheckin[d.id]}/5`).join(' · ')}</div>
+        </div>
+      </div>`
+    : _renderEveningForm();
 
   wrap.innerHTML=`
-    <div style="padding:0 16px 24px;">
+    <div style="padding:0 16px 32px;">
       <div class="section-label" style="color:var(--green);margin-top:16px;">Today's Vitals</div>
       ${todayEntries}
-      <div class="section-label" style="color:var(--green);margin-top:20px;">Evening Debrief</div>
-      ${eveningHtml}
-      <div style="margin-top:24px;padding:16px;background:var(--surface);border:1px solid rgba(184,217,38,0.15);border-radius:10px;text-align:center;">
-        <div style="font-family:var(--font-pixel);font-size:8px;color:var(--hint);letter-spacing:0.05em;margin-bottom:8px;">COMING SOON</div>
-        <div style="font-family:var(--font-body);font-size:14px;color:var(--pearl);opacity:0.6;">Check-in UI and evening debrief<br>coming in the next build.</div>
+      <div class="section-label" style="color:var(--green);margin-top:24px;">Evening Debrief</div>
+      ${eveningFormOrSummary}
+    </div>`;
+
+  // Inject eve-dim styles if not present
+  if(!document.getElementById('eve-styles')){
+    const s=document.createElement('style');
+    s.id='eve-styles';
+    s.textContent=`.eve-dim-selected{border-color:var(--green,#B8D926)!important;transform:scale(1.12);}`;
+    document.head.appendChild(s);
+  }
+}
+
+function _renderEveningForm(){
+  const dimRows=EVENING_DIMS.map(d=>`
+    <div style="margin-bottom:18px;">
+      <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--hint);letter-spacing:0.06em;margin-bottom:6px;">${d.label.toUpperCase()}</div>
+      <div style="font-family:var(--font-system,monospace);font-size:8px;color:rgba(255,255,255,0.25);margin-bottom:6px;">Low ──────────────── High</div>
+      <div style="display:flex;gap:6px;">
+        ${d.icons.map((emoji,i)=>`<button class="eve-dim-btn${_eveningSelections[d.id]===i+1?' eve-dim-selected':''}"
+          data-dim="${d.id}" onclick="selectEveningDim('${d.id}',${i+1})"
+          style="flex:1;font-size:22px;padding:8px 4px;background:var(--surface2);border:1.5px solid rgba(255,255,255,0.08);border-radius:8px;cursor:pointer;line-height:1;transition:border-color 0.15s,transform 0.1s;">
+          ${emoji}
+        </button>`).join('')}
       </div>
+    </div>`).join('');
+
+  return `
+    <div style="margin-top:8px;">
+      <div style="font-family:var(--font-body,serif);font-size:13px;color:var(--pearl);opacity:0.8;margin-bottom:20px;">How are you ending the day?</div>
+      ${dimRows}
+      <textarea id="eve-note" placeholder="how did today feel overall?"
+        style="width:100%;min-height:44px;max-height:120px;background:var(--surface2);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--pearl);font-family:var(--font-body,serif);font-size:14px;padding:10px 12px;resize:vertical;box-sizing:border-box;margin-bottom:16px;"
+        rows="2"></textarea>
+      <button id="eve-submit-btn" onclick="submitEveningLog()"
+        disabled style="opacity:0.4;width:100%;padding:14px;background:var(--green,#B8D926);color:#0a0a0c;font-family:var(--font-pixel,monospace);font-size:8px;letter-spacing:0.1em;border:none;border-radius:8px;cursor:pointer;transition:opacity 0.2s;">
+        SUBMIT EVENING LOG
+      </button>
     </div>`;
 }
 
