@@ -256,7 +256,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -344,6 +344,9 @@ async function loadFromSupabase(){
       if(d.donutRollingMemory)donutRollingMemory=d.donutRollingMemory;
       if(d.donutPermanentMemory)donutPermanentMemory=d.donutPermanentMemory;
       if(d.donutBiscuitState)donutBiscuitState=d.donutBiscuitState;
+      if(d.fcmToken!==undefined)fcmToken=d.fcmToken;
+      if(d.pushEnabled!==undefined)pushEnabled=d.pushEnabled;
+      if(d.pushDeclinedAt!==undefined)pushDeclinedAt=d.pushDeclinedAt;
       if(d.collapseLog)collapseLog=d.collapseLog;
       if(d.collapseState)collapseState=d.collapseState;
       if(d.archived){archived=d.archived;if(!archived.tasks)archived.tasks=[];}
@@ -468,6 +471,9 @@ let donutApiKey=loadLocal('dr-anthropic-key',null);
 let donutRollingMemory=load('dr-donut-rolling',[]);
 let donutPermanentMemory=load('dr-donut-permanent',[]);
 let donutBiscuitState=load('dr-donut-biscuit',{active:false,expiresAt:null});
+let fcmToken=loadLocal('dr-fcm-token',null);
+let pushEnabled=load('dr-push-enabled',null); // null=never asked, true=on, false=declined
+let pushDeclinedAt=load('dr-push-declined',null);
 let donutView='donut',donutLoading=false;
 let currentSpinTask=null, reSpinsLeft=3;
 
@@ -5684,7 +5690,86 @@ async function init(){
       setTimeout(()=>new Notification('Daily Routine',{body:n.label}),next-now);
     });
   }
+  // Push permission prompt — show after brief delay so UI settles first
+  setTimeout(maybeShowPushPrompt, 4000);
 }    // ← this closes init()
+
+/* ─── PUSH NOTIFICATIONS ────────────────────────────────────────────────── */
+window.saveFCMToken = function(token){
+  fcmToken=token;
+  pushEnabled=true;
+  saveLocal('dr-fcm-token',token);
+  syncToSupabase();
+};
+
+window.showDonutPushMessage = function(title, body){
+  // Show as a temporary Donut banner at top of screen
+  let banner=document.getElementById('push-donut-banner');
+  if(!banner){
+    banner=document.createElement('div');
+    banner.id='push-donut-banner';
+    banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:var(--surface2,#1a1a22);border-bottom:1px solid rgba(212,154,0,0.3);padding:10px 16px;display:flex;align-items:flex-start;gap:10px;animation:slideDown 0.3s ease;';
+    document.body.appendChild(banner);
+  }
+  banner.innerHTML=`
+    <div style="flex:1;">
+      <div style="font-family:var(--font-cinzel,'Cinzel'),serif;font-size:11px;color:var(--amber,#D49A00);letter-spacing:0.08em;">Princess Donut:</div>
+      <div style="font-family:'Crimson Pro',serif;font-size:14px;color:var(--text,#D9DCE1);margin-top:2px;">${body}</div>
+    </div>
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 0 0 8px;line-height:1;">×</button>`;
+  // Auto-dismiss after 8s
+  clearTimeout(banner._dismissTimer);
+  banner._dismissTimer=setTimeout(()=>banner.remove(),8000);
+};
+
+function maybeShowPushPrompt(){
+  // Skip if already set up or browser doesn't support
+  if(typeof Notification==='undefined')return;
+  if(Notification.permission==='denied')return;
+  if(pushEnabled===true)return;
+  // Respect 7-day decline cooldown
+  if(pushDeclinedAt&&(Date.now()-pushDeclinedAt)<7*24*60*60*1000)return;
+  showPushPermissionSheet();
+}
+
+function showPushPermissionSheet(){
+  const existing=document.getElementById('push-permission-sheet');
+  if(existing)existing.remove();
+  const sheet=document.createElement('div');
+  sheet.id='push-permission-sheet';
+  sheet.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:9998;background:var(--surface,#111116);border-top:1px solid rgba(212,154,0,0.3);padding:20px 20px 32px;';
+  sheet.innerHTML=`
+    <div style="font-family:var(--font-cinzel,'Cinzel'),serif;font-size:10px;letter-spacing:0.12em;color:var(--amber,#D49A00);margin-bottom:10px;">Princess Donut:</div>
+    <p style="font-family:'Crimson Pro',serif;font-size:15px;color:var(--text,#D9DCE1);margin:0 0 18px;line-height:1.5;">
+      I can send you reminders. Check-ins, floor warnings, the occasional observation. Nothing excessive.
+      I know what excessive looks like. This is not that.
+    </p>
+    <div style="display:flex;gap:10px;">
+      <button onclick="handlePushAllow()" style="flex:1;padding:12px;background:rgba(212,154,0,0.15);border:1px solid rgba(212,154,0,0.4);border-radius:8px;color:var(--amber,#D49A00);font-family:var(--font-cinzel,'Cinzel'),serif;font-size:11px;letter-spacing:0.08em;cursor:pointer;">ALLOW NOTIFICATIONS</button>
+      <button onclick="handlePushDecline()" style="padding:12px 16px;background:none;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--muted);font-size:12px;cursor:pointer;">Not now</button>
+    </div>`;
+  document.body.appendChild(sheet);
+}
+
+async function handlePushAllow(){
+  const sheet=document.getElementById('push-permission-sheet');
+  if(sheet)sheet.remove();
+  if(window.initPushNotifications){
+    const ok=await window.initPushNotifications();
+    if(!ok){
+      // Permission denied at browser level — note it
+      pushEnabled=false;
+      save('dr-push-enabled',false);
+    }
+  }
+}
+
+function handlePushDecline(){
+  const sheet=document.getElementById('push-permission-sheet');
+  if(sheet)sheet.remove();
+  pushDeclinedAt=Date.now();
+  save('dr-push-declined',pushDeclinedAt);
+}
 
 
 init();
