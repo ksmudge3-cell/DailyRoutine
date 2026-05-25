@@ -837,6 +837,20 @@ function openEditOverlay(type,sectionIdx,taskIdx){
 }
 
 function openEditOverlayById(type,taskId){
+  // One-offs live in schedule.oneOff, not in weekday/weekend. Check there first
+  // regardless of the schedType arg, since the long-press handler passes
+  // weekday/weekend based on selectedDay (Today Only is a synthetic section).
+  const oneOffIdx=(schedule.oneOff||[]).findIndex(t=>t.id===taskId);
+  if(oneOffIdx>=0){
+    const task=schedule.oneOff[oneOffIdx];
+    editCtx={type:'oneoff',oneOffId:task.id,isNew:false};
+    document.getElementById('edit-title').textContent='Edit task';
+    _editPopulateForm(task,task.section||'Today Only');
+    document.getElementById('edit-overlay').style.display='flex';
+    setTimeout(()=>document.getElementById('edit-name-input').focus(),80);
+    return;
+  }
+  // Recurring tasks: look in weekday/weekend
   const sc=type==='weekday'?schedule.weekday:schedule.weekend;
   let foundSection=-1,foundIdx=-1;
   sc.forEach((s,si)=>s.tasks.forEach((t,ti)=>{if(t.id===taskId){foundSection=si;foundIdx=ti;}}));
@@ -883,6 +897,37 @@ function saveTaskEdit(){
   const biweeklyStart=freq==='biweekly'?document.getElementById('edit-biweekly-start').value||null:null;
   const oneoffDate=rec==='one-off'?document.getElementById('edit-oneoff-date').value:null;
 
+  if(editCtx.type==='oneoff'){
+    // Editing an existing one-off — it lives in schedule.oneOff, NOT in weekday/weekend
+    if(!schedule.oneOff)schedule.oneOff=[];
+    const idx=schedule.oneOff.findIndex(t=>t.id===editCtx.oneOffId);
+    if(idx<0){closeEditOverlay();return;}
+    const task=schedule.oneOff[idx];
+    const time=document.getElementById('edit-time-input').value.trim();
+    if(rec==='one-off'){
+      // Stay as one-off — update in place
+      Object.assign(task,{name,time,section,date:oneoffDate,
+        days:null,frequency:null,monthly_date:null,biweekly_start:null});
+    } else {
+      // Convert one-off → recurring: remove from schedule.oneOff, push to weekday/weekend
+      const allWeekend=days.every(d=>d===0||d===6);
+      const targetType=allWeekend?'weekend':'weekday';
+      const sc=targetType==='weekday'?schedule.weekday:schedule.weekend;
+      let secIdx=sc.findIndex(s=>s.section===section);
+      if(secIdx<0)secIdx=0;
+      const targetSec=sc[secIdx];
+      schedule.oneOff.splice(idx,1);
+      targetSec.tasks.push({
+        id:task.id,name,time,section,recurrence:'recurring',days,frequency:freq,
+        monthly_date:monthlyDate,biweekly_start:biweeklyStart,date:null,order:targetSec.tasks.length
+      });
+    }
+    save('dr-schedule',schedule);
+    closeEditOverlay();
+    renderToday();
+    return;
+  }
+
   if(rec==='one-off'){
     // One-off: store in schedule.oneOff
     if(!schedule.oneOff)schedule.oneOff=[];
@@ -894,12 +939,20 @@ function saveTaskEdit(){
       };
       schedule.oneOff.push(newTask);
     } else {
-      // Find task in current location, move to oneOff
+      // Convert recurring → one-off: REMOVE from weekday/weekend and PUSH to schedule.oneOff.
+      // (Previously this did Object.assign in place, which left a phantom one-off in
+      // weekday/weekend that getScheduleFor returned true for on every day — making
+      // the task appear daily instead of date-restricted.)
       const sc=editCtx.type==='weekday'?schedule.weekday:schedule.weekend;
       const task=sc[editCtx.sectionIdx].tasks[editCtx.taskIdx];
-      Object.assign(task,{name,time:document.getElementById('edit-time-input').value.trim(),
-        section,recurrence:'one-off',date:oneoffDate,days:null,frequency:null,
-        monthly_date:null,biweekly_start:null});
+      const updatedTask={
+        ...task,name,time:document.getElementById('edit-time-input').value.trim(),
+        section,recurrence:'one-off',date:oneoffDate,
+        days:null,frequency:null,monthly_date:null,biweekly_start:null,
+        order:schedule.oneOff.length
+      };
+      sc[editCtx.sectionIdx].tasks.splice(editCtx.taskIdx,1);
+      schedule.oneOff.push(updatedTask);
     }
   } else {
     // Recurring
@@ -937,9 +990,29 @@ function saveTaskEdit(){
 function deleteTaskEdit(){
   if(!editCtx||editCtx.isNew)return;
   if(!confirm('Archive this task? Completion history is preserved and the task can be restored later.'))return;
+  if(!archived.tasks)archived.tasks=[];
+
+  if(editCtx.type==='oneoff'){
+    const idx=(schedule.oneOff||[]).findIndex(t=>t.id===editCtx.oneOffId);
+    if(idx<0){closeEditOverlay();return;}
+    const task=schedule.oneOff[idx];
+    archived.tasks.unshift({
+      task:{...task},
+      archivedAt:Date.now(),
+      type:'oneoff',
+      sectionName:task.section||'Today Only',
+    });
+    schedule.oneOff.splice(idx,1);
+    save('dr-schedule',schedule);
+    save('dr-archived',archived);
+    closeEditOverlay();
+    renderToday();
+    showPtsToast('Task archived — history preserved');
+    return;
+  }
+
   const sc=editCtx.type==='weekday'?schedule.weekday:schedule.weekend;
   const task=sc[editCtx.sectionIdx].tasks[editCtx.taskIdx];
-  if(!archived.tasks)archived.tasks=[];
   archived.tasks.unshift({
     task:{...task},
     archivedAt:Date.now(),
