@@ -292,8 +292,8 @@ async function loadFromSupabase(){
         if(weMorn&&!weMorn.tasks.find(t=>t.id==='meds-am'))weMorn.tasks.unshift({id:'meds-am',name:'Morning medications',time:'Morning'});
         if(weEve&&!weEve.tasks.find(t=>t.id==='meds-pm')){const si=weEve.tasks.findIndex(t=>t.id==='sleep');si>-1?weEve.tasks.splice(si,0,{id:'meds-pm',name:'Evening medications',time:'9:10 PM'}):weEve.tasks.push({id:'meds-pm',name:'Evening medications',time:'9:10 PM'});}
         // MIGRATION: ensure evening-log exists in Evening sections
-        if(wdEve&&!wdEve.tasks.find(t=>t.id==='evening-log')){const si=wdEve.tasks.findIndex(t=>t.id==='sleep');si>-1?wdEve.tasks.splice(si,0,{id:'evening-log',name:'Evening Log',time:'9:20 PM'}):wdEve.tasks.push({id:'evening-log',name:'Evening Log',time:'9:20 PM'});}
-        if(weEve&&!weEve.tasks.find(t=>t.id==='evening-log')){const si=weEve.tasks.findIndex(t=>t.id==='sleep');si>-1?weEve.tasks.splice(si,0,{id:'evening-log',name:'Evening Log',time:'9:20 PM'}):weEve.tasks.push({id:'evening-log',name:'Evening Log',time:'9:20 PM'});}
+        if(wdEve&&!wdEve.tasks.find(t=>t.id==='evening-log')){const si=wdEve.tasks.findIndex(t=>t.id==='sleep');const _elt={id:'evening-log',name:'Evening Log',time:'9:20 PM',recurrence:'recurring',days:[1,2,3,4,5],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:8};si>-1?wdEve.tasks.splice(si,0,_elt):wdEve.tasks.push(_elt);}
+        if(weEve&&!weEve.tasks.find(t=>t.id==='evening-log')){const si=weEve.tasks.findIndex(t=>t.id==='sleep');const _elt={id:'evening-log',name:'Evening Log',time:'9:20 PM',recurrence:'recurring',days:[0,6],frequency:'weekly',date:null,monthly_date:null,biweekly_start:null,order:5};si>-1?weEve.tasks.splice(si,0,_elt):weEve.tasks.push(_elt);}
         // MIGRATION: ensure gym task exists in weekday morning (insert before shower)
         if(wdMorn&&!wdMorn.tasks.find(t=>t.id==='gym')){
           const showerIdx=wdMorn.tasks.findIndex(t=>t.id==='shower');
