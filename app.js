@@ -429,7 +429,7 @@ let wheel=load('dr-wheel',DEFAULT_WHEEL);
 let wheelDone=load('dr-wheel-done',{});
 let wheelSkips=load('dr-wheel-skips',{});
 let wheelPinned=load('dr-wheel-pinned',{});
-let inbox=[];
+let inbox=load('dr-inbox',[]);
 let commTowerHistory=load('dr-comm-history',[]);
 let commTowerPending=load('dr-comm-pending',[]);
 let sideQuestBacklog=load('dr-side-quests',[]);
@@ -1616,7 +1616,7 @@ function renderToday(){
   // Scroll today into view
   setTimeout(()=>{
     const todayPill=strip.querySelector('.date-pill-today');
-    if(todayPill)todayPill.scrollIntoView({inline:'center',behavior:'smooth'});
+    if(todayPill)todayPill.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
   },50);
 
   const sc=getScheduleFor(selectedDay,selectedDate);
@@ -4868,7 +4868,8 @@ function renderRewards(){
           <div class="reward-cost${canAfford?' can-afford':''}" style="margin-top:4px;">${coinImg}${r.cost}${timesRedeemed>0?' · redeemed '+timesRedeemed+'×':''}</div>
 
         </div>
-        ${canAfford?pixelIcon(ICON_CHEST,12)+' Redeem':coinImg+r.cost}
+        <button class="redeem-btn" ${!canAfford?'disabled':''} onclick="redeemReward('${r.id}')">
+          ${canAfford?pixelIcon(ICON_CHEST,12)+' Redeem':coinImg+r.cost}
         </button>
       </div>`;
     }).join('');
@@ -5610,7 +5611,7 @@ async function init(){
     wheelDone=load('dr-wheel-done',{});
     wheelSkips=load('dr-wheel-skips',{});
     wheelPinned=load('dr-wheel-pinned',{});
-    inbox=[];
+    inbox=load('dr-inbox',[]);
     shopItems=load('dr-shop',[]);
     rewardsState=load('dr-rewards',DEFAULT_REWARDS_STATE);
     xpState=load('dr-xp',{totalXP:0,level:1,equippedTitle:null,unlockedTitles:['Freshly Fallen Crawler'],companionXP:{edna:0,kronk:0}});
