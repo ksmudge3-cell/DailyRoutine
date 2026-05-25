@@ -516,10 +516,17 @@ function getScheduleFor(dayIdx, date){
 
   // Inject one-off tasks for the date
   const dateStr=_localDateStr(d);
-  // keepUntilDone one-offs appear every day until marked complete (toggleTask
-  // splices them from schedule.oneOff on completion). Date-specific one-offs
-  // appear only on their dated day.
-  const oneOffs=(schedule.oneOff||[]).filter(t=>t.keepUntilDone||t.date===dateStr);
+  const dKey=_dateKey(d);
+  // Date-specific one-offs: only on their dated day.
+  // Keep-until-done one-offs: appear every day UNTIL they've been completed on a
+  // strictly earlier day. Marking done today leaves the task visible today (so
+  // the checkmark is visible and the user can undo on the completion day); the
+  // task hides on subsequent days only. Undoing on the completion day brings it
+  // back the next day too.
+  const oneOffs=(schedule.oneOff||[]).filter(t=>{
+    if(t.keepUntilDone)return !_keepUntilDoneCompletedBefore(t.id,dKey);
+    return t.date===dateStr;
+  });
   if(oneOffs.length){
     base.push({section:'Today Only',tasks:oneOffs.sort((a,b)=>(a.order??0)-(b.order??0))});
   }
@@ -746,27 +753,34 @@ function toggleTask(dayIdx,taskId){
   else delete state[k][taskId+'_ts'];
   save('dr-state',state);
   maybeAwardTaskPoints(taskId,dayIdx);
-  _maybeRemoveKeepUntilDone(taskId);
   renderToday();
 }
 
-// Auto-remove a keepUntilDone one-off from schedule.oneOff once it's been
-// marked done. Called after toggleTask and after cycleQuality's "done" branches.
-// "Done" = state[_dateKey][taskId] truthy AND quality is not 'gray' (N/A means
-// the task doesn't apply today, so it should remain for future days). Red
-// (intentional skip) doesn't reach here because cycleQuality sets state to
-// false on red, so the truthy-state guard already filters it.
-function _maybeRemoveKeepUntilDone(taskId){
-  if(!schedule.oneOff||!schedule.oneOff.length)return;
-  const idx=schedule.oneOff.findIndex(t=>t.id===taskId&&t.keepUntilDone);
-  if(idx<0)return;
-  const k=_dateKey(selectedDate);
-  const isDone=!!(state[k]&&state[k][taskId]);
-  if(!isDone)return;
-  const q=qualityState[k]&&qualityState[k][taskId];
-  if(q==='gray')return; // N/A: task remains for future days
-  schedule.oneOff.splice(idx,1);
-  save('dr-schedule',schedule);
+// Has this keep-until-done task been completed on a strictly earlier day than
+// currentDateKey? "Completed" = state[k][taskId] is truthy AND quality is not
+// 'gray' (N/A means "doesn't apply today" — never counts as completion). Red
+// quality is filtered automatically because cycleQuality sets state to false
+// on red. Used by getScheduleFor to hide completed keep-until-done tasks on
+// days after the completion. Undo on the completion day → state goes false →
+// no day has it done → task reappears.
+function _keepUntilDoneCompletedBefore(taskId,currentDateKey){
+  // currentDateKey format: `${y}-${m}-${d}` (zero-indexed month, no padding).
+  // Same format used for state keys — parse via the Date constructor.
+  const parts=currentDateKey.split('-');
+  if(parts.length!==3)return false;
+  const cMs=new Date(+parts[0],+parts[1],+parts[2]).getTime();
+  for(const k in state){
+    if(k===currentDateKey)continue; // include today's view even if done today
+    const kp=k.split('-');
+    if(kp.length!==3)continue;
+    const kMs=new Date(+kp[0],+kp[1],+kp[2]).getTime();
+    if(isNaN(kMs)||kMs>=cMs)continue; // skip future and same-day
+    if(state[k]&&state[k][taskId]){
+      const q=qualityState[k]&&qualityState[k][taskId];
+      if(q!=='gray')return true;
+    }
+  }
+  return false;
 }
 
 function resetToday(){state[dayKey(new Date().getDay())]={};save('dr-state',state);renderToday();}
@@ -1286,7 +1300,6 @@ function cycleQuality(dayIdx, taskId){
   }
 
   save('dr-quality',qualityState);
-  _maybeRemoveKeepUntilDone(taskId);
 
   // Surgical orb update — no full re-render, no scroll jump
   const orbTap=document.querySelector(`.q-orb-tap[data-taskid="${taskId}"]`);
