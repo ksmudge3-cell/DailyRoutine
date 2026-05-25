@@ -401,7 +401,7 @@ async function pullFromSupabase(opts){
       checkCommTowerReset();
       checkDonutChatReset();
       checkOneOffCleanup();
-      if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;saveLocal('dr-floor-condition',null);}
+      if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;save('dr-floor-condition',null);}
       // Re-render only when caller asks for it. Visibility-triggered pulls pass
       // rerender:true (user just refocused, fresh render is expected). Background
       // 30s polls pass nothing — data lands in memory + localStorage and the next
@@ -518,13 +518,19 @@ function getScheduleFor(dayIdx, date){
   const dateStr=_localDateStr(d);
   const dKey=_dateKey(d);
   // Date-specific one-offs: only on their dated day.
-  // Keep-until-done one-offs: appear every day UNTIL they've been completed on a
-  // strictly earlier day. Marking done today leaves the task visible today (so
-  // the checkmark is visible and the user can undo on the completion day); the
-  // task hides on subsequent days only. Undoing on the completion day brings it
-  // back the next day too.
+  // Keep-until-done one-offs: appear every day starting from t.startDate (the
+  // day the task was created) UNTIL they've been completed on a strictly
+  // earlier day. Without startDate (legacy tasks), parse the task ID timestamp
+  // (IDs are 't_'+Date.now()) so we don't retroactively inject into days that
+  // existed before the task did. Marking done today leaves the task visible
+  // today (so the checkmark is visible and the user can undo on the completion
+  // day); the task hides on subsequent days only.
   const oneOffs=(schedule.oneOff||[]).filter(t=>{
-    if(t.keepUntilDone)return !_keepUntilDoneCompletedBefore(t.id,dKey);
+    if(t.keepUntilDone){
+      const start=t.startDate||_taskIdToLocalDateStr(t.id)||_localDateStr();
+      if(dateStr<start)return false;
+      return !_keepUntilDoneCompletedBefore(t.id,dKey);
+    }
     return t.date===dateStr;
   });
   if(oneOffs.length){
@@ -756,6 +762,18 @@ function toggleTask(dayIdx,taskId){
   renderToday();
 }
 
+// Parse the creation timestamp from a task ID (IDs are created as 't_'+Date.now())
+// and return it formatted as _localDateStr. Used as a fallback startDate for
+// keep-until-done tasks that predate the explicit startDate field. Returns null
+// if the ID isn't in the expected format.
+function _taskIdToLocalDateStr(taskId){
+  const m=/^t_(\d+)$/.exec(taskId||'');
+  if(!m)return null;
+  const ts=parseInt(m[1],10);
+  if(!ts||isNaN(ts))return null;
+  return _localDateStr(new Date(ts));
+}
+
 // Has this keep-until-done task been completed on a strictly earlier day than
 // currentDateKey? "Completed" = state[k][taskId] is truthy AND quality is not
 // 'gray' (N/A means "doesn't apply today" — never counts as completion). Red
@@ -967,10 +985,12 @@ function saveTaskEdit(){
     const task=schedule.oneOff[idx];
     const time=document.getElementById('edit-time-input').value.trim();
     if(rec==='one-off'){
-      // Stay as one-off — update in place
+      // Stay as one-off — update in place. If turning keep-until-done ON, set
+      // startDate to today (or preserve existing). If turning it OFF, clear.
+      const startDate=keepUntilDone?(task.startDate||_localDateStr()):null;
       Object.assign(task,{name,time,section,date:oneoffDate,
         days:null,frequency:null,monthly_date:null,biweekly_start:null,
-        keepUntilDone});
+        keepUntilDone,startDate});
     } else {
       // Convert one-off → recurring: remove from schedule.oneOff, push to weekday/weekend
       const allWeekend=days.every(d=>d===0||d===6);
@@ -983,7 +1003,7 @@ function saveTaskEdit(){
       targetSec.tasks.push({
         id:task.id,name,time,section,recurrence:'recurring',days,frequency:freq,
         monthly_date:monthlyDate,biweekly_start:biweeklyStart,date:null,
-        keepUntilDone:false,order:targetSec.tasks.length
+        keepUntilDone:false,startDate:null,order:targetSec.tasks.length
       });
     }
     save('dr-schedule',schedule);
@@ -999,7 +1019,9 @@ function saveTaskEdit(){
       const newTask={
         id:'t_'+Date.now(),name,time:document.getElementById('edit-time-input').value.trim(),
         section,recurrence:'one-off',date:oneoffDate,days:null,frequency:null,
-        monthly_date:null,biweekly_start:null,keepUntilDone,order:schedule.oneOff.length
+        monthly_date:null,biweekly_start:null,keepUntilDone,
+        startDate:keepUntilDone?_localDateStr():null,
+        order:schedule.oneOff.length
       };
       schedule.oneOff.push(newTask);
     } else {
@@ -1013,7 +1035,8 @@ function saveTaskEdit(){
         ...task,name,time:document.getElementById('edit-time-input').value.trim(),
         section,recurrence:'one-off',date:oneoffDate,
         days:null,frequency:null,monthly_date:null,biweekly_start:null,
-        keepUntilDone,order:schedule.oneOff.length
+        keepUntilDone,startDate:keepUntilDone?_localDateStr():null,
+        order:schedule.oneOff.length
       };
       sc[editCtx.sectionIdx].tasks.splice(editCtx.taskIdx,1);
       schedule.oneOff.push(updatedTask);
@@ -1619,10 +1642,16 @@ function renderToday(){
   // Expand panels
   _renderWeekPanel();
 
-  // Scroll today into view
+  // Center today pill horizontally within the date strip. Done by setting
+  // strip.scrollLeft directly — NOT scrollIntoView, which would also move the
+  // window scroll if the strip is off-screen (e.g. user scrolled to evening
+  // tasks). This is purely horizontal within the strip's overflow.
   setTimeout(()=>{
     const todayPill=strip.querySelector('.date-pill-today');
-    if(todayPill)todayPill.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+    if(todayPill){
+      const target=todayPill.offsetLeft-(strip.clientWidth-todayPill.offsetWidth)/2;
+      strip.scrollTo({left:Math.max(0,target),behavior:'smooth'});
+    }
   },50);
 
   const sc=getScheduleFor(selectedDay,selectedDate);
@@ -3650,14 +3679,14 @@ function declareFloorCondition(id){
 function confirmFloorCondition(id){
   const def=FLOOR_CONDITIONS.find(f=>f.id===id);if(!def)return;
   floorCondition={id:def.id,name:def.name,tasks:def.tasks,effect:def.effect,date:todayStr()};
-  saveLocal('dr-floor-condition',floorCondition);
+  save('dr-floor-condition',floorCondition);
   document.getElementById('fc-confirm-overlay')?.remove();
   renderToday();renderProfile();
 }
 
 function clearFloorCondition(){
   floorCondition=null;
-  saveLocal('dr-floor-condition',null);
+  save('dr-floor-condition',null);
   renderToday();renderProfile();
 }
 
@@ -5642,7 +5671,7 @@ async function init(){
   checkOneOffCleanup();
   checkDonutBiscuitExpiry();
   checkFloorCollapse();
-  if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;saveLocal('dr-floor-condition',null);}
+  if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;save('dr-floor-condition',null);}
 
   // Re-render with fresh data if Supabase pulled changes
   if(synced)showRoom(loadLocal('dr-last-screen','today')||'today');
