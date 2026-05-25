@@ -895,7 +895,7 @@ function _editPopulateForm(task, sectionName){
     if(freq==='biweekly')document.getElementById('edit-biweekly-start').value=task.biweekly_start||_localDateStr();
     document.getElementById('edit-oneoff-date').value=task.date||_localDateStr();
   } else {
-    document.getElementById('edit-oneoff-date').value=task.date||new Date().toISOString().slice(0,10);
+    document.getElementById('edit-oneoff-date').value=task.date||_localDateStr();
   }
   _editHideValidation();
 }
