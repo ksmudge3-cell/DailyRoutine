@@ -1310,8 +1310,8 @@ function _renderWeekPanel(){
     const d=new Date(monday);d.setDate(monday.getDate()+offset+i);
     const dow=d.getDay();
     const isPast=d<=now;
-    const pct=isPast?dayPct(dow):null;
-    const taskCount=!isPast?getScheduleFor(dow).reduce((a,s)=>a+s.tasks.length,0):null;
+    const pct=isPast?dayPct(dow,d):null;
+    const taskCount=!isPast?getScheduleFor(dow,d).reduce((a,s)=>a+s.tasks.length,0):null;
     const btn=document.createElement('button');
     btn.className='date-pill date-pill-sm'+(_lastWeekExpanded?' date-pill-past':' date-pill-future');
     btn.innerHTML=`<span class="dp-day">${['S','M','T','W','T','F','S'][dow]}</span>`
@@ -1383,8 +1383,7 @@ function renderToday(){
     const isFuture=d>now&&!isToday;
     const isSelected=selectedDay===dow&&_selectedWeekOffset===0;
     const pct=isPast||isToday?dayPct(dow):null;
-    const taskCount=isFuture?getScheduleFor(dow).reduce((a,s)=>a+s.tasks.length,0):null;
-
+    const taskCount=isFuture?getScheduleFor(dow,d).reduce((a,s)=>a+s.tasks.length,0):null;
     const btn=document.createElement('button');
     let cls='date-pill';
     if(isToday)cls+=' date-pill-today';
