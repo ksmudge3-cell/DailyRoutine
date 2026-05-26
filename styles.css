@@ -2677,7 +2677,7 @@ body { font-family: var(--font-body); }
 #screen-map {
   min-height: 100dvh;
   background: #0a0a0c;
-  padding: 0 !important;
+  padding: env(safe-area-inset-top) 0 0 0 !important;
   overflow-x: clip;
   overflow-y: visible;
   width: 100%;
