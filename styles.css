@@ -7677,3 +7677,11 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
   white-space: nowrap;
   flex-shrink: 0;
 }}
+
+#screen-today {
+  padding-bottom: calc(60px + env(safe-area-inset-bottom));
+}
+
+#screen-profile {
+  padding-bottom: calc(60px + env(safe-area-inset-bottom));
+}
