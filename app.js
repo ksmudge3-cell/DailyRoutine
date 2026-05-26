@@ -255,10 +255,37 @@ function saveLocal(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){
 
 async function syncToSupabase(){
   try{
+    // Never let a device with fewer permanent memory entries overwrite one with more.
+    // Fetch current Supabase permanent memory and merge before writing.
+    let safePermanent=donutPermanentMemory;
+    let safeRolling=donutRollingMemory;
+    try{
+      const chk=await fetch(`${SUPABASE_URL}/rest/v1/routine_data?id=eq.${SYNC_ID}&select=data`,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+      const chkRows=await chk.json();
+      const remote=chkRows?.[0]?.data;
+      if(remote?.donutPermanentMemory?.length){
+        const merged=[...donutPermanentMemory];
+        remote.donutPermanentMemory.forEach(r=>{
+          if(!merged.find(m=>m.savedOn===r.savedOn&&m.note===r.note))merged.push(r);
+        });
+        safePermanent=merged;
+        if(merged.length>donutPermanentMemory.length){
+          donutPermanentMemory=merged;
+          saveLocal('dr-donut-permanent',merged);
+        }
+      }
+      if(remote?.donutRollingMemory?.length){
+        const merged=[...donutRollingMemory];
+        remote.donutRollingMemory.forEach(r=>{
+          if(!merged.find(m=>m.week_number===r.week_number))merged.push(r);
+        });
+        safeRolling=merged.slice(-4);
+      }
+    }catch(e){}
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -5160,6 +5187,15 @@ function renderCoach(){
   const biscuitBanner=donutBiscuitState?.active&&donutBiscuitState?.expiresAt>Date.now()
     ?`<div class=\"donut-biscuit-active\">✨ ENCHANTED BISCUIT ACTIVE — ${Math.ceil((donutBiscuitState.expiresAt-Date.now())/60000)} MIN REMAINING</div>`
     :'';
+  const memoryWarning=donutPermanentMemory.length>=15
+    ?`<div style="background:rgba(161,13,13,0.15);border:1px solid rgba(161,13,13,0.3);border-radius:6px;padding:8px 12px;margin-bottom:8px;font-family:var(--font-system,monospace);font-size:9px;color:var(--red-hi,#FF3B1F);letter-spacing:0.05em;">
+        WARNING: PERMANENT MEMORY HAS ${donutPermanentMemory.length} ENTRIES. RECOMMEND CLEANUP IN WAR ROOM.
+      </div>`
+    :donutPermanentMemory.length>=10
+    ?`<div style="background:rgba(212,154,0,0.1);border:1px solid rgba(212,154,0,0.25);border-radius:6px;padding:8px 12px;margin-bottom:8px;font-family:var(--font-system,monospace);font-size:9px;color:var(--amber);letter-spacing:0.05em;">
+        NOTICE: PERMANENT MEMORY AT ${donutPermanentMemory.length} ENTRIES. CONSIDER CLEANUP IN WAR ROOM.
+      </div>`
+    :'';
   wrap.innerHTML=`
 <div class="donut-tab-header">
       <button class="donut-view-btn${donutView==='report'?' active':''}" onclick="setDonutView('report')">REPORT</button>
@@ -5167,6 +5203,7 @@ function renderCoach(){
       <button class="donut-view-btn${donutView==='therapist'?' active':''}" onclick="setDonutView('therapist')">THERAPIST</button>
     </div>
     ${biscuitBanner}
+    ${memoryWarning}
     ${donutView==='report'?renderDonutReport():donutView==='donut'?renderDonutChat():renderTherapistMain()}`;
   setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},200);
 }
