@@ -258,7 +258,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -376,6 +376,7 @@ async function loadFromSupabase(){
         saveLocal('dr-floor-condition',floorCondition);
       }
       if(d.moodCheckins)moodCheckins=d.moodCheckins;
+      if(d.dogWalkCount)dogWalkCount=d.dogWalkCount;
       // Explicit save list — keys must match what init() re-loads (line ~4400).
       // Auto camelCase→kebab conversion was lossy (xpState→dr-xp-state, but actual key is dr-xp).
       saveLocal('dr-state',state);
@@ -449,7 +450,7 @@ window.addEventListener('beforeunload',()=>{
       fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins},updated_at:new Date().toISOString()}),
+        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount},updated_at:new Date().toISOString()}),
         keepalive:true
       });
     }catch(e){}
@@ -463,6 +464,7 @@ let dogTasks=load('dr-dog-tasks',DEFAULT_DOG_TASKS);
 let dogState=load('dr-dog-state',{});
 let groomState=load('dr-groom-state',{});
 let prevState=load('dr-prev-state',{});
+let dogWalkCount=load('dr-dog-walk-count',{});
 let notifs=load('dr-notifs',[]);
 let wheel=load('dr-wheel',DEFAULT_WHEEL);
 let wheelDone=load('dr-wheel-done',{});
@@ -1820,6 +1822,7 @@ function renderToday(){
 
   renderBonusToday(selectedDay);
   renderApothecarySection();
+  renderDogMentalSection();
 
   // Restore scroll after layout settles (see snapshot at top of function).
   // Only restore if there was a meaningful scroll position — avoids fighting
@@ -2118,6 +2121,45 @@ async function _sendEveningLogToDonut(eveningData, todayCheckins){
   if(currentRoom==='coach')renderCoach();
 }
 
+function renderDogMentalSection(){
+  // Dog mental health moments as tappable bonus tasks on the floor — today only
+  if(selectedDay!==new Date().getDay())return;
+  const list=document.getElementById('task-list');
+  if(!list)return;
+  const dogData=getDogDayData();
+  const tasks=dogTasks.mental||[];
+  if(!tasks.length)return;
+
+  const sectionWrap=document.createElement('div');
+  sectionWrap.className='task-section-group';
+
+  const lbl=document.createElement('div');
+  lbl.className='section-label';
+  lbl.innerHTML='<span>Dog Moments</span>';
+  sectionWrap.appendChild(lbl);
+
+  tasks.forEach(t=>{
+    const done=!!dogData[t.id];
+    const div=document.createElement('div');
+    div.className='task'+(done?' done':'');
+    div.style.cssText='cursor:pointer;';
+    div.innerHTML=`<div class="check"><span class="check-mark">✓</span></div>
+      <div style="flex:1;">
+        <div class="task-name"><span style="margin-right:4px;">🐾</span>${t.name}</div>
+        <div class="task-time" style="color:var(--hint);">BONUS · +2🪙 +5⚡ · ${t.time}</div>
+      </div>
+      <span style="font-family:var(--font-pixel);font-size:6px;color:var(--hint);letter-spacing:0.05em;padding:2px 5px;border:1px solid rgba(255,255,255,0.1);border-radius:3px;align-self:center;">BONUS</span>`;
+    div.onclick=()=>{
+      if(!done){
+        toggleDogTask(t.id);
+      }
+    };
+    sectionWrap.appendChild(div);
+  });
+
+  list.appendChild(sectionWrap);
+}
+
 function renderApothecarySection(){
   // Apothecary bonus section on the floor — only shows for today
   if(selectedDay!==new Date().getDay())return;
@@ -2280,7 +2322,18 @@ function toggleDogTask(taskId){
   if(selectedDay===new Date().getDay())renderToday();
 }
 
-function markGrooming(id){groomState[id]=Date.now();save('dr-groom-state',groomState);renderDogs();}
+function logExtraWalk(taskId){
+  const k=todayStr();
+  if(!dogState[k])dogState[k]={};
+  // First tap checks the task, subsequent taps just increment count
+  if(!dogState[k][taskId])dogState[k][taskId]=true;
+  if(!dogWalkCount[k])dogWalkCount[k]={};
+  dogWalkCount[k][taskId]=(dogWalkCount[k][taskId]||0)+1;
+  save('dr-dog-state',dogState);
+  save('dr-dog-walk-count',dogWalkCount);
+  renderDogs();
+  if(selectedDay===new Date().getDay())renderToday();
+}
 function markPrevention(id){prevState[id]=Date.now();save('dr-prev-state',prevState);renderDogs();}
 
 // Run on startup AND after Supabase load to clean stale data
@@ -2340,12 +2393,19 @@ function renderDogs(){
   const data=getDogDayData();
   const dt=dogTasks.shared||{morning:[],evening:[]};
 
-  const dogTaskHtml=tasks=>tasks.map(t=>`
-    <div class="dog-task${data[t.id]?' done':''}" onclick="toggleDogTask('${t.id}')">
+  const dogTaskHtml=tasks=>tasks.map(t=>{
+    const isWalk=t.id.includes('walk');
+    const todayKey=todayStr();
+    const walkCount=isWalk?(dogWalkCount[todayKey]?.[t.id]||0):0;
+    const countBadge=isWalk&&walkCount>0?`<span style="font-family:var(--font-num,monospace);font-size:8px;color:var(--amber);margin-left:6px;">${walkCount} today</span>`:'';
+    const plusBtn=isWalk?`<button onclick="event.stopPropagation();logExtraWalk('${t.id}')" style="background:none;border:1px solid rgba(212,154,0,0.3);color:var(--amber);border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;margin-left:8px;line-height:1;">+</button>`:'';
+    return`<div class="dog-task${data[t.id]?' done':''}" onclick="toggleDogTask('${t.id}')">
       <div class="dog-check">${data[t.id]?'✓':''}</div>
-      <div class="dog-task-name">${t.name}</div>
+      <div class="dog-task-name">${t.name}${countBadge}</div>
       <div class="dog-task-time">${t.time}</div>
-    </div>`).join('');
+      ${plusBtn}
+    </div>`;
+  }).join('');
 
   const now=new Date(),dom=now.getDate();
 
@@ -2374,22 +2434,14 @@ function renderDogs(){
     return `<div class="groom-row"><span class="groom-name">${p.label}</span>${status}<button class="groom-btn" onclick="markPrevention('${p.id}')">Done today</button></div>`;
   }).join('');
 
-  const mentalHtml=(dogTasks.mental||[]).map(t=>`
-    <div class="mental-task${data[t.id]?' done':''}" onclick="toggleDogTask('${t.id}')">
-      <div class="mental-check">${data[t.id]?'✓':''}</div>
-      <div class="mental-name">${t.name}</div>
-      <div style="font-size:10px;color:var(--hint);margin-left:auto;">${t.time}</div>
-    </div>`).join('');
+  const mentalHtml=''; // Mental health moments now live on the floor as bonus tasks
 
   document.getElementById('dog-content').innerHTML=`
+    <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);text-align:center;padding:4px 16px 12px;letter-spacing:0.04em;">Kronk is also present. He is unaware of the jurisdiction.</div>
     <div class="dog-section">
       <div class="dog-header" style="align-items:center;gap:10px;"><div style="display:flex;gap:4px;"><img src="${CHAR_FACE_EDNA_HAPPY}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(180,100,220,0.5);"><img src="${CHAR_FACE_KRONK_HAPPY}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(80,180,220,0.5);"></div><div><div class="dog-name">Edna & Kronk</div><div class="dog-streak">Morning + evening care</div></div></div>
-      <div class="section-label" style="margin-top:0;margin-bottom:8px;">Morning</div>${dogTaskHtml(dt.morning||[])}
-      <div class="section-label" style="margin-bottom:8px;">Evening</div>${dogTaskHtml(dt.evening||[])}
-    </div>
-    <div class="mental-card">
-      <h3>Mental health moments <span style="font-size:10px;color:var(--hint);text-transform:none;letter-spacing:0;font-weight:400;">(→ counts as bonus tasks, not dog care %)</span></h3>
-      ${mentalHtml}
+      <div class="section-label" style="margin-top:0;margin-bottom:8px;font-size:9px;letter-spacing:0.1em;">DAILY OPS — MORNING</div>${dogTaskHtml(dt.morning||[])}
+      <div class="section-label" style="margin-bottom:8px;font-size:9px;letter-spacing:0.1em;">DAILY OPS — EVENING</div>${dogTaskHtml(dt.evening||[])}
     </div>
     <div class="grooming-card"><h3>Grooming tracker</h3>${groomHtml}</div>
     <div class="grooming-card"><h3>Prevention tracker <span style="font-size:10px;color:var(--muted);font-weight:400;">monthly — day ${(dogTasks.prevention||[{dayOfMonth:15}])[0].dayOfMonth}</span></h3>${prevHtml}</div>`;
@@ -5897,7 +5949,7 @@ function endGymCardio(){
 
 const ROOMS={
   today:  {name:'The Floor',       label:'FLOOR',    door:()=>ENV_DOOR_GOLD_OPEN,  header:'THE FLOOR',       color:'var(--amber)'},
-  dogs:   {name:'The Kennels',     label:'KENNELS',  door:()=>ENV_DOOR_DAMAGED,    header:'THE KENNELS',     color:'var(--amber)'},
+  dogs:   {name:'The Kennels',     label:'KENNELS',  door:()=>ENV_DOOR_DAMAGED,    header:'KENNEL BLOCK 7',  color:'var(--amber)'},
   spin:   {name:'The Arena',       label:'ARENA',    door:()=>ENV_DOOR_DANGER,     header:'THE ARENA',       color:'var(--red)'},
   gym:    {name:'The Gym',         label:'GYM',      door:()=>ENV_DOOR_TEAL_LOCKED,header:'THE GYM',         color:'var(--teal)'},
   inbox:  {name:'The Comm Tower',  label:'COMMS',    door:()=>ENV_DOOR_BLUE_MAGIC, header:'THE COMM TOWER',  color:'var(--blue)'},
