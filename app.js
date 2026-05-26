@@ -2595,18 +2595,33 @@ function toggleTrainingCommand(dog, cmdId){
 
 function logTrainingSession(){
   const today=todayStr();
-  // Remove any existing entry for today
-  trainingLog=trainingLog.filter(s=>s.date!==today);
+  const ednaCommands=[..._trainingSession.edna];
+  const kronkCommands=[..._trainingSession.kronk];
+  if(!ednaCommands.length&&!kronkCommands.length)return;
+
+  // Append session — multiple allowed per day
   trainingLog.push({
     date:today,
-    edna:[..._trainingSession.edna],
-    kronk:[..._trainingSession.kronk],
+    edna:ednaCommands,
+    kronk:kronkCommands,
     loggedAt:Date.now()
   });
   save('dr-training-log',trainingLog);
+
   // Award Obedience per command practiced
-  _trainingSession.edna.forEach(()=>updateDogStat('edna','obedience',2));
-  _trainingSession.kronk.forEach(()=>updateDogStat('kronk','obedience',3));
+  ednaCommands.forEach(()=>updateDogStat('edna','obedience',2));
+  kronkCommands.forEach(()=>updateDogStat('kronk','obedience',3));
+
+  // Comm Tower entry
+  const ednaList=ednaCommands.map(id=>TRAINING_COMMANDS.find(c=>c.id===id)?.label||id).join(', ')||'none';
+  const kronkList=kronkCommands.map(id=>TRAINING_COMMANDS.find(c=>c.id===id)?.label||id).join(', ')||'none';
+  commTowerHistory.push({
+    role:'system',
+    content:`LOG ENTRY: TRAINING SESSION RECORDED. Edna: ${ednaList}. Kronk: ${kronkList}. Obedience stats updated. The dungeon has noted the effort.`,
+    ts:Date.now()
+  });
+  save('dr-comm-history',commTowerHistory);
+
   _trainingSession={edna:[],kronk:[]};
   awardXP(10,'Training session');
   renderDogs();
@@ -2614,15 +2629,12 @@ function logTrainingSession(){
 
 function renderTrainingSection(){
   const today=todayStr();
-  const todaySession=trainingLog.find(s=>s.date===today);
-  const lastSession=trainingLog.length
-    ?trainingLog[trainingLog.length-(todaySession&&trainingLog.length>1?2:1)]
-    :null;
-  const lastTrained=lastSession
+  const todaySessions=trainingLog.filter(s=>s.date===today);
+  const lastSession=[...trainingLog].reverse().find(s=>s.date!==today)||null;
+  const lastTrained=todaySessions.length?'Today':lastSession
     ?new Date(lastSession.loggedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})
     :'never';
-  const lastCount=lastSession?(lastSession.edna.length+lastSession.kronk.length):0;
-  const alreadyLogged=!!todaySession;
+  const sessionCount=todaySessions.length;
 
   // 7-day history
   const now=new Date();
@@ -2646,11 +2658,9 @@ function renderTrainingSection(){
   </div>`;
 
   const commandGrid=TRAINING_COMMANDS.map(cmd=>{
-    const ednaDone=alreadyLogged?todaySession.edna.includes(cmd.id):_trainingSession.edna.includes(cmd.id);
-    const kronkDone=alreadyLogged?todaySession.kronk.includes(cmd.id):_trainingSession.kronk.includes(cmd.id);
-    const chk=(done,dog)=>alreadyLogged
-      ?`<div style="width:28px;height:28px;border-radius:4px;background:${done?'rgba(184,217,38,0.2)':'rgba(255,255,255,0.05)'};border:1px solid ${done?'rgba(184,217,38,0.4)':'rgba(255,255,255,0.1)'};display:flex;align-items:center;justify-content:center;font-size:14px;">${done?'✓':''}</div>`
-      :`<div onclick="toggleTrainingCommand('${dog}','${cmd.id}')" style="width:28px;height:28px;border-radius:4px;background:${done?'rgba(184,217,38,0.2)':'rgba(255,255,255,0.05)'};border:1px solid ${done?'rgba(184,217,38,0.4)':'rgba(255,255,255,0.1)'};display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;">${done?'✓':''}</div>`;
+    const ednaDone=_trainingSession.edna.includes(cmd.id);
+    const kronkDone=_trainingSession.kronk.includes(cmd.id);
+    const chk=(done,dog)=>`<div onclick="toggleTrainingCommand('${dog}','${cmd.id}')" style="width:28px;height:28px;border-radius:4px;background:${done?'rgba(184,217,38,0.2)':'rgba(255,255,255,0.05)'};border:1.5px solid ${done?'rgba(184,217,38,0.4)':'rgba(255,255,255,0.1)'};display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;">${done?'✓':''}</div>`;
     const kronkCell=cmd.kronkLocked
       ?`<div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);">—</div>`
       :chk(kronkDone,'kronk');
@@ -2665,9 +2675,9 @@ function renderTrainingSection(){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <div>
         <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--green);letter-spacing:0.08em;">TRAINING SESSION</div>
-        <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);margin-top:3px;">Last trained: ${lastTrained}${lastCount?' · '+lastCount+' commands':''}</div>
+        <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);margin-top:3px;">Last trained: ${lastTrained}${sessionCount?` · ${sessionCount} session${sessionCount>1?'s':''} today`:''}</div>
       </div>
-      ${alreadyLogged?`<span style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--green);padding:3px 6px;border:1px solid rgba(184,217,38,0.3);border-radius:3px;">LOGGED</span>`:''}
+      ${sessionCount?`<span style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--green);padding:3px 6px;border:1px solid rgba(184,217,38,0.3);border-radius:3px;">${sessionCount}x TODAY</span>`:''}
     </div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.08);">
       <div style="flex:1;"></div>
@@ -2675,7 +2685,7 @@ function renderTrainingSection(){
       <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--void-hi,#8E65FF);letter-spacing:0.05em;width:28px;text-align:center;">KRONK</div>
     </div>
     ${commandGrid}
-    ${!alreadyLogged?`<button onclick="logTrainingSession()" style="width:100%;margin-top:12px;padding:12px;background:rgba(184,217,38,0.1);border:1px solid rgba(184,217,38,0.3);border-radius:8px;color:var(--green);font-family:var(--font-pixel,monospace);font-size:8px;letter-spacing:0.08em;cursor:pointer;">LOG SESSION</button>`:''}
+    <button onclick="logTrainingSession()" style="width:100%;margin-top:12px;padding:12px;background:rgba(184,217,38,0.1);border:1px solid rgba(184,217,38,0.3);border-radius:8px;color:var(--green);font-family:var(--font-pixel,monospace);font-size:8px;letter-spacing:0.08em;cursor:pointer;">LOG SESSION</button>
     ${historyHtml}
   </div>`;
 }
