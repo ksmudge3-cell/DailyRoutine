@@ -5005,6 +5005,8 @@ function _buildMoodContext(){
     :'Evening log: not yet submitted';
   return`${checkinLines}\n${eveLine}`;
 }
+
+async function sendDonutMessage(message){
   if(!donutApiKey||!message.trim()||donutLoading)return;
   const wn=getWeekNumber();
   const weekData=buildWeekData();
