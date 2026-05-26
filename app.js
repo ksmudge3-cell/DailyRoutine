@@ -4779,7 +4779,14 @@ function renderProfile(){
         </div>`).join('');
     })()}
 
-    <div class="system-msg"><div class="sys-body">${DCC.system.broadcast}</div></div>`;
+    <div class="system-msg"><div class="sys-body">${DCC.system.broadcast}</div></div>
+    <div style="margin:16px 0 4px;padding:12px 14px;background:var(--surface2);border:1px solid rgba(255,255,255,0.08);border-radius:8px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--hint);letter-spacing:0.06em;margin-bottom:3px;">PUSH NOTIFICATIONS</div>
+        <div style="font-family:var(--font-system,monospace);font-size:9px;color:${fcmToken?'var(--teal)':'var(--hint)'};">${fcmToken?'Token registered':'No token — tap to register'}</div>
+      </div>
+      <button onclick="refreshPushToken()" style="background:none;border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--pearl);font-family:var(--font-pixel,monospace);font-size:7px;letter-spacing:0.05em;padding:6px 10px;cursor:pointer;">REFRESH TOKEN</button>
+    </div>`;
 }
 /* ─── DONUT TAB ────────────────────────────────────────────────────────────── */
 
@@ -5458,6 +5465,28 @@ function saveDonutKey(){
   donutApiKey=inp.value.trim();
   saveLocal('dr-anthropic-key',donutApiKey);
   renderCoach();
+}
+
+async function refreshPushToken(){
+  if(!window.initPushNotifications){
+    alert('Push notification setup not available on this browser.');
+    return;
+  }
+  const btn=document.querySelector('[onclick="refreshPushToken()"]');
+  if(btn){btn.textContent='REFRESHING...';btn.disabled=true;}
+  try{
+    const ok=await window.initPushNotifications();
+    if(ok){
+      syncToSupabase();
+      renderProfile();
+    } else {
+      if(btn){btn.textContent='REFRESH TOKEN';btn.disabled=false;}
+      alert('Could not get push token. Check notification permissions in browser settings.');
+    }
+  }catch(e){
+    if(btn){btn.textContent='REFRESH TOKEN';btn.disabled=false;}
+    console.error('Push token refresh error:',e);
+  }
 }
 function equipTitle(title){
   xpState.equippedTitle=title;
