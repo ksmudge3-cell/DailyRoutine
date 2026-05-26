@@ -1895,13 +1895,13 @@ function submitVitalsCheckin(){
     const msg=`SARA. THAT IS A LOT OF THINGS AT ONCE. I AM HERE IF YOU WANT TO UNPACK ANY OF IT.`;
     donutChat.push({role:'assistant',content:msg,timestamp:Date.now(),week_number:getWeekNumber()});
     save('dr-donut-chat',donutChat);
-    setTimeout(()=>showRoom('coach'),400);
+    _showApothecaryToast('DONUT HAS A MESSAGE FOR YOU.');
   } else if(negatives.length===1){
     const label=VITALS_ICONS.find(v=>v.id===negatives[0])?.label.toUpperCase()||negatives[0].toUpperCase();
     const msg=`YOU CHECKED ${label}. I NOTICED. THE APOTHECARY IS OPEN IF YOU WANT TO TALK.`;
     donutChat.push({role:'assistant',content:msg,timestamp:Date.now(),week_number:getWeekNumber()});
     save('dr-donut-chat',donutChat);
-    setTimeout(()=>showRoom('coach'),400);
+    _showApothecaryToast('DONUT HAS A MESSAGE FOR YOU.');
   }
 
   closeVitalsCheckin();
@@ -2083,8 +2083,10 @@ async function _sendEveningLogToDonut(eveningData, todayCheckins){
   }
   save('dr-donut-chat',donutChat);
   donutLoading=false;
-  // Navigate to Donut's Chamber to show the response
-  showRoom('coach');
+  // Don't auto-navigate — let Sara go to Donut's Chamber on her own.
+  // Auto-routing on Monday collides with generateWeeklySummary and can corrupt state.
+  _showApothecaryToast('DONUT HAS RESPONDED. Visit her chamber when ready.');
+  if(currentRoom==='coach')renderCoach();
 }
 
 function renderApothecarySection(){
