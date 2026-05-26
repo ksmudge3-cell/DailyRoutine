@@ -2368,6 +2368,17 @@ function logExtraWalk(taskId){
   renderDogs();
   if(selectedDay===new Date().getDay())renderToday();
 }
+
+function removeWalk(taskId){
+  const k=todayStr();
+  if(!dogWalkCount[k])return;
+  dogWalkCount[k][taskId]=Math.max(0,(dogWalkCount[k][taskId]||0)-1);
+  if(dogWalkCount[k][taskId]===0&&dogState[k])dogState[k][taskId]=false;
+  save('dr-dog-walk-count',dogWalkCount);
+  save('dr-dog-state',dogState);
+  renderDogs();
+  if(selectedDay===new Date().getDay())renderToday();
+}
 function markPrevention(id){prevState[id]=Date.now();save('dr-prev-state',prevState);renderDogs();}
 
 // Run on startup AND after Supabase load to clean stale data
@@ -2441,6 +2452,7 @@ function _kronkStatus(dogData){
 
 const TRAINING_COMMANDS=[
   {id:'leave-it', label:'Leave it'},
+  {id:'sit',      label:'Sit'},
   {id:'off',      label:'Off'},
   {id:'down',     label:'Down'},
   {id:'shake',    label:'Shake', kronkLocked:true}, // Kronk hasn't learned this yet
@@ -2614,7 +2626,7 @@ function renderDogs(){
     const todayKey=todayStr();
     const walkCount=isWalk?(dogWalkCount[todayKey]?.[t.id]||0):0;
     const countBadge=isWalk&&walkCount>0?`<span style="font-family:var(--font-num,monospace);font-size:8px;color:var(--amber);margin-left:6px;">${walkCount} today</span>`:'';
-    const plusBtn=isWalk?`<button onclick="event.stopPropagation();logExtraWalk('${t.id}')" style="background:none;border:1px solid rgba(212,154,0,0.3);color:var(--amber);border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;margin-left:8px;line-height:1;">+</button>`:'';
+    const plusBtn=isWalk?`<button onclick="event.stopPropagation();logExtraWalk('${t.id}')" style="background:none;border:1px solid rgba(212,154,0,0.3);color:var(--amber);border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;margin-left:8px;line-height:1;">+</button>${walkCount>0?`<button onclick="event.stopPropagation();removeWalk('${t.id}')" style="background:none;border:1px solid rgba(255,255,255,0.12);color:var(--hint);border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;margin-left:4px;line-height:1;">−</button>`:''}`:'';
     return`<div class="dog-task${data[t.id]?' done':''}" onclick="toggleDogTask('${t.id}')">
       <div class="dog-check">${data[t.id]?'✓':''}</div>
       <div class="dog-task-name">${t.name}${countBadge}</div>
