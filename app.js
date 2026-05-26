@@ -406,7 +406,14 @@ async function loadFromSupabase(){
       if(d.dogWalkCount)dogWalkCount=d.dogWalkCount;
       if(d.ednaIncidents)ednaIncidents=d.ednaIncidents;
       if(d.kronkChaosLog)kronkChaosLog=d.kronkChaosLog;
-      if(d.trainingLog)trainingLog=d.trainingLog;
+      if(d.trainingLog){
+        // Merge by loggedAt — never drop local sessions
+        const merged=[...trainingLog];
+        (d.trainingLog||[]).forEach(r=>{
+          if(!merged.find(m=>m.loggedAt===r.loggedAt))merged.push(r);
+        });
+        trainingLog=merged.sort((a,b)=>a.loggedAt-b.loggedAt);
+      }
       if(d.ednaStats)ednaStats={...ednaStats,...d.ednaStats};
       if(d.kronkStats)kronkStats={...kronkStats,...d.kronkStats};
       // Explicit save list — keys must match what init() re-loads (line ~4400).
