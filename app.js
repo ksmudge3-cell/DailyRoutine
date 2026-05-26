@@ -346,8 +346,22 @@ async function loadFromSupabase(){
       if(d.donutWeeklySummary)donutWeeklySummary=d.donutWeeklySummary;
       if(d.donutTherapistSummary)donutTherapistSummary=d.donutTherapistSummary;
       if(d.donutApiKey){donutApiKey=d.donutApiKey;saveLocal('dr-anthropic-key',donutApiKey);}
-      if(d.donutRollingMemory)donutRollingMemory=d.donutRollingMemory;
-      if(d.donutPermanentMemory)donutPermanentMemory=d.donutPermanentMemory;
+      if(d.donutRollingMemory){
+        // Merge: keep local entries not in remote, append remote entries not in local
+        const merged=[...donutRollingMemory];
+        (d.donutRollingMemory||[]).forEach(r=>{
+          if(!merged.find(m=>m.week_number===r.week_number))merged.push(r);
+        });
+        donutRollingMemory=merged.slice(-4);
+      }
+      if(d.donutPermanentMemory){
+        // NEVER overwrite — merge only. Local entries always survive.
+        const merged=[...donutPermanentMemory];
+        (d.donutPermanentMemory||[]).forEach(r=>{
+          if(!merged.find(m=>m.savedOn===r.savedOn&&m.note===r.note))merged.push(r);
+        });
+        donutPermanentMemory=merged;
+      }
       if(d.donutBiscuitState)donutBiscuitState=d.donutBiscuitState;
       if(d.fcmToken!==undefined)fcmToken=d.fcmToken;
       if(d.pushEnabled!==undefined)pushEnabled=d.pushEnabled;
