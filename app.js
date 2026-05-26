@@ -1857,6 +1857,7 @@ function renderToday(){
   renderBonusToday(selectedDay);
   renderApothecarySection();
   renderDogMentalSection();
+  renderPreventionFloorSection();
 
   // Restore scroll after layout settles (see snapshot at top of function).
   // Only restore if there was a meaningful scroll position — avoids fighting
@@ -2153,6 +2154,57 @@ async function _sendEveningLogToDonut(eveningData, todayCheckins){
   // Auto-routing on Monday collides with generateWeeklySummary and can corrupt state.
   _showApothecaryToast('DONUT HAS RESPONDED. Visit her chamber when ready.');
   if(currentRoom==='coach')renderCoach();
+}
+
+function renderPreventionFloorSection(){
+  // Only show on today, and only on/after the 15th until logged this month
+  if(selectedDay!==new Date().getDay())return;
+  const list=document.getElementById('task-list');
+  if(!list)return;
+  const now=new Date();
+  const dom=now.getDate();
+  if(dom<15)return; // Not yet due this month
+
+  const tasks=dogTasks.prevention||[];
+  const dueTasks=tasks.filter(p=>{
+    const lastTs=prevState[p.id];
+    if(!lastTs)return true; // Never done
+    const lastDate=new Date(lastTs);
+    const monthsSince=(now.getFullYear()-lastDate.getFullYear())*12+(now.getMonth()-lastDate.getMonth());
+    return monthsSince>=1; // Due again
+  });
+  if(!dueTasks.length)return;
+
+  const PREV_PRODUCTS={'prev-e-monthly':'Simparica Trio','prev-k-monthly':'Interceptor + NexGard'};
+
+  const sectionWrap=document.createElement('div');
+  sectionWrap.className='task-section-group';
+
+  const lbl=document.createElement('div');
+  lbl.className='section-label';
+  lbl.innerHTML='<span>Monthly Prevention</span>';
+  sectionWrap.appendChild(lbl);
+
+  dueTasks.forEach(p=>{
+    const product=PREV_PRODUCTS[p.id]||'';
+    const div=document.createElement('div');
+    div.className='task';
+    div.style.cssText='cursor:pointer;';
+    div.innerHTML=`<div class="check"><span class="check-mark">✓</span></div>
+      <div style="flex:1;">
+        <div class="task-name">${p.label}</div>
+        <div class="task-time" style="color:var(--teal);">${product} · tap to log</div>
+      </div>
+      <span style="font-family:var(--font-pixel);font-size:6px;color:var(--hint);padding:2px 5px;border:1px solid rgba(255,255,255,0.1);border-radius:3px;align-self:center;">MONTHLY</span>`;
+    div.onclick=()=>{
+      markPrevention(p.id);
+      renderToday();
+      renderDogs();
+    };
+    sectionWrap.appendChild(div);
+  });
+
+  list.appendChild(sectionWrap);
 }
 
 function renderDogMentalSection(){
@@ -2643,9 +2695,10 @@ function renderDogs(){
     const overdue=daysSince!==null&&daysSince>=g.days;
     const dueIn=last?Math.max(0,g.days-Math.floor(daysSince)):0;
     const status=!last?`<span class="groom-due">Not done yet</span>`:overdue?`<span class="groom-due">Overdue</span>`:`<span class="groom-done-label">Due in ${dueIn}d</span>`;
-    return `<div class="groom-row"><span class="groom-name">${g.label}</span>${status}<button class="groom-btn" onclick="markGrooming('${g.id}')">Done today</button></div>`;
+    return `<div class="groom-row"><span class="groom-name">${g.label}</span>${status}<button class="groom-btn" onclick="markGrooming('${g.id}')">LOGGED</button></div>`;
   }).join('');
 
+  const PREV_PRODUCTS={'prev-e-monthly':'Simparica Trio','prev-k-monthly':'Interceptor + NexGard'};
   const prevHtml=(dogTasks.prevention||[]).map(p=>{
     const lastTs=prevState[p.id];
     let status='';
@@ -2656,10 +2709,11 @@ function renderDogs(){
       const lastDate=new Date(lastTs);
       const monthsSince=(now.getFullYear()-lastDate.getFullYear())*12+(now.getMonth()-lastDate.getMonth());
       if(monthsSince>=1&&dom>=p.dayOfMonth)status=`<span class="groom-due">Due now</span>`;
-      else if(monthsSince===0)status=`<span class="groom-done-label">Done this month</span>`;
+      else if(monthsSince===0)status=`<span class="groom-done-label">Done this month ✓</span>`;
       else{const d=((p.dayOfMonth-dom+31)%31)||31;status=`<span class="groom-done-label">Due in ${d}d</span>`;}
     }
-    return `<div class="groom-row"><span class="groom-name">${p.label}</span>${status}<button class="groom-btn" onclick="markPrevention('${p.id}')">Done today</button></div>`;
+    const product=PREV_PRODUCTS[p.id]?`<span style="font-family:var(--font-system,monospace);font-size:9px;color:var(--teal);margin-left:6px;">${PREV_PRODUCTS[p.id]}</span>`:'';
+    return `<div class="groom-row"><span class="groom-name">${p.label}${product}</span>${status}<button class="groom-btn" onclick="markPrevention('${p.id}')">LOGGED</button></div>`;
   }).join('');
 
   const mentalHtml=''; // Mental health moments now live on the floor as bonus tasks
@@ -2671,11 +2725,17 @@ function renderDogs(){
       <div class="section-label" style="margin-top:0;margin-bottom:8px;font-size:9px;letter-spacing:0.1em;">DAILY OPS — MORNING</div>${dogTaskHtml(dt.morning||[])}
       <div class="section-label" style="margin-bottom:8px;font-size:9px;letter-spacing:0.1em;">DAILY OPS — EVENING</div>${dogTaskHtml(dt.evening||[])}
     </div>
-    <div class="grooming-card"><h3>Grooming tracker</h3>${groomHtml}</div>
+    <div class="grooming-card" style="border:1px solid rgba(212,154,0,0.15);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--amber);letter-spacing:0.08em;margin-bottom:10px;">GROOMING LOG</div>
+      ${groomHtml}
+    </div>
     ${renderEdnaKennelSection(data)}
     ${renderKronkKennelSection(data)}
     ${renderTrainingSection()}
-    <div class="grooming-card"><h3>Prevention tracker <span style="font-size:10px;color:var(--muted);font-weight:400;">monthly — day ${(dogTasks.prevention||[{dayOfMonth:15}])[0].dayOfMonth}</span></h3>${prevHtml}</div>`;
+    <div class="grooming-card" style="border:1px solid rgba(212,154,0,0.15);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--amber);letter-spacing:0.08em;margin-bottom:10px;">MONTHLY PREVENTION <span style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);letter-spacing:0;font-weight:400;margin-left:6px;">day ${(dogTasks.prevention||[{dayOfMonth:15}])[0].dayOfMonth} of each month</span></div>
+      ${prevHtml}
+    </div>`;
 }
 
 /* ─── WHEEL ─────────────────────────────────────────────────────────────── */
