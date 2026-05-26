@@ -4794,7 +4794,52 @@ function buildTherapistText(weekData){
   const floorsCleared=days.filter(d=>d.completion_pct===100).length;
   const avgPct=Math.round(days.reduce((a,d)=>a+d.completion_pct,0)/7);
   const daily=days.map(d=>`${d.date.slice(0,3)}: ${d.completion_pct}%${d.notable_events.length?' — '+d.notable_events.join(', '):''}`).join('\n');
-  return`WEEKLY ROUTINE SUMMARY\nWeek of ${weekData.date_range}\n━━━━━━━━━━━━━━━━━━━━━━━━\n\nOVERVIEW\nFloors cleared: ${floorsCleared}/7\nAverage completion: ${avgPct}%\nCurrent streak: ${weekData.streak} days\nRecovery Mode activations: ${weekData.recovery_mode_count}\nFloor collapses: ${weekData.floor_collapse_count}\n\nDAILY BREAKDOWN\n${daily}\n\nDEBUFF PATTERNS\nMost frequent: ${weekData.top_debuff}\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nGAD-7 / PHQ-9: Not yet tracked\n(Mood tracker coming in future build)\n━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+  // Build mood summary from this week's moodCheckins
+  const now=new Date();
+  const todayDow=now.getDay();
+  const monday=new Date(now);
+  monday.setDate(now.getDate()-((todayDow+6)%7));
+  const weekDays=[];
+  for(let i=0;i<7;i++){const d=new Date(monday);d.setDate(monday.getDate()+i);weekDays.push(d);}
+
+  const eveningLogs=weekDays.map(d=>{
+    const dk=_dateKey(d);
+    const eve=(moodCheckins[dk]||{}).evening;
+    return eve?.loggedAt?eve:null;
+  }).filter(Boolean);
+
+  let moodSection='';
+  if(eveningLogs.length){
+    const avg=(key)=>(eveningLogs.reduce((a,e)=>a+(e[key]||0),0)/eveningLogs.length).toFixed(1);
+    const avgs=`Mood: ${avg('mood')}/5 · Energy: ${avg('energy')}/5 · Anxiety: ${avg('anxiety')}/5 · Focus: ${avg('focus')}/5 · Physical: ${avg('physical')}/5 · Emotional: ${avg('emotional')}/5`;
+
+    // Count mood tags across all vitals check-ins this week
+    const tagCounts={};
+    weekDays.forEach(d=>{
+      const dk=_dateKey(d);
+      const checkins=moodCheckins[dk]||{};
+      ['10am','2pm','5pm'].forEach(slot=>{
+        (checkins[slot]?.icons||[]).forEach(id=>{
+          tagCounts[id]=(tagCounts[id]||0)+1;
+        });
+      });
+    });
+    const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([id,n])=>`${id} (${n}x)`).join(', ')||'none';
+
+    const vitalsLogged=weekDays.reduce((a,d)=>{
+      const dk=_dateKey(d);
+      const c=moodCheckins[dk]||{};
+      return a+['10am','2pm','5pm'].filter(s=>c[s]?.loggedAt).length;
+    },0);
+    const eveningLogged=eveningLogs.length;
+
+    moodSection=`\nMOOD + VITALS SUMMARY\n━━━━━━━━━━━━━━━━━━━━━━━━\nEvening log averages (${eveningLogged} of 7 days logged):\n${avgs}\n\nMost frequent mood tags: ${topTags}\nVitals check-ins logged: ${vitalsLogged} of 21\nEvening logs completed: ${eveningLogged} of 7\n━━━━━━━━━━━━━━━━━━━━━━━━`;
+  } else {
+    moodSection=`\nMOOD + VITALS SUMMARY\n━━━━━━━━━━━━━━━━━━━━━━━━\nNo evening logs recorded this week.\n━━━━━━━━━━━━━━━━━━━━━━━━`;
+  }
+
+  return`WEEKLY ROUTINE SUMMARY\nWeek of ${weekData.date_range}\n━━━━━━━━━━━━━━━━━━━━━━━━\n\nOVERVIEW\nFloors cleared: ${floorsCleared}/7\nAverage completion: ${avgPct}%\nCurrent streak: ${weekData.streak} days\nRecovery Mode activations: ${weekData.recovery_mode_count}\nFloor collapses: ${weekData.floor_collapse_count}\n\nDAILY BREAKDOWN\n${daily}\n\nDEBUFF PATTERNS\nMost frequent: ${weekData.top_debuff}\n${moodSection}`;
 }
 
 /* ── API calls ── */
@@ -4891,7 +4936,23 @@ function getTimeSinceLastSaraMessage(){
   return 'moments ago';
 }
 
-async function sendDonutMessage(message){
+function _buildMoodContext(){
+  const dk=_dateKey(new Date());
+  const checkins=moodCheckins[dk]||{};
+  const slots=['10am','2pm','5pm'];
+  const checkinLines=slots.map(slot=>{
+    const c=checkins[slot];
+    if(!c?.loggedAt)return`${SLOT_LABELS[slot]}: pending`;
+    const time=new Date(c.loggedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+    const icons=c.icons?.length?c.icons.join(', '):'none';
+    return`${SLOT_LABELS[slot]} (${time}): overall ${c.overall}/5 | mood tags: ${icons}${c.note?' | note: "'+c.note+'"':''}`;
+  }).join('\n');
+  const eve=checkins.evening;
+  const eveLine=eve?.loggedAt
+    ?`Evening log: mood ${eve.mood}/5 · energy ${eve.energy}/5 · anxiety ${eve.anxiety}/5 · focus ${eve.focus}/5 · physical exhaustion ${eve.physical}/5 · emotional exhaustion ${eve.emotional}/5${eve.note?' | note: "'+eve.note+'"':''}`
+    :'Evening log: not yet submitted';
+  return`${checkinLines}\n${eveLine}`;
+}
   if(!donutApiKey||!message.trim()||donutLoading)return;
   const wn=getWeekNumber();
   const weekData=buildWeekData();
@@ -4924,6 +4985,7 @@ async function sendDonutMessage(message){
           +`\n\n=== TODAY'S TASKS (you can see these — do not ask Sara to read them back) ===\n${getTodayTaskSummary().map(t=>`${t.done?'✓':'○'} ${t.name} [${t.quality}]`).join('\n')}`
           +(donutRollingMemory.length?`\n\n=== RECENT WEEKS (last ${donutRollingMemory.length}) ===\n${donutRollingMemory.map(w=>`Week of ${w.weekOf}: avg completion ${w.floorAvg}%, gym ${w.gymSessions} sessions, streak high ${w.streakHigh}${w.themes?', themes: '+w.themes:''}`).join('\n')}`:'')
           +(donutPermanentMemory.length?`\n\n=== PERMANENT MEMORY ===\n${donutPermanentMemory.map(m=>`[${m.savedOn}${m.source==='donut'?' — you saved this':''}] ${m.note}`).join('\n')}`:'')
+          +`\n\n=== TODAY'S MOOD (APOTHECARY) ===\n${_buildMoodContext()}`
           +`\n\n=== WEEK DATA ===\n${JSON.stringify(weekData,null,2)}`,        messages:history
       })    });
     const data=await resp.json();
