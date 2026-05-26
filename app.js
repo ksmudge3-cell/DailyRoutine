@@ -3939,14 +3939,14 @@ async function sendCommMessage(){
     side_quest_backlog:sideQuestBacklog,
     companion_status:{
       edna:{
-        incidents_today:[],
+        incidents_today:ednaIncidents.filter(i=>new Date(i.ts).toDateString()===now.toDateString()),
         stats:{
-          loyalty:_loyalty,
-          chaos:Math.min(100,Math.round((_cxp.edna||0)/50)),
-          morale:Math.round(_allDT.filter(t=>_dogData[t.id]).length/_allDT.length*100)||0,
-          floof:0,
-          zoomies:0,
-          obedience:0
+          loyalty:ednaStats?.loyalty||0,
+          chaos:ednaStats?.chaos||0,
+          morale:ednaStats?.morale||0,
+          floof:ednaStats?.floof||0,
+          zoomies:ednaStats?.zoomies||0,
+          obedience:ednaStats?.obedience||0
         },
         care_today:{
           fed_am:_fedAm,
@@ -3956,14 +3956,14 @@ async function sendCommMessage(){
         }
       },
       kronk:{
-        incidents_today:[],
+        incidents_today:kronkChaosLog.filter(i=>new Date(i.ts).toDateString()===now.toDateString()),
         stats:{
-          loyalty:_loyalty,
-          aura:Math.min(100,Math.round((_cxp.kronk||0)/50)),
-          morale:Math.round(_allDT.filter(t=>_dogData[t.id]).length/_allDT.length*100)||0,
-          floof:0,
-          zoomies:0,
-          obedience:0
+          loyalty:kronkStats?.loyalty||0,
+          aura:kronkStats?.aura||0,
+          morale:kronkStats?.morale||0,
+          floof:kronkStats?.floof||0,
+          zoomies:kronkStats?.zoomies||0,
+          obedience:kronkStats?.obedience||0
         },
         care_today:{
           fed_am:_fedAm,
@@ -4849,7 +4849,7 @@ function renderProfile(){
     <div class="companion-card">
       <div class="companion-card-header">
         <div class="companion-avatar" onclick="openPhotoModal('edna')" style="cursor:pointer;position:relative;">
-          ${companionPhotos.edna?`<img src="${companionPhotos.edna}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`<img src="${CHAR_EDNA_IDLE}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`}
+          ${companionPhotos.edna?`<img src="${companionPhotos.edna}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`:`<img src="${CHAR_EDNA_IDLE}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />`}
           
         </div>
         <div>
@@ -4880,7 +4880,7 @@ function renderProfile(){
     <div class="companion-card">
       <div class="companion-card-header">
         <div class="companion-avatar" onclick="openPhotoModal('kronk')" style="cursor:pointer;position:relative;">
-          ${companionPhotos.kronk?`<img src="${companionPhotos.kronk}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`<img src="${CHAR_KRONK_IDLE}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`}
+          ${companionPhotos.kronk?`<img src="${companionPhotos.kronk}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`:`<img src="${CHAR_KRONK_IDLE}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />`}
           
         </div>
         <div>
