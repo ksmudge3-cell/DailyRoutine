@@ -285,7 +285,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -407,6 +407,8 @@ async function loadFromSupabase(){
       if(d.ednaIncidents)ednaIncidents=d.ednaIncidents;
       if(d.kronkChaosLog)kronkChaosLog=d.kronkChaosLog;
       if(d.trainingLog)trainingLog=d.trainingLog;
+      if(d.ednaStats)ednaStats={...ednaStats,...d.ednaStats};
+      if(d.kronkStats)kronkStats={...kronkStats,...d.kronkStats};
       // Explicit save list — keys must match what init() re-loads (line ~4400).
       // Auto camelCase→kebab conversion was lossy (xpState→dr-xp-state, but actual key is dr-xp).
       saveLocal('dr-state',state);
@@ -480,7 +482,7 @@ window.addEventListener('beforeunload',()=>{
       fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog},updated_at:new Date().toISOString()}),
+        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
         keepalive:true
       });
     }catch(e){}
@@ -499,6 +501,8 @@ let ednaIncidents=load('dr-edna-incidents',[]);
 let kronkChaosLog=load('dr-kronk-chaos',[]);
 let trainingLog=load('dr-training-log',[]);
 let _trainingSession={edna:[],kronk:[]};
+let ednaStats=load('dr-edna-stats',{loyalty:20,chaos:50,morale:30,floof:20,zoomies:0,obedience:15});
+let kronkStats=load('dr-kronk-stats',{loyalty:20,aura:30,morale:30,floof:20,zoomies:0,obedience:10});
 let notifs=load('dr-notifs',[]);
 let wheel=load('dr-wheel',DEFAULT_WHEEL);
 let wheelDone=load('dr-wheel-done',{});
@@ -2398,14 +2402,78 @@ function _renderEveningForm(){
 function toggleDogTask(taskId){
   const k=todayStr();
   if(!dogState[k])dogState[k]={};
+  const wasChecked=!!dogState[k][taskId];
   dogState[k][taskId]=!dogState[k][taskId];
   save('dr-dog-state',dogState);
-  // Award points: mental health tasks get bonus pts, core care gets dog pts
+  // Award stats only when checking (not unchecking)
+  if(!wasChecked)awardDogTaskStats(taskId);
   const isMental=(dogTasks.mental||[]).find(t=>t.id===taskId);
   if(isMental)maybeAwardBonusDogPoints(taskId);
   else maybeAwardDogPoints(taskId);
   renderDogs();
   if(selectedDay===new Date().getDay())renderToday();
+}
+
+// Stat caps
+const STAT_CAPS={
+  edna:{loyalty:100,chaos:100,morale:100,floof:100,zoomies:100,obedience:40},
+  kronk:{loyalty:100,aura:100,morale:100,floof:100,zoomies:100,obedience:90}
+};
+const STAT_FLOORS={edna:{chaos:15},kronk:{}};
+
+function updateDogStat(dog,stat,delta){
+  const stats=dog==='edna'?ednaStats:kronkStats;
+  const caps=STAT_CAPS[dog];
+  const floors=STAT_FLOORS[dog];
+  if(!(stat in stats))return;
+  stats[stat]=Math.min(caps[stat]||100,Math.max(floors[stat]||0,stats[stat]+delta));
+  save(dog==='edna'?'dr-edna-stats':'dr-kronk-stats',stats);
+}
+
+function checkStatDecay(){
+  // Check missed care days and apply decay
+  const now=new Date();
+  const yesterday=new Date(now);yesterday.setDate(now.getDate()-1);
+  const twoDaysAgo=new Date(now);twoDaysAgo.setDate(now.getDate()-2);
+  const yk=`${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
+  const tdk=`${twoDaysAgo.getFullYear()}-${String(twoDaysAgo.getMonth()+1).padStart(2,'0')}-${String(twoDaysAgo.getDate()).padStart(2,'0')}`;
+  const yesterday_state=dogState[yk]||{};
+  const twoday_state=dogState[tdk]||{};
+  const coreTasks=['dogs-feed-am','dogs-feed-pm','dogs-water-am','dogs-water-pm'];
+  const missedYesterday=coreTasks.filter(t=>!yesterday_state[t]).length;
+  const missedTwoAgo=coreTasks.filter(t=>!twoday_state[t]).length;
+  if(missedTwoAgo>=2){
+    ['edna','kronk'].forEach(dog=>{
+      ['morale','loyalty','zoomies'].forEach(stat=>updateDogStat(dog,stat,-2));
+    });
+  } else if(missedYesterday>=2){
+    ['edna','kronk'].forEach(dog=>{
+      ['morale','loyalty','zoomies'].forEach(stat=>updateDogStat(dog,stat,-1));
+    });
+  }
+}
+
+// Task ID → stat awards
+const DOG_TASK_STATS={
+  'dogs-feed-am':   {edna:{morale:2},          kronk:{morale:2}},
+  'dogs-feed-pm':   {edna:{morale:2},          kronk:{morale:2}},
+  'dogs-water-am':  {edna:{morale:1},          kronk:{morale:1}},
+  'dogs-water-pm':  {edna:{morale:1},          kronk:{morale:1}},
+  'dogs-walk-am':   {edna:{zoomies:3},         kronk:{zoomies:3}},
+  'dogs-walk-pm':   {edna:{zoomies:3},         kronk:{zoomies:3}},
+  'dogs-walk-wknd': {edna:{zoomies:3},         kronk:{zoomies:3}},
+  'm-snuggle':      {edna:{loyalty:2,chaos:-1},kronk:{loyalty:2,aura:3}},
+  'm-breath':       {edna:{loyalty:2,chaos:-1},kronk:{loyalty:2,aura:3}},
+  'm-play':         {edna:{loyalty:2,chaos:-1},kronk:{loyalty:2,aura:3}},
+  'm-gratitude':    {edna:{loyalty:2,chaos:-1},kronk:{loyalty:2,aura:3}},
+  'm-photo':        {edna:{loyalty:2,chaos:-1},kronk:{loyalty:2,aura:3}},
+};
+
+function awardDogTaskStats(taskId){
+  const awards=DOG_TASK_STATS[taskId];
+  if(!awards)return;
+  if(awards.edna)Object.entries(awards.edna).forEach(([s,d])=>updateDogStat('edna',s,d));
+  if(awards.kronk)Object.entries(awards.kronk).forEach(([s,d])=>updateDogStat('kronk',s,d));
 }
 
 function logExtraWalk(taskId){
@@ -2431,7 +2499,13 @@ function removeWalk(taskId){
   renderDogs();
   if(selectedDay===new Date().getDay())renderToday();
 }
-function markGrooming(id){groomState[id]=Date.now();save('dr-groom-state',groomState);renderDogs();}
+function markGrooming(id){
+  groomState[id]=Date.now();
+  save('dr-groom-state',groomState);
+  updateDogStat('edna','floof',5);
+  updateDogStat('kronk','floof',5);
+  renderDogs();
+}
 function markPrevention(id){prevState[id]=Date.now();save('dr-prev-state',prevState);renderDogs();}
 
 // Run on startup AND after Supabase load to clean stale data
@@ -2530,6 +2604,9 @@ function logTrainingSession(){
     loggedAt:Date.now()
   });
   save('dr-training-log',trainingLog);
+  // Award Obedience per command practiced
+  _trainingSession.edna.forEach(()=>updateDogStat('edna','obedience',2));
+  _trainingSession.kronk.forEach(()=>updateDogStat('kronk','obedience',3));
   _trainingSession={edna:[],kronk:[]};
   awardXP(10,'Training session');
   renderDogs();
@@ -2634,6 +2711,16 @@ function renderEdnaKennelSection(dogData){
       <span style="color:var(--amber);">SPECIALTY:</span> Perimeter security (self-appointed) &nbsp;·&nbsp;
       <span style="color:var(--teal);">KNOWN FOR:</span> The donut cone incident
     </div>
+    <div style="margin-top:12px;">
+      ${[['Loyalty',ednaStats.loyalty,'var(--amber)'],['Chaos',ednaStats.chaos,'var(--fire,#C64A00)'],['Morale',ednaStats.morale,'var(--teal)'],['Floof',ednaStats.floof,'var(--purple-hi,#D947FF)'],['Zoomies',ednaStats.zoomies,'var(--green)'],['Obedience',Math.min(ednaStats.obedience,40),'var(--teal)']].map(([label,val,color])=>`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+          <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--hint);width:54px;letter-spacing:0.04em;">${label.toUpperCase()}</div>
+          <div style="flex:1;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+            <div style="height:100%;width:${val}%;background:${color};border-radius:2px;transition:width 0.3s;"></div>
+          </div>
+          <div style="font-family:var(--font-num,monospace);font-size:9px;color:var(--hint);width:24px;text-align:right;">${val}</div>
+        </div>`).join('')}
+    </div>
   </div>`;
 }
 
@@ -2666,6 +2753,16 @@ function renderKronkKennelSection(dogData){
       <span style="color:var(--fire);">ORIGIN:</span> Animal control rescue &nbsp;·&nbsp;
       <span style="color:var(--amber);">SPECIALTY:</span> Emotional support (accidental) &nbsp;·&nbsp;
       <span style="color:var(--teal);">KNOWN FOR:</span> Will absolutely eat something he shouldn't. Will do it again.
+    </div>
+    <div style="margin-top:12px;">
+      ${[['Loyalty',kronkStats.loyalty,'var(--amber)'],['Aura',kronkStats.aura,'var(--void-hi,#8E65FF)'],['Morale',kronkStats.morale,'var(--teal)'],['Floof',kronkStats.floof,'var(--purple-hi,#D947FF)'],['Zoomies',kronkStats.zoomies,'var(--green)'],['Obedience',kronkStats.obedience,'var(--teal)']].map(([label,val,color])=>`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+          <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--hint);width:54px;letter-spacing:0.04em;">${label.toUpperCase()}</div>
+          <div style="flex:1;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+            <div style="height:100%;width:${val}%;background:${color};border-radius:2px;transition:width 0.3s;"></div>
+          </div>
+          <div style="font-family:var(--font-num,monospace);font-size:9px;color:var(--hint);width:24px;text-align:right;">${val}</div>
+        </div>`).join('')}
     </div>
   </div>`;
 }
@@ -6620,6 +6717,7 @@ async function init(){
   checkOneOffCleanup();
   checkDonutBiscuitExpiry();
   checkFloorCollapse();
+  checkStatDecay();
   if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;save('dr-floor-condition',null);}
 
   // Re-render with fresh data if Supabase pulled changes
