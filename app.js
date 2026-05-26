@@ -258,7 +258,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -377,6 +377,8 @@ async function loadFromSupabase(){
       }
       if(d.moodCheckins)moodCheckins=d.moodCheckins;
       if(d.dogWalkCount)dogWalkCount=d.dogWalkCount;
+      if(d.ednaIncidents)ednaIncidents=d.ednaIncidents;
+      if(d.kronkChaosLog)kronkChaosLog=d.kronkChaosLog;
       // Explicit save list — keys must match what init() re-loads (line ~4400).
       // Auto camelCase→kebab conversion was lossy (xpState→dr-xp-state, but actual key is dr-xp).
       saveLocal('dr-state',state);
@@ -450,7 +452,7 @@ window.addEventListener('beforeunload',()=>{
       fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount},updated_at:new Date().toISOString()}),
+        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog},updated_at:new Date().toISOString()}),
         keepalive:true
       });
     }catch(e){}
@@ -465,6 +467,8 @@ let dogState=load('dr-dog-state',{});
 let groomState=load('dr-groom-state',{});
 let prevState=load('dr-prev-state',{});
 let dogWalkCount=load('dr-dog-walk-count',{});
+let ednaIncidents=load('dr-edna-incidents',[]);
+let kronkChaosLog=load('dr-kronk-chaos',[]);
 let notifs=load('dr-notifs',[]);
 let wheel=load('dr-wheel',DEFAULT_WHEEL);
 let wheelDone=load('dr-wheel-done',{});
@@ -2389,6 +2393,89 @@ function migrateScheduleToRecurrence(){
   return false;
 }
 
+function _ednaStatus(dogData){
+  const walked=!!(dogData['dogs-walk-am']||dogData['dogs-walk-pm']||dogData['dogs-walk-wknd']);
+  if(walked)return'EXCAVATING — do not disturb';
+  const fed=!!(dogData['dogs-feed-am']&&dogData['dogs-feed-pm']);
+  if(fed)return'ON PATROL — last sighting: Kennels corridor';
+  return'ON PATROL — last sighting: Kennels corridor';
+}
+
+function _kronkStatus(dogData){
+  const walked=!!(dogData['dogs-walk-am']||dogData['dogs-walk-pm']||dogData['dogs-walk-wknd']);
+  if(walked)return'SLEEPING — contentment level: maximum';
+  const fed=!!(dogData['dogs-feed-am']);
+  if(!fed)return'INVESTIGATING SOMETHING — threat assessment: pending';
+  return'LOCATION: Floor corridor — tail: active';
+}
+
+function renderEdnaKennelSection(dogData){
+  const status=_ednaStatus(dogData);
+  const face=dogData['dogs-feed-am']&&dogData['dogs-feed-pm']?CHAR_FACE_EDNA_HAPPY:CHAR_FACE_EDNA_GUARD;
+  const incidents=ednaIncidents.slice(-5).reverse();
+  const incidentHtml=incidents.length
+    ?incidents.map((inc,i)=>`<div style="border-left:2px solid rgba(212,154,0,0.4);padding:6px 10px;margin-bottom:6px;background:rgba(0,0,0,0.2);border-radius:0 4px 4px 0;">
+        <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--amber);letter-spacing:0.05em;">INCIDENT REPORT #${(ednaIncidents.length-incidents.length+i+1)}</div>
+        <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);margin-bottom:2px;">${new Date(inc.ts).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+        <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--pearl);">${inc.text}</div>
+      </div>`).join('')
+    :`<div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);font-style:italic;padding:6px;">No incidents on record. This is suspicious.</div>`;
+
+  return`<div class="grooming-card" style="border:1px solid rgba(212,154,0,0.2);border-radius:10px;padding:14px 14px 10px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <img src="${companionPhotos.edna||face}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(212,154,0,0.4);" alt="Edna">
+      <div style="flex:1;">
+        <div style="font-family:var(--font-title,serif);font-size:15px;color:var(--amber);letter-spacing:0.05em;">EDNA</div>
+        <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--hint);letter-spacing:0.06em;margin-top:2px;">THE HURRICANE DWARF · AGE 2 · RECRUIT</div>
+        <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--teal);margin-top:4px;">${status}</div>
+      </div>
+    </div>
+    <div style="font-family:var(--font-body,serif);font-size:12px;color:var(--hint);font-style:italic;margin-bottom:10px;padding:6px 8px;background:var(--surface2);border-radius:4px;">"Edna is monitoring the balcony situation. It is ongoing."</div>
+    <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--amber);letter-spacing:0.06em;margin-bottom:2px;">PASSIVE: Chaos Engine</div>
+    <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);margin-bottom:10px;">Converts failed tasks to partial XP. Self-appointed perimeter guard. Zero successful threat identifications.</div>
+    <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--hint);letter-spacing:0.06em;margin-bottom:6px;">INCIDENT REPORTS</div>
+    <div style="max-height:160px;overflow-y:auto;">${incidentHtml}</div>
+    <div style="margin-top:10px;font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);">
+      <span style="color:var(--fire);">ORIGIN:</span> Hurricane rescue &nbsp;·&nbsp;
+      <span style="color:var(--amber);">SPECIALTY:</span> Perimeter security (self-appointed) &nbsp;·&nbsp;
+      <span style="color:var(--teal);">KNOWN FOR:</span> The donut cone incident
+    </div>
+  </div>`;
+}
+
+function renderKronkKennelSection(dogData){
+  const status=_kronkStatus(dogData);
+  const face=dogData['dogs-feed-am']?CHAR_FACE_KRONK_HAPPY:CHAR_FACE_KRONK_FOOD;
+  const logs=kronkChaosLog.slice(-5).reverse();
+  const logHtml=logs.length
+    ?logs.map(entry=>`<div style="border-left:2px solid rgba(100,80,200,0.4);padding:6px 10px;margin-bottom:6px;background:rgba(0,0,0,0.2);border-radius:0 4px 4px 0;">
+        <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--void-hi,#8E65FF);letter-spacing:0.05em;">NOTIFICATION — ${new Date(entry.ts).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+        <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--pearl);margin-top:2px;">${entry.text}</div>
+      </div>`).join('')
+    :`<div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);font-style:italic;padding:6px;">No incidents logged. He's being suspiciously calm.</div>`;
+
+  return`<div class="grooming-card" style="border:1px solid rgba(100,80,200,0.2);border-radius:10px;padding:14px 14px 10px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <img src="${companionPhotos.kronk||face}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(100,80,200,0.4);" alt="Kronk">
+      <div style="flex:1;">
+        <div style="font-family:var(--font-title,serif);font-size:15px;color:var(--void-hi,#8E65FF);letter-spacing:0.05em;">KRONK</div>
+        <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--hint);letter-spacing:0.06em;margin-top:2px;">EMOTIONAL SUPPORT ENGINE · AGE 1 · RECRUIT</div>
+        <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--teal);margin-top:4px;">${status}</div>
+      </div>
+    </div>
+    <div style="font-family:var(--font-body,serif);font-size:12px;color:var(--hint);font-style:italic;margin-bottom:10px;padding:6px 8px;background:var(--surface2);border-radius:4px;">"Kronk is vibrating with excitement and has not eaten anything suspicious today."</div>
+    <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--void-hi,#8E65FF);letter-spacing:0.06em;margin-bottom:2px;">PASSIVE: Emotional Support Aura</div>
+    <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);margin-bottom:10px;">Proximity buff, always active. Classic lab. Enormous heart. Zero impulse control.</div>
+    <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--hint);letter-spacing:0.06em;margin-bottom:6px;">CHAOS LOG</div>
+    <div style="max-height:160px;overflow-y:auto;">${logHtml}</div>
+    <div style="margin-top:10px;font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);">
+      <span style="color:var(--fire);">ORIGIN:</span> Animal control rescue &nbsp;·&nbsp;
+      <span style="color:var(--amber);">SPECIALTY:</span> Emotional support (accidental) &nbsp;·&nbsp;
+      <span style="color:var(--teal);">KNOWN FOR:</span> Will absolutely eat something he shouldn't. Will do it again.
+    </div>
+  </div>`;
+}
+
 function renderDogs(){
   const data=getDogDayData();
   const dt=dogTasks.shared||{morning:[],evening:[]};
@@ -2444,6 +2531,8 @@ function renderDogs(){
       <div class="section-label" style="margin-bottom:8px;font-size:9px;letter-spacing:0.1em;">DAILY OPS — EVENING</div>${dogTaskHtml(dt.evening||[])}
     </div>
     <div class="grooming-card"><h3>Grooming tracker</h3>${groomHtml}</div>
+    ${renderEdnaKennelSection(data)}
+    ${renderKronkKennelSection(data)}
     <div class="grooming-card"><h3>Prevention tracker <span style="font-size:10px;color:var(--muted);font-weight:400;">monthly — day ${(dogTasks.prevention||[{dayOfMonth:15}])[0].dayOfMonth}</span></h3>${prevHtml}</div>`;
 }
 
