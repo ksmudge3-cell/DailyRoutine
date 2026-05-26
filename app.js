@@ -2694,7 +2694,7 @@ function renderEdnaKennelSection(dogData){
 
   return`<div class="grooming-card" style="border:1px solid rgba(212,154,0,0.2);border-radius:10px;padding:14px 14px 10px;margin-bottom:12px;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <img src="${companionPhotos.edna||face}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(212,154,0,0.4);" alt="Edna">
+      <img src="${companionPhotos.edna||face}" onclick="openPhotoModal('edna')" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:2px solid rgba(212,154,0,0.4);cursor:pointer;" alt="Edna">
       <div style="flex:1;">
         <div style="font-family:var(--font-title,serif);font-size:15px;color:var(--amber);letter-spacing:0.05em;">EDNA</div>
         <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--hint);letter-spacing:0.06em;margin-top:2px;">THE HURRICANE DWARF · AGE 2 · RECRUIT</div>
@@ -2737,7 +2737,7 @@ function renderKronkKennelSection(dogData){
 
   return`<div class="grooming-card" style="border:1px solid rgba(100,80,200,0.2);border-radius:10px;padding:14px 14px 10px;margin-bottom:12px;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <img src="${companionPhotos.kronk||face}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(100,80,200,0.4);" alt="Kronk">
+      <img src="${companionPhotos.kronk||face}" onclick="openPhotoModal('kronk')" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:2px solid rgba(100,80,200,0.4);cursor:pointer;" alt="Kronk">
       <div style="flex:1;">
         <div style="font-family:var(--font-title,serif);font-size:15px;color:var(--void-hi,#8E65FF);letter-spacing:0.05em;">KRONK</div>
         <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--hint);letter-spacing:0.06em;margin-top:2px;">EMOTIONAL SUPPORT ENGINE · AGE 1 · RECRUIT</div>
