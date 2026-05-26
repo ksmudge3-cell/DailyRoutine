@@ -4407,6 +4407,69 @@ function getActiveBuffs(){
   return Object.values(slots).filter(Boolean);
 }
 
+const BUFF_DEBUFF_DATA={
+  // DEBUFFS
+  'sleep-deprived':{name:'Sleep Deprived',color:'var(--red-hi,#FF3B1F)',cause:'Lights out after 10 PM or wind down skipped.',effect:'Carries forward. Focus buffs reduced.',clear:'Lights out on time tonight.',donut:'You went to bed late. The dungeon noticed. So did I.'},
+  'sleep-deprived-severe':{name:'Sleep Deprived (Severe)',color:'var(--red-hi,#FF3B1F)',cause:'Sleep Deprived active + missed meds.',effect:'Carries forward. Focus buffs disabled. -10% coins.',clear:'Lights out on time + meds logged.',donut:'Severe. Both at once. Fix one tonight.'},
+  'foggy-crawler':{name:'Foggy Crawler',color:'var(--red-hi,#FF3B1F)',cause:'Missed morning or evening meds.',effect:'Today only. Focus category neutral.',clear:'Log meds tomorrow.',donut:'Missed meds. The floor is harder without them. You know this.'},
+  'foggy-crawler-severe':{name:'Foggy Crawler (Severe)',color:'var(--red-hi,#FF3B1F)',cause:'Missed meds while Compliance Risk active.',effect:'Today. Focus buffs disabled. -20% coins.',clear:'Log meds tomorrow. Fill pill box Sunday.',donut:'Severe. Because the pill box sat empty. Fix it Sunday.'},
+  'compliance-risk':{name:'Compliance Risk',color:'var(--amber,#D49A00)',cause:'Sunday pill box not completed.',effect:'Week-long passive. Any missed med upgrades Foggy Crawler to Severe.',clear:'Complete Sunday pill box this week.',donut:'Compliance Risk active. You made this harder for yourself.'},
+  'running-on-empty':{name:'Running on Empty',color:'var(--red-hi,#FF3B1F)',cause:'Meal task missed or skipped.',effect:'Today. Vitality stat impact.',clear:'Log a meal.',donut:'You haven\'t eaten. The dungeon runs on fuel. So do you.'},
+  'doomscrolling':{name:'Doomscrolling',color:'var(--red-hi,#FF3B1F)',cause:'Screen time logged after wind down.',effect:'Carries forward. Sleep quality impacted.',clear:'Complete wind down without screen time tonight.',donut:'You know what you did.'},
+  'undertrained':{name:'Undertrained',color:'var(--red-hi,#FF3B1F)',cause:'No gym session this week.',effect:'Strength stat drain. Grows with each missed session.',clear:'Complete a gym session.',donut:'The gym has been waiting. It is patient. I am less so.'},
+  'sluggish':{name:'Sluggish',color:'var(--red-hi,#FF3B1F)',cause:'Woke late or hit snooze.',effect:'Today only. Morning task coin value reduced.',clear:'Wake on time tomorrow.',donut:'Late start. The morning tasks noticed.'},
+  'structural-collapse':{name:'Structural Damage',color:'var(--red-hi,#FF3B1F)',cause:'1–2 rooms uncleared at midnight.',effect:'-10% coins tomorrow.',clear:'First task completion tomorrow.',donut:'The floor took damage. One task tomorrow clears it.'},
+  'heavy-collapse':{name:'Heavy Collapse',color:'var(--red-hi,#FF3B1F)',cause:'3–4 rooms uncleared at midnight.',effect:'-20% coins. Sleep Deprived stacks.',clear:'3 tasks completed tomorrow.',donut:'Heavy collapse. Three tasks tomorrow. Start there.'},
+  'total-collapse':{name:'Total Collapse',color:'var(--red-hi,#FF3B1F)',cause:'5+ rooms uncleared at midnight.',effect:'-25% coins. Recovery Mode activates.',clear:'Recovery Mode completion.',donut:'Total collapse. Recovery Mode is active. Start moving.'},
+  // BUFFS
+  'rested':{name:'Rested',color:'var(--teal-hi,#2EF2E0)',cause:'Lights out on time + full wind down.',effect:'+5% coins today. Focus buffs enhanced.',clear:'N/A — resets at midnight.',donut:'You slept. Properly. The dungeon approves.'},
+  'combat-ready':{name:'Combat Ready',color:'var(--teal-hi,#2EF2E0)',cause:'Full gym session completed.',effect:'Strength stat boosted. +5% coins today.',clear:'N/A — resets at midnight.',donut:'You went. The floor knows it.'},
+  'optimal':{name:'Optimal',color:'var(--teal-hi,#2EF2E0)',cause:'Meds logged on time.',effect:'Focus category active. No Foggy Crawler risk.',clear:'N/A — resets at midnight.',donut:'Meds logged. The dungeon is satisfied.'},
+  'fueled':{name:'Fueled',color:'var(--teal-hi,#2EF2E0)',cause:'At least one meal logged.',effect:'Vitality stat active. Running on Empty cleared.',clear:'N/A — resets at midnight.',donut:'You ate. Good. Do it again later.'},
+  'well-fed':{name:'Well Fed',color:'var(--teal-hi,#2EF2E0)',cause:'Three proper meals logged.',effect:'Vitality stat boosted. Fueled upgraded.',clear:'N/A — resets at midnight.',donut:'Three meals. The dungeon did not expect this. Neither did I.'},
+  'early-riser':{name:'Early Riser',color:'var(--teal-hi,#2EF2E0)',cause:'Woke at 5:30, no snooze.',effect:'+5% coins today. Morning task XP boosted.',clear:'N/A — resets at midnight.',donut:'First alarm. No snooze. I am choosing not to make a big deal of this.'},
+  'hyperfocused':{name:'Hyperfocused',color:'var(--teal-hi,#2EF2E0)',cause:'Multiple legendary orbs in a session.',effect:'Focus category boosted. XP multiplier active.',clear:'N/A — resets at midnight.',donut:'Locked in. The dungeon noticed. Keep going.'},
+  'warmed-up':{name:'Warmed Up',color:'var(--teal-hi,#2EF2E0)',cause:'3+ day streak.',effect:'+5% XP per task.',clear:'N/A — persists while streak holds.',donut:'Three days. You\'re finding your rhythm.'},
+  'on-fire':{name:'On Fire',color:'var(--teal-hi,#2EF2E0)',cause:'7+ day streak.',effect:'+10% XP per task. Coin bonus on floor clear.',clear:'N/A — persists while streak holds.',donut:'Seven days. The dungeon is watching you differently now.'},
+  'legendary-pace':{name:'Legendary Pace',color:'var(--amber-hi,#FFD43A)',cause:'30+ day streak.',effect:'+15% XP. Coin bonus. Narrator milestone triggered.',clear:'N/A — persists while streak holds.',donut:'Thirty days. I would say I\'m proud but that would set a precedent. I\'m proud.'},
+  // SPECIAL
+  'recovery':{name:'Recovery Mode',color:'var(--teal-hi,#2EF2E0)',cause:'Debuff overload (4+ debuffs) or Total Collapse.',effect:'Floor reduced to 3 tasks. Streak protected. No collapse penalty.',clear:'Complete Recovery Mode floor (3 tasks).',donut:'Recovery Mode. Three tasks. That is all I ask today.'},
+  'overload':{name:'Debuff Overload',color:'var(--amber,#D49A00)',cause:'3 or more active debuffs.',effect:'Warning state. One more debuff triggers Recovery Mode.',clear:'Clear a debuff.',donut:'That is a lot. Even for you. Address something.'},
+};
+
+function showBuffModal(id){
+  const d=BUFF_DEBUFF_DATA[id];
+  if(!d)return;
+  let modal=document.getElementById('buff-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='buff-modal';
+    modal.style.cssText='position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);padding:16px;';
+    modal.onclick=e=>{if(e.target===modal)closeBuffModal();};
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML=`
+    <div style="background:var(--surface);border:0.5px solid ${d.color};border-radius:10px;max-width:320px;width:100%;padding:20px;position:relative;">
+      <div style="font-family:var(--font-title,serif);font-size:14px;color:${d.color};letter-spacing:0.05em;margin-bottom:12px;">${d.name}</div>
+      <div style="height:1px;background:rgba(255,255,255,0.08);margin-bottom:12px;"></div>
+      <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--hint);letter-spacing:0.1em;margin-bottom:4px;">CAUSE</div>
+      <div style="font-family:var(--font-body,serif);font-size:14px;color:var(--pearl);margin-bottom:12px;">${d.cause}</div>
+      <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--hint);letter-spacing:0.1em;margin-bottom:4px;">EFFECT</div>
+      <div style="font-family:var(--font-body,serif);font-size:14px;color:var(--pearl);margin-bottom:12px;">${d.effect}</div>
+      <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--hint);letter-spacing:0.1em;margin-bottom:4px;">HOW TO CLEAR</div>
+      <div style="font-family:var(--font-body,serif);font-size:14px;color:var(--pearl);margin-bottom:16px;">${d.clear}</div>
+      <div style="height:1px;background:rgba(255,255,255,0.08);margin-bottom:12px;"></div>
+      <div style="font-family:var(--font-title,serif);font-size:12px;color:var(--purple-hi,#D947FF);font-style:italic;text-transform:uppercase;margin-bottom:16px;">"${d.donut}"</div>
+      <button onclick="closeBuffModal()" style="width:100%;padding:10px;background:none;border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:var(--hint);font-family:var(--font-pixel,monospace);font-size:7px;letter-spacing:0.08em;cursor:pointer;">CLOSE</button>
+    </div>`;
+  modal.style.display='flex';
+}
+
+function closeBuffModal(){
+  const m=document.getElementById('buff-modal');
+  if(m)m.style.display='none';
+}
+
 function renderStatusBar(){
   const el=document.getElementById('status-effects-bar');if(!el)return;
   const effects=getActiveBuffs();
@@ -4416,7 +4479,7 @@ function renderStatusBar(){
   else if(dc>=3) extra=[{id:'overload',label:'⚠ DEBUFF OVERLOAD',type:'overload'}];
   const all=[...effects,...extra];
   if(!all.length){el.innerHTML='';return;}
-  el.innerHTML=`<div class="status-bar">${all.map(e=>`<span class="status-chip ${e.type}">${e.label}</span>`).join('')}</div>`;
+  el.innerHTML=`<div class="status-bar">${all.map(e=>`<span class="status-chip ${e.type}" onclick="showBuffModal('${e.id}')" style="cursor:pointer;">${e.label}</span>`).join('')}</div>`;
 }
 
 /* ─── SYSTEM GREETING ON TODAY ───────────────────────────────────────────── */
@@ -4775,7 +4838,7 @@ function renderProfile(){
   ];
 
   const effects=getActiveBuffs();
-  const effectsHtml=effects.length?effects.map(e=>`<span class="status-chip ${e.type}" style="margin-right:6px;">${e.label}</span>`).join(''):'<span style="font-size:11px;color:var(--hint);">No active effects</span>';
+  const effectsHtml=effects.length?effects.map(e=>`<span class="status-chip ${e.type}" onclick="showBuffModal('${e.id}')" style="cursor:pointer;margin-right:6px;">${e.label}</span>`).join(''):'<span style="font-size:11px;color:var(--hint);">No active effects</span>';
 
  // HP bar driven by debuff state (4+ debuffs or recovery mode = empty)
  const debuffCount=countDebuffs();
