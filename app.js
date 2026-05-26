@@ -395,7 +395,7 @@ let syncTimer=null;
 // it before the network fetch and aborts the apply if it changed during the
 // roundtrip (i.e. a local write happened that we'd otherwise clobber).
 let _writeCounter=0;
-function save(k,v){saveLocal(k,v);_writeCounter++;clearTimeout(syncTimer);syncTimer=setTimeout(()=>{syncToSupabase();syncTimer=null;},1500);}
+function save(k,v){saveLocal(k,v);_writeCounter++;clearTimeout(syncTimer);syncTimer=setTimeout(()=>{syncToSupabase();syncTimer=null;},500);}
 function load(k,d){return loadLocal(k,d);}
 
 // Pull fresh state from Supabase when the device becomes visible again.
@@ -425,6 +425,21 @@ async function pullFromSupabase(opts){
 
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible')pullFromSupabase({rerender:true});
+});
+
+// Force a sync on page close/refresh — fetch with keepalive survives unload
+window.addEventListener('beforeunload',()=>{
+  if(syncTimer){
+    clearTimeout(syncTimer);syncTimer=null;
+    try{
+      fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins},updated_at:new Date().toISOString()}),
+        keepalive:true
+      });
+    }catch(e){}
+  }
 });
 
 /* ─── STATE ─────────────────────────────────────────────────────────────── */
