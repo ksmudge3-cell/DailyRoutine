@@ -2151,61 +2151,77 @@ function renderApothecarySection(){
   list.appendChild(sectionWrap);
 }
 
+function _getCurrentVitalsSlot(){
+  const h=new Date().getHours()+(new Date().getMinutes()/60);
+  const dk=_dateKey(new Date());
+  const checkins=moodCheckins[dk]||{};
+  if(h>=10&&h<14&&!checkins['10am']?.loggedAt)return'10am';
+  if(h>=14&&h<17&&!checkins['2pm']?.loggedAt)return'2pm';
+  if(h>=17&&h<21&&!checkins['5pm']?.loggedAt)return'5pm';
+  return null;
+}
+
+function _buildWeekChart(){
+  const now=new Date();
+  const todayDow=now.getDay();
+  const monday=new Date(now);
+  monday.setDate(now.getDate()-((todayDow+6)%7));
+  const days=[];
+  for(let i=0;i<7;i++){const d=new Date(monday);d.setDate(monday.getDate()+i);days.push(d);}
+  const colColor=(val)=>{
+    if(val==null)return'var(--hint)';
+    if(val<=2)return'var(--red-hi,#FF3B1F)';
+    if(val===3)return'var(--amber,#D49A00)';
+    return'var(--teal-hi,#2EF2E0)';
+  };
+  const dayLabels=['M','T','W','T','F','S','S'];
+  const headerCells=dayLabels.map((l,i)=>{
+    const isToday=days[i].toDateString()===now.toDateString();
+    return`<th style="font-family:var(--font-pixel,monospace);font-size:7px;color:${isToday?'var(--green)':'var(--hint)'};padding:4px 6px;text-align:center;font-weight:normal;">${l}</th>`;
+  }).join('');
+  const dimRows=EVENING_DIMS.map(d=>{
+    const cells=days.map(date=>{
+      const dk=_dateKey(date);
+      const evening=(moodCheckins[dk]||{}).evening;
+      const val=evening?.loggedAt?evening[d.id]:null;
+      const isFuture=date>now;
+      const display=isFuture?'':val!=null?val:'—';
+      return`<td style="font-family:var(--font-num,monospace);font-size:13px;color:${colColor(val)};padding:4px 6px;text-align:center;">${display}</td>`;
+    }).join('');
+    const shortLabel=d.label.split(' ')[0].slice(0,5);
+    return`<tr><td style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--hint);padding:4px 8px 4px 0;white-space:nowrap;">${shortLabel.toUpperCase()}</td>${cells}</tr>`;
+  }).join('');
+  return`<div style="overflow-x:auto;margin-top:8px;"><table style="border-collapse:collapse;width:100%;"><thead><tr><th style="padding:4px 8px 4px 0;"></th>${headerCells}</tr></thead><tbody>${dimRows}</tbody></table></div>`;
+}
+
 function renderApothecaryRoom(){
   const wrap=document.getElementById('apothecary-content');
   if(!wrap)return;
   const dk=_dateKey(new Date());
   const checkins=(moodCheckins[dk])||{};
-
   const VITALS=[
     {slot:'10am',label:'10 AM Check-in'},
     {slot:'2pm', label:'2 PM Check-in'},
     {slot:'5pm', label:'5 PM Check-in'},
   ];
-
+  const currentSlot=_getCurrentVitalsSlot();
+  const quickBtn=currentSlot
+    ?`<button onclick="openVitalsCheckin('${currentSlot}')" style="width:100%;padding:16px;background:var(--green,#B8D926);color:#0a0a0c;font-family:var(--font-pixel,monospace);font-size:9px;letter-spacing:0.1em;border:none;border-radius:10px;cursor:pointer;margin-bottom:20px;">TAP TO LOG VITALS — ${SLOT_LABELS[currentSlot]}</button>`
+    :'';
   const todayEntries=VITALS.map(v=>{
     const entry=checkins[v.slot];
-    if(!entry?.loggedAt) return `<div class="task" style="opacity:0.7;cursor:pointer;" onclick="openVitalsCheckin('${v.slot}')">
-      <div class="check"></div>
-      <div style="flex:1;"><div class="task-name">${v.label}</div>
-      <div class="task-time" style="color:rgba(184,217,38,0.5);">TAP TO LOG</div></div>
-      <span style="font-family:var(--font-pixel);font-size:6px;color:var(--hint);padding:2px 5px;border:1px solid rgba(255,255,255,0.08);border-radius:3px;align-self:center;">BONUS</span></div>`;
+    if(!entry?.loggedAt) return `<div class="task" style="opacity:0.6;cursor:pointer;" onclick="openVitalsCheckin('${v.slot}')"><div class="check"></div><div style="flex:1;"><div class="task-name">${v.label}</div><div class="task-time" style="color:rgba(184,217,38,0.4);">— pending</div></div><span style="font-family:var(--font-pixel);font-size:6px;color:var(--hint);padding:2px 5px;border:1px solid rgba(255,255,255,0.08);border-radius:3px;align-self:center;">BONUS</span></div>`;
     const icons=(entry.icons||[]).map(id=>VITALS_ICONS.find(vi=>vi.id===id)?.emoji||'').join('');
     const time=new Date(entry.loggedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
-    return `<div class="task done">
-      <div class="check"><span class="check-mark">✓</span></div>
-      <div style="flex:1;"><div class="task-name">${v.label}</div>
-      <div class="task-time">${time}${icons?' · '+icons:''}${entry.overall?' · Overall: '+entry.overall+'/5':''}</div></div></div>`;
+    const note=entry.note?`<div style="font-family:var(--font-body,serif);font-size:12px;color:var(--hint);font-style:italic;margin-top:2px;">"${entry.note}"</div>`:'';
+    return`<div class="task done"><div class="check"><span class="check-mark">✓</span></div><div style="flex:1;"><div class="task-name">${v.label}</div><div class="task-time">${time}${icons?' · '+icons:''}${entry.overall?' · Overall: '+entry.overall+'/5':''}</div>${note}</div></div>`;
   }).join('');
-
   const eveningCheckin=checkins.evening;
-
-  // Evening debrief: show summary if done, form if not
   const eveningFormOrSummary=eveningCheckin?.loggedAt
-    ? `<div class="task done" style="margin-bottom:16px;">
-        <div class="check"><span class="check-mark">✓</span></div>
-        <div style="flex:1;">
-          <div class="task-name">Evening Log</div>
-          <div class="task-time">Submitted · ${EVENING_DIMS.map(d=>`${d.label.split(' ')[0]}: ${eveningCheckin[d.id]}/5`).join(' · ')}</div>
-        </div>
-      </div>`
-    : _renderEveningForm();
-
-  wrap.innerHTML=`
-    <div style="padding:0 16px 32px;">
-      <div class="section-label" style="color:var(--green);margin-top:16px;">Today's Vitals</div>
-      ${todayEntries}
-      <div class="section-label" style="color:var(--green);margin-top:24px;">Evening Debrief</div>
-      ${eveningFormOrSummary}
-    </div>`;
-
-  // Inject eve-dim styles if not present
-  if(!document.getElementById('eve-styles')){
-    const s=document.createElement('style');
-    s.id='eve-styles';
-    s.textContent=`.eve-dim-selected{border-color:var(--green,#B8D926)!important;transform:scale(1.12);}`;
-    document.head.appendChild(s);
-  }
+    ?`<div class="task done" style="margin-bottom:16px;"><div class="check"><span class="check-mark">✓</span></div><div style="flex:1;"><div class="task-name">Evening Log</div><div class="task-time">Submitted · ${EVENING_DIMS.map(d=>`${d.label.split(' ')[0]}: ${eveningCheckin[d.id]}/5`).join(' · ')}</div>${eveningCheckin.note?`<div style="font-family:var(--font-body,serif);font-size:12px;color:var(--hint);font-style:italic;margin-top:2px;">"${eveningCheckin.note}"</div>`:''}</div></div>`
+    :_renderEveningForm();
+  wrap.innerHTML=`<div style="padding:0 16px 32px;">${quickBtn}<div class="section-label" style="color:var(--green);margin-top:${currentSlot?'0':'16px'};">Today's Vitals</div>${todayEntries}<div class="section-label" style="color:var(--green);margin-top:24px;">Evening Debrief</div>${eveningFormOrSummary}<div class="section-label" style="color:var(--green);margin-top:28px;">This Week</div>${_buildWeekChart()}</div>`;
+  if(!document.getElementById('eve-styles')){const s=document.createElement('style');s.id='eve-styles';s.textContent='.eve-dim-selected{border-color:var(--green,#B8D926)!important;transform:scale(1.12);}';document.head.appendChild(s);}
 }
 
 function _renderEveningForm(){
