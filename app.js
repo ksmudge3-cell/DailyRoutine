@@ -2431,6 +2431,7 @@ function removeWalk(taskId){
   renderDogs();
   if(selectedDay===new Date().getDay())renderToday();
 }
+function markGrooming(id){groomState[id]=Date.now();save('dr-groom-state',groomState);renderDogs();}
 function markPrevention(id){prevState[id]=Date.now();save('dr-prev-state',prevState);renderDogs();}
 
 // Run on startup AND after Supabase load to clean stale data
