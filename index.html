@@ -355,6 +355,11 @@
     try {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') return false;
+      // Unsubscribe any existing push subscription first — prevents duplicate tokens
+      if (swReg) {
+        const existingSub = await swReg.pushManager.getSubscription();
+        if (existingSub) await existingSub.unsubscribe();
+      }
       const token = await getToken(messaging, {
         vapidKey: 'BERHIHgTQl16AzAcNXTwZOGsGbBmXE3gSHYSDpWpguPhiUDuPG58Uqevx2Q0TEIRgmCeTXc-idj3AZjNTd7VkfU',
         serviceWorkerRegistration: swReg
