@@ -6453,3 +6453,5 @@ function handlePushDecline(){
   pushDeclinedAt=Date.now();
   save('dr-push-declined',pushDeclinedAt);
 }
+
+init();
