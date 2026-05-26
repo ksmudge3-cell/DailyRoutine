@@ -285,7 +285,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -406,6 +406,7 @@ async function loadFromSupabase(){
       if(d.dogWalkCount)dogWalkCount=d.dogWalkCount;
       if(d.ednaIncidents)ednaIncidents=d.ednaIncidents;
       if(d.kronkChaosLog)kronkChaosLog=d.kronkChaosLog;
+      if(d.trainingLog)trainingLog=d.trainingLog;
       // Explicit save list — keys must match what init() re-loads (line ~4400).
       // Auto camelCase→kebab conversion was lossy (xpState→dr-xp-state, but actual key is dr-xp).
       saveLocal('dr-state',state);
@@ -479,7 +480,7 @@ window.addEventListener('beforeunload',()=>{
       fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog},updated_at:new Date().toISOString()}),
+        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog},updated_at:new Date().toISOString()}),
         keepalive:true
       });
     }catch(e){}
@@ -496,6 +497,8 @@ let prevState=load('dr-prev-state',{});
 let dogWalkCount=load('dr-dog-walk-count',{});
 let ednaIncidents=load('dr-edna-incidents',[]);
 let kronkChaosLog=load('dr-kronk-chaos',[]);
+let trainingLog=load('dr-training-log',[]);
+let _trainingSession={edna:[],kronk:[]};
 let notifs=load('dr-notifs',[]);
 let wheel=load('dr-wheel',DEFAULT_WHEEL);
 let wheelDone=load('dr-wheel-done',{});
@@ -2436,6 +2439,105 @@ function _kronkStatus(dogData){
   return'LOCATION: Floor corridor — tail: active';
 }
 
+const TRAINING_COMMANDS=[
+  {id:'leave-it', label:'Leave it'},
+  {id:'off',      label:'Off'},
+  {id:'down',     label:'Down'},
+  {id:'shake',    label:'Shake', kronkLocked:true}, // Kronk hasn't learned this yet
+];
+
+function toggleTrainingCommand(dog, cmdId){
+  if(!_trainingSession[dog])_trainingSession[dog]=[];
+  const idx=_trainingSession[dog].indexOf(cmdId);
+  if(idx>-1)_trainingSession[dog].splice(idx,1);
+  else _trainingSession[dog].push(cmdId);
+  renderDogs();
+}
+
+function logTrainingSession(){
+  const today=todayStr();
+  // Remove any existing entry for today
+  trainingLog=trainingLog.filter(s=>s.date!==today);
+  trainingLog.push({
+    date:today,
+    edna:[..._trainingSession.edna],
+    kronk:[..._trainingSession.kronk],
+    loggedAt:Date.now()
+  });
+  save('dr-training-log',trainingLog);
+  _trainingSession={edna:[],kronk:[]};
+  awardXP(10,'Training session');
+  renderDogs();
+}
+
+function renderTrainingSection(){
+  const today=todayStr();
+  const todaySession=trainingLog.find(s=>s.date===today);
+  const lastSession=trainingLog.length
+    ?trainingLog[trainingLog.length-(todaySession&&trainingLog.length>1?2:1)]
+    :null;
+  const lastTrained=lastSession
+    ?new Date(lastSession.loggedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})
+    :'never';
+  const lastCount=lastSession?(lastSession.edna.length+lastSession.kronk.length):0;
+  const alreadyLogged=!!todaySession;
+
+  // 7-day history
+  const now=new Date();
+  const historyDays=Array.from({length:7},(_,i)=>{
+    const d=new Date(now);d.setDate(now.getDate()-i);
+    const dk=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    // Match trainingLog which uses todayStr() format
+    const entry=trainingLog.find(s=>s.date===dk||s.date===`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`);
+    return{
+      label:d.toLocaleDateString('en-US',{weekday:'short'}).slice(0,1),
+      entry,
+      isToday:i===0
+    };
+  }).reverse();
+
+  const historyHtml=`<div style="display:flex;gap:4px;margin-top:12px;">
+    ${historyDays.map(d=>`<div style="flex:1;text-align:center;">
+      <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:${d.isToday?'var(--amber)':'var(--hint)'};margin-bottom:4px;">${d.label}</div>
+      <div style="width:100%;aspect-ratio:1;border-radius:4px;background:${d.entry?'rgba(184,217,38,0.3)':'rgba(255,255,255,0.05)'};border:1px solid ${d.entry?'rgba(184,217,38,0.4)':'rgba(255,255,255,0.08)'};""></div>
+    </div>`).join('')}
+  </div>`;
+
+  const commandGrid=TRAINING_COMMANDS.map(cmd=>{
+    const ednaDone=alreadyLogged?todaySession.edna.includes(cmd.id):_trainingSession.edna.includes(cmd.id);
+    const kronkDone=alreadyLogged?todaySession.kronk.includes(cmd.id):_trainingSession.kronk.includes(cmd.id);
+    const chk=(done,dog)=>alreadyLogged
+      ?`<div style="width:28px;height:28px;border-radius:4px;background:${done?'rgba(184,217,38,0.2)':'rgba(255,255,255,0.05)'};border:1px solid ${done?'rgba(184,217,38,0.4)':'rgba(255,255,255,0.1)'};display:flex;align-items:center;justify-content:center;font-size:14px;">${done?'✓':''}</div>`
+      :`<div onclick="toggleTrainingCommand('${dog}','${cmd.id}')" style="width:28px;height:28px;border-radius:4px;background:${done?'rgba(184,217,38,0.2)':'rgba(255,255,255,0.05)'};border:1px solid ${done?'rgba(184,217,38,0.4)':'rgba(255,255,255,0.1)'};display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;">${done?'✓':''}</div>`;
+    const kronkCell=cmd.kronkLocked
+      ?`<div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);">—</div>`
+      :chk(kronkDone,'kronk');
+    return`<div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+      <div style="flex:1;font-family:var(--font-system,monospace);font-size:10px;color:var(--pearl);">${cmd.label}</div>
+      ${chk(ednaDone,'edna')}
+      ${kronkCell}
+    </div>`;
+  }).join('');
+
+  return`<div class="grooming-card" style="border:1px solid rgba(184,217,38,0.15);border-radius:10px;padding:14px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div>
+        <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--green);letter-spacing:0.08em;">TRAINING SESSION</div>
+        <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);margin-top:3px;">Last trained: ${lastTrained}${lastCount?' · '+lastCount+' commands':''}</div>
+      </div>
+      ${alreadyLogged?`<span style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--green);padding:3px 6px;border:1px solid rgba(184,217,38,0.3);border-radius:3px;">LOGGED</span>`:''}
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.08);">
+      <div style="flex:1;"></div>
+      <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--amber);letter-spacing:0.05em;width:28px;text-align:center;">EDNA</div>
+      <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--void-hi,#8E65FF);letter-spacing:0.05em;width:28px;text-align:center;">KRONK</div>
+    </div>
+    ${commandGrid}
+    ${!alreadyLogged?`<button onclick="logTrainingSession()" style="width:100%;margin-top:12px;padding:12px;background:rgba(184,217,38,0.1);border:1px solid rgba(184,217,38,0.3);border-radius:8px;color:var(--green);font-family:var(--font-pixel,monospace);font-size:8px;letter-spacing:0.08em;cursor:pointer;">LOG SESSION</button>`:''}
+    ${historyHtml}
+  </div>`;
+}
+
 function renderEdnaKennelSection(dogData){
   const status=_ednaStatus(dogData);
   const face=dogData['dogs-feed-am']&&dogData['dogs-feed-pm']?CHAR_FACE_EDNA_HAPPY:CHAR_FACE_EDNA_GUARD;
@@ -2560,6 +2662,7 @@ function renderDogs(){
     <div class="grooming-card"><h3>Grooming tracker</h3>${groomHtml}</div>
     ${renderEdnaKennelSection(data)}
     ${renderKronkKennelSection(data)}
+    ${renderTrainingSection()}
     <div class="grooming-card"><h3>Prevention tracker <span style="font-size:10px;color:var(--muted);font-weight:400;">monthly — day ${(dogTasks.prevention||[{dayOfMonth:15}])[0].dayOfMonth}</span></h3>${prevHtml}</div>`;
 }
 
