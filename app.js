@@ -3962,7 +3962,8 @@ async function sendCommMessage(){
           fed_am:_fedAm,
           fed_pm:_fedPm,
           walks:_walks,
-          trained:!!_dogData['dog-train']
+          trained:trainingLog.filter(s=>s.date===todayStr()).length>0,
+          sessions_today:trainingLog.filter(s=>s.date===todayStr()).length
         }
       },
       kronk:{
@@ -3979,7 +3980,8 @@ async function sendCommMessage(){
           fed_am:_fedAm,
           fed_pm:_fedPm,
           walks:_walks,
-          trained:!!_dogData['dog-train']
+          trained:trainingLog.filter(s=>s.date===todayStr()).length>0,
+          sessions_today:trainingLog.filter(s=>s.date===todayStr()).length
         }
       }
     }
