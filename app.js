@@ -4781,14 +4781,15 @@ function renderQuestCard(q){
 
 function renderQuestLog(){
   const wrap=document.getElementById('archive-content'); if(!wrap)return;
+  const newBtn=`<button onclick="openQuestPrompt()" style="width:100%;box-sizing:border-box;background:rgba(212,154,0,0.12);border:1px solid var(--amber);color:var(--amber);border-radius:8px;padding:12px;font-family:var(--font-game,'Cinzel');font-size:11px;letter-spacing:0.05em;cursor:pointer;margin-bottom:14px;">+ PETITION THE SYSTEM — NEW DIRECTIVE</button>`;
   const list=Array.isArray(quests)?quests:[];
   const active=list.filter(q=>q.status!=='completed');
   const done=list.filter(q=>q.status==='completed');
   if(!active.length&&!done.length){
-    wrap.innerHTML='<div style="padding:24px 16px;text-align:center;color:var(--hint,#888);font-family:var(--font-body);font-size:13px;">No directives yet.<br>Petition the System with a goal to receive one.</div>';
+    wrap.innerHTML=newBtn+'<div style="padding:24px 16px;text-align:center;color:var(--hint,#888);font-family:var(--font-body);font-size:13px;">No directives yet.<br>Petition the System with a goal to receive one.</div>';
     return;
   }
-  let html='';
+  let html=newBtn;
   if(active.length) html+='<div class="section-label" style="color:var(--amber);margin:4px 0 8px;">ACTIVE DIRECTIVES</div>'+active.map(renderQuestCard).join('');
   if(done.length) html+='<div class="section-label" style="color:var(--teal);margin:20px 0 8px;">COMPLETED</div>'+
     done.map(q=>`<div style="opacity:0.65;padding:8px 12px;font-family:var(--font-body);font-size:13px;border-left:2px solid var(--teal);margin-bottom:6px;">☑ ${_escHtml(q.name)}</div>`).join('');
@@ -4803,6 +4804,81 @@ function toggleQuestStep(questId,stepId){
   save('dr-quests',quests);
   if(typeof checkQuestCompletion==='function')checkQuestCompletion(); // pay out if now complete
   renderQuestLog();
+}
+
+// ─── QUEST CREATION FLOW (in-app: goal → review → confirm) ────────────────
+let _questFlow=null;
+function openQuestPrompt(){
+  if(!donutApiKey){ alert("Princess Donut needs an API key first (Donut tab) — the System uses it to draft directives."); return; }
+  _questFlow={state:'input', goal:'', proposal:null};
+  let ov=document.getElementById('quest-flow-overlay');
+  if(!ov){ ov=document.createElement('div'); ov.id='quest-flow-overlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    document.body.appendChild(ov); }
+  renderQuestFlow();
+}
+function closeQuestPrompt(){ const ov=document.getElementById('quest-flow-overlay'); if(ov)ov.remove(); _questFlow=null; }
+function renderQuestFlow(){
+  const ov=document.getElementById('quest-flow-overlay'); if(!ov||!_questFlow)return;
+  const f=_questFlow;
+  const wrap=b=>`<div style="background:var(--surface,#111116);border:1px solid rgba(212,154,0,0.3);border-radius:10px;padding:20px;max-width:380px;width:100%;max-height:85vh;overflow-y:auto;">${b}</div>`;
+  const hdr='<div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--amber);letter-spacing:0.1em;margin-bottom:12px;">THE SYSTEM · DIRECTIVE INTAKE</div>';
+  let inner='';
+  if(f.state==='input'){
+    inner=wrap(hdr+`<div style="font-family:var(--font-body);font-size:13px;color:var(--muted,#bbb);margin-bottom:10px;">State your goal. The System will decompose it into a directive.</div>
+      <textarea id="quest-goal-input" rows="3" placeholder="e.g. reclaim my apartment" style="width:100%;box-sizing:border-box;background:var(--surface2,#1a1a22);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-family:var(--font-body);font-size:14px;padding:10px;margin-bottom:14px;resize:vertical;"></textarea>
+      <div style="display:flex;gap:10px;">
+        <button onclick="submitQuestGoal()" style="flex:1;background:rgba(212,154,0,0.15);border:1px solid var(--amber);color:var(--amber);border-radius:6px;padding:11px;font-family:var(--font-game,'Cinzel');font-size:10px;letter-spacing:0.05em;cursor:pointer;">PETITION THE SYSTEM</button>
+        <button onclick="closeQuestPrompt()" style="background:var(--surface2,#1a1a22);border:1px solid rgba(255,255,255,0.1);color:var(--hint,#888);border-radius:6px;padding:11px 14px;font-family:var(--font-game,'Cinzel');font-size:10px;cursor:pointer;">CANCEL</button>
+      </div>`);
+  } else if(f.state==='loading'){
+    inner=wrap(hdr+`<div style="font-family:var(--font-body);font-size:14px;color:var(--teal);padding:24px 0;text-align:center;">The System is deliberating…</div>`);
+  } else if(f.state==='error'){
+    inner=wrap(hdr+`<div style="font-family:var(--font-body);font-size:13px;color:var(--red-hi,#FF3B1F);margin-bottom:14px;">The System could not parse that request. Try rephrasing your goal.</div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="_questFlow.state='input';renderQuestFlow()" style="flex:1;background:rgba(212,154,0,0.15);border:1px solid var(--amber);color:var(--amber);border-radius:6px;padding:11px;font-family:var(--font-game,'Cinzel');font-size:10px;cursor:pointer;">TRY AGAIN</button>
+        <button onclick="closeQuestPrompt()" style="background:var(--surface2,#1a1a22);border:1px solid rgba(255,255,255,0.1);color:var(--hint,#888);border-radius:6px;padding:11px 14px;font-family:var(--font-game,'Cinzel');font-size:10px;cursor:pointer;">CLOSE</button>
+      </div>`);
+  } else if(f.state==='review'&&f.proposal){
+    const q=f.proposal;
+    const steps=q.steps.map((s,i)=>`<div style="padding:6px 0;border-top:1px solid rgba(255,255,255,0.05);font-family:var(--font-body);font-size:13px;color:#ddd;">${i+1}. ${_escHtml(s.label)}${s.taskRef?' — routine: '+_escHtml(s.taskRef):''}</div>`).join('');
+    inner=wrap(hdr+`<div style="font-family:var(--font-game,'Cinzel');font-size:16px;color:var(--amber);margin-bottom:2px;">${_escHtml(q.name)}</div>
+      <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint,#888);text-transform:uppercase;margin-bottom:10px;">${_escHtml(q.type)} · ${q.steps.length} steps</div>
+      ${q.rationale?`<div style="font-family:var(--font-body);font-size:12px;color:var(--muted,#aaa);font-style:italic;margin-bottom:10px;border-left:2px solid rgba(212,154,0,0.4);padding-left:8px;">${_escHtml(q.rationale)}</div>`:''}
+      <div style="margin-bottom:14px;">${steps}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="confirmQuest()" style="flex:1;min-width:120px;background:rgba(46,242,224,0.12);border:1px solid var(--teal);color:var(--teal);border-radius:6px;padding:11px;font-family:var(--font-game,'Cinzel');font-size:10px;letter-spacing:0.05em;cursor:pointer;">ACCEPT DIRECTIVE</button>
+        <button onclick="regenerateQuest()" style="background:var(--surface2,#1a1a22);border:1px solid rgba(255,255,255,0.15);color:var(--muted,#bbb);border-radius:6px;padding:11px 12px;font-family:var(--font-game,'Cinzel');font-size:10px;cursor:pointer;">REGENERATE</button>
+        <button onclick="closeQuestPrompt()" style="background:transparent;border:1px solid rgba(255,255,255,0.1);color:var(--hint,#888);border-radius:6px;padding:11px 12px;font-family:var(--font-game,'Cinzel');font-size:10px;cursor:pointer;">DISCARD</button>
+      </div>`);
+  }
+  ov.innerHTML=inner;
+  if(f.state==='input'){ const ta=document.getElementById('quest-goal-input'); if(ta){ta.value=f.goal||'';ta.focus();} }
+}
+async function submitQuestGoal(){
+  const ta=document.getElementById('quest-goal-input'); const goal=ta?ta.value.trim():'';
+  if(!goal)return;
+  _questFlow.goal=goal; _questFlow.state='loading'; renderQuestFlow();
+  const res=await generateQuestProposal(goal);
+  if(!_questFlow)return; // user closed mid-flight
+  if(res&&res.ok){ _questFlow.proposal=res.quest; _questFlow.state='review'; }
+  else { _questFlow.state='error'; }
+  renderQuestFlow();
+}
+async function regenerateQuest(){
+  if(!_questFlow||!_questFlow.goal)return;
+  _questFlow.state='loading'; renderQuestFlow();
+  const res=await generateQuestProposal(_questFlow.goal);
+  if(!_questFlow)return;
+  if(res&&res.ok){ _questFlow.proposal=res.quest; _questFlow.state='review'; } else { _questFlow.state='error'; }
+  renderQuestFlow();
+}
+function confirmQuest(){
+  if(!_questFlow||!_questFlow.proposal)return;
+  const r=commitQuestProposal(_questFlow.proposal);
+  closeQuestPrompt();
+  if(typeof renderQuestLog==='function')renderQuestLog();
+  if(r&&r.ok&&typeof showPtsToast==='function')showPtsToast('DIRECTIVE REGISTERED. Begin.');
 }
 
 // Starter quest set — block-based, so it works every day (Morning/Evening exist
