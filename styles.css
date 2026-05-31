@@ -3996,3 +3996,32 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 @media (prefers-reduced-motion: reduce) {
   .stash-crate-img, .stash-crate-fallback { animation: none; }
 }
+
+/* ── IN PLAY strip (active / banked effects) ────────────────────── */
+.stash-inplay { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.stash-inplay-chip {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 13px 8px 9px; border-radius: 99px;
+  background: var(--surface);
+  border: 0.75px solid var(--gold-dim);
+  box-shadow: 0 0 10px rgba(212,154,0,0.12);
+}
+.stash-inplay-chip.banked { border-color: var(--border); box-shadow: none; opacity: 0.58; }
+.stash-inplay-icon {
+  width: 22px; height: 22px; image-rendering: pixelated; display: block;
+  filter: drop-shadow(0 0 4px var(--gold));
+}
+.stash-inplay-chip.banked .stash-inplay-icon { filter: none; }
+.stash-inplay-glyph {
+  width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+  color: var(--gold); font-size: 14px;
+}
+.stash-inplay-chip.banked .stash-inplay-glyph { color: var(--muted); }
+.stash-inplay-text { display: flex; flex-direction: column; gap: 1px; }
+.stash-inplay-name {
+  font-family: var(--font-title); font-size: 12px; color: var(--text);
+  display: flex; align-items: center; gap: 7px;
+}
+.stash-inplay-status { font-family: var(--font-hotdog); font-size: 6px; letter-spacing: 0.1em; color: var(--gold); }
+.stash-inplay-chip.banked .stash-inplay-status { color: var(--muted); }
+.stash-inplay-note { font-family: var(--font-system); font-size: 9.5px; color: var(--muted); letter-spacing: 0.02em; }

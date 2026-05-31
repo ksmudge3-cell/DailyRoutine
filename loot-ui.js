@@ -107,6 +107,9 @@ function renderInventory() {
     html += '</div>';
   }
 
+  var effects = (typeof getActiveEffects === 'function') ? (getActiveEffects() || []) : [];
+  if (effects.length) html += stashActiveStrip(effects);
+
   html += '<div class="stash-label">YOUR HAUL · ' + items.length + ' ITEM' + (items.length === 1 ? '' : 'S') + '</div>';
   if (!items.length) {
     html += '<div class="stash-empty">// STASH EMPTY\nCLEAR FLOORS AND HOLD STREAKS TO EARN CRATES.</div>';
@@ -218,4 +221,34 @@ function openLootBox(boxId) {
                 '+' + coins + ' CRAWLER COINS   +' + xp + ' XP';
   _stashOpenId = null;
   renderInventory();
+}
+
+/* ════════════════════════════════════════════════════════════════
+   IN PLAY strip — active / banked effects above the haul grid
+   Data via getActiveEffects(): { name, status:'active'|'banked', note, itemId, tier }
+   Read-only status display (no tap action). amber = active, dimmed = banked.
+   ════════════════════════════════════════════════════════════════ */
+function stashActiveStrip(effects) {
+  var html = '<div class="stash-label">IN PLAY</div><div class="stash-inplay">';
+  for (var i = 0; i < effects.length; i++) html += stashEffectChip(effects[i]);
+  return html + '</div>';
+}
+
+function stashEffectChip(e) {
+  var banked = (e.status === 'banked');
+  var tier = stashTier(e.tier);
+  var styleVars = '--tier:' + tier.color + ';--tier-dim:' + stashHexToRgba(tier.color, 0.16);
+  var iconSrc = stashAsset(stashIconName({ itemId: e.itemId, type: 'buff' }));
+  var icon = iconSrc
+    ? stashImg(iconSrc, 22, 'stash-inplay-icon')
+    : '<span class="stash-inplay-glyph">✦</span>';
+  return '<div class="stash-inplay-chip' + (banked ? ' banked' : '') + '" style="' + styleVars + '">' +
+           icon +
+           '<div class="stash-inplay-text">' +
+             '<div class="stash-inplay-name">' + stashEsc(e.name) +
+               '<span class="stash-inplay-status">' + (banked ? 'BANKED' : 'ACTIVE') + '</span>' +
+             '</div>' +
+             (e.note ? '<div class="stash-inplay-note">' + stashEsc(e.note) + '</div>' : '') +
+           '</div>' +
+         '</div>';
 }
