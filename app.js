@@ -7143,14 +7143,13 @@ const MAP_POS={
   rewards:{x:73, y:65},  // The Vault
   inbox:  {x:47, y:75},  // The Comm Tower
   apothecary:{x:17,y:15},// The Apothecary
-  inventory:{x:90,y:50}, // The Stash
+  inventory:{x:77,y:88}, // The Stash (moved into the old Counting House slot)
   archive:{x:23,y:87},   // The Archive — quest log
 };
 
 const SEALED_ROOMS=[
   {id:'mess-hall',       label:'The Mess Hall',       x:83, y:15},
   {id:'shrine',          label:'The Shrine',          x:47, y:88},
-  {id:'counting-house',  label:'The Counting House',  x:77, y:88},
 ];
 
 let ednaPatrolInterval=null;
