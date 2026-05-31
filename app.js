@@ -4291,6 +4291,94 @@ let xpState=load('dr-xp',{totalXP:0,level:1,equippedTitle:null,unlockedTitles:['
 let inventory=load('dr-inventory',[]);
 let pendingBoxes=load('dr-pending-boxes',[]);
 
+/* ─── LOOT / INVENTORY API (build: loot wiring Piece 2) ────────────────────
+   Logic only — no UX. The reveal moment + inventory grid (other chat) call
+   into these. Defaults locked this build:
+   • currency in a box AUTO-DEPOSITS via awardPoints/awardXP on openBox()
+   • items STACK by itemId+qty (food/voucher/junk/buff); cosmetics stored
+     once (dupes ignored); donutLines recorded as unlocked flags.
+   Buff EFFECT wiring (payload.effect → debuff/floor systems) is a later piece. */
+
+// Grant an earned box. Rolls + appraises now; stores it UNOPENED so the
+// reveal UX can animate the open. Returns the pending-box record (or null).
+function grantBox(tier,source){
+  tier=(tier||'common').toLowerCase();
+  if(!window.DCCLoot||!window.DCCLoot.BOX_TIERS[tier]){console.warn('grantBox: unknown tier',tier);return null;}
+  const items=window.DCCLoot.rollBox(tier);
+  if(window.DCCNarrator)window.DCCNarrator.appraiseAll(items); // fills .description
+  const box={
+    id:'box_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    tier,source:source||('box:'+tier),
+    items,earnedAt:Date.now(),openedAt:null,
+  };
+  pendingBoxes.push(box);
+  save('dr-pending-boxes',pendingBoxes);
+  return box;
+}
+
+// Open a pending box: deposit currency, move the rest into inventory.
+// Returns {box, items, deposited:{coins,xp}} for the reveal UX to display.
+function openBox(boxId){
+  const idx=pendingBoxes.findIndex(b=>b.id===boxId);
+  if(idx<0){console.warn('openBox: no pending box',boxId);return null;}
+  const box=pendingBoxes[idx];
+  const deposited={coins:0,xp:0};
+  const landed=[];
+  for(const it of box.items){
+    if(it.type==='currency'){
+      const p=it.payload||{};
+      if(p.coins){awardPoints(p.coins,'Loot box ('+box.tier+')','loot');deposited.coins+=p.coins;}
+      if(p.xp){awardXP(p.xp,'Loot box ('+box.tier+')');deposited.xp+=p.xp;}
+      continue; // currency never sits in inventory
+    }
+    addToInventory(it);
+    landed.push(it);
+  }
+  box.openedAt=Date.now();
+  pendingBoxes.splice(idx,1);
+  save('dr-pending-boxes',pendingBoxes);
+  save('dr-inventory',inventory);
+  return {box,items:landed,deposited};
+}
+
+// Add one rolled item to inventory under the stacking rules.
+function addToInventory(item){
+  if(!item)return null;
+  if(item.type==='donutLine'){ // unlocked dialogue flag — never duplicate
+    const flag=inventory.find(r=>r.type==='donutLine'&&r.itemId===item.itemId);
+    if(flag)return flag;
+    inventory.push({...item,qty:1});
+    return item;
+  }
+  if(item.type==='cosmetic'){ // own-once — ignore dupes
+    const owned=inventory.find(r=>r.type==='cosmetic'&&r.itemId===item.itemId);
+    if(owned)return owned;
+    inventory.push({...item,qty:1,equipped:false});
+    return item;
+  }
+  // food / voucher / junk / buff → merge into an unused stack of the same item
+  const stack=inventory.find(r=>r.itemId===item.itemId&&r.type===item.type&&!r.usedAt);
+  if(stack){stack.qty=(stack.qty||1)+(item.qty||1);return stack;}
+  inventory.push({...item,qty:(item.qty||1)});
+  return item;
+}
+
+// Consume (decrement) or equip-toggle an inventory row. Returns the row.
+// Buff payload.effect application is wired in a later piece.
+function useInventoryItem(id){
+  const row=inventory.find(r=>r.id===id);
+  if(!row)return null;
+  if(row.type==='cosmetic'){row.equipped=!row.equipped;save('dr-inventory',inventory);return row;}
+  row.qty=(row.qty||1)-1;
+  if(row.qty<=0){const i=inventory.indexOf(row);if(i>=0)inventory.splice(i,1);} // depleted — remove
+  save('dr-inventory',inventory);
+  return row;
+}
+
+// Read helpers for the UX.
+function getInventory(){return inventory.filter(r=>!r.usedAt);}
+function getPendingBoxes(){return pendingBoxes.filter(b=>!b.openedAt);}
+
 function getLevelInfo(xp){
   let current=XP_LEVELS[0];
   for(const l of XP_LEVELS){if(xp>=l.xp)current=l;else break;}
