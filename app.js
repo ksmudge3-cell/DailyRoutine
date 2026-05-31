@@ -285,7 +285,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -367,6 +367,8 @@ async function loadFromSupabase(){
       if(d.commTowerPending)commTowerPending=d.commTowerPending;
       if(d.sideQuestBacklog)sideQuestBacklog=d.sideQuestBacklog;
       if(d.shopItems)shopItems=d.shopItems;
+      if(d.inventory)inventory=d.inventory;
+      if(d.pendingBoxes)pendingBoxes=d.pendingBoxes;
       if(d.qualityState)qualityState={...qualityState,...d.qualityState};
       if(d.customRewards)customRewards=d.customRewards;
       if(d.donutChat)donutChat=d.donutChat;
@@ -431,6 +433,8 @@ async function loadFromSupabase(){
       saveLocal('dr-wheel-pinned',wheelPinned);
       saveLocal('dr-inbox',inbox);
       saveLocal('dr-shop',shopItems);
+      saveLocal('dr-inventory',inventory);
+      saveLocal('dr-pending-boxes',pendingBoxes);
       saveLocal('dr-archived',archived);
       saveLocal('dr-rewards',rewardsState);
       saveLocal('dr-xp',xpState);
@@ -489,7 +493,7 @@ window.addEventListener('beforeunload',()=>{
       fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
+        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
         keepalive:true
       });
     }catch(e){}
@@ -4279,6 +4283,13 @@ const XP_LEVELS=[
 const XP_PTS={task:5,dogTask:8,spinTask:10,dayComplete:25,streak7:50,streak30:200,weeklyBoss:100};
 
 let xpState=load('dr-xp',{totalXP:0,level:1,equippedTitle:null,unlockedTitles:['Freshly Fallen Crawler'],companionXP:{edna:0,kronk:0}});
+
+/* ─── LOOT / INVENTORY STATE (build: loot wiring Piece 1) ──────────────────
+   inventory   = held items (§2A): buffs, food, vouchers, cosmetics, junk.
+   pendingBoxes= earned-but-unopened boxes; the reveal UX (other chat) calls
+                 openBox(id) to animate + move contents into inventory.       */
+let inventory=load('dr-inventory',[]);
+let pendingBoxes=load('dr-pending-boxes',[]);
 
 function getLevelInfo(xp){
   let current=XP_LEVELS[0];
