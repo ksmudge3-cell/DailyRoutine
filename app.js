@@ -6206,7 +6206,7 @@ function renderDonutSetup(){
     <img src="${ICON_PRINCESS_DONUT_PORTRAIT}" class="donut-portrait" alt="Princess Donut">
     <div class="donut-setup-title">${editing?'CHANGE API KEY':'DONUT TAB SETUP'}</div>
     <div class="donut-setup-desc">An Anthropic API key is required to activate Princess Donut. Your key is stored on this device only — never synced, never in the app source code.</div>
-    <input type="password" id="donut-key-input" class="donut-key-input" placeholder="sk-ant-...">
+    <input type="password" id="donut-key-input" class="donut-key-input" placeholder="sk-ant-..." autofocus onkeydown="if(event.key==='Enter'){event.preventDefault();saveDonutKey();}">
     <button class="donut-key-save-btn" onclick="saveDonutKey()">${editing?'SAVE NEW KEY':'ACTIVATE'}</button>
     ${editing?`<button class="donut-key-save-btn" onclick="cancelDonutKeyEdit()" style="background:transparent;border:1px solid rgba(255,255,255,0.2);color:var(--hint,#888);margin-top:8px;">CANCEL</button>`:''}
   </div>`;
