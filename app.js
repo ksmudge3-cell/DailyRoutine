@@ -255,10 +255,37 @@ function saveLocal(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){
 
 async function syncToSupabase(){
   try{
+    // Never let a device with fewer permanent memory entries overwrite one with more.
+    // Fetch current Supabase permanent memory and merge before writing.
+    let safePermanent=donutPermanentMemory;
+    let safeRolling=donutRollingMemory;
+    try{
+      const chk=await fetch(`${SUPABASE_URL}/rest/v1/routine_data?id=eq.${SYNC_ID}&select=data`,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+      const chkRows=await chk.json();
+      const remote=chkRows?.[0]?.data;
+      if(remote?.donutPermanentMemory?.length){
+        const merged=[...donutPermanentMemory];
+        remote.donutPermanentMemory.forEach(r=>{
+          if(!merged.find(m=>m.savedOn===r.savedOn&&m.note===r.note))merged.push(r);
+        });
+        safePermanent=merged;
+        if(merged.length>donutPermanentMemory.length){
+          donutPermanentMemory=merged;
+          saveLocal('dr-donut-permanent',merged);
+        }
+      }
+      if(remote?.donutRollingMemory?.length){
+        const merged=[...donutRollingMemory];
+        remote.donutRollingMemory.forEach(r=>{
+          if(!merged.find(m=>m.week_number===r.week_number))merged.push(r);
+        });
+        safeRolling=merged.slice(-4);
+      }
+    }catch(e){}
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -379,6 +406,16 @@ async function loadFromSupabase(){
       if(d.dogWalkCount)dogWalkCount=d.dogWalkCount;
       if(d.ednaIncidents)ednaIncidents=d.ednaIncidents;
       if(d.kronkChaosLog)kronkChaosLog=d.kronkChaosLog;
+      if(d.trainingLog){
+        // Merge by loggedAt — never drop local sessions
+        const merged=[...trainingLog];
+        (d.trainingLog||[]).forEach(r=>{
+          if(!merged.find(m=>m.loggedAt===r.loggedAt))merged.push(r);
+        });
+        trainingLog=merged.sort((a,b)=>a.loggedAt-b.loggedAt);
+      }
+      if(d.ednaStats)ednaStats={...ednaStats,...d.ednaStats};
+      if(d.kronkStats)kronkStats={...kronkStats,...d.kronkStats};
       // Explicit save list — keys must match what init() re-loads (line ~4400).
       // Auto camelCase→kebab conversion was lossy (xpState→dr-xp-state, but actual key is dr-xp).
       saveLocal('dr-state',state);
@@ -452,7 +489,7 @@ window.addEventListener('beforeunload',()=>{
       fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog},updated_at:new Date().toISOString()}),
+        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
         keepalive:true
       });
     }catch(e){}
@@ -469,6 +506,10 @@ let prevState=load('dr-prev-state',{});
 let dogWalkCount=load('dr-dog-walk-count',{});
 let ednaIncidents=load('dr-edna-incidents',[]);
 let kronkChaosLog=load('dr-kronk-chaos',[]);
+let trainingLog=load('dr-training-log',[]);
+let _trainingSession={edna:[],kronk:[]};
+let ednaStats=load('dr-edna-stats',{loyalty:20,chaos:50,morale:30,floof:20,zoomies:0,obedience:15});
+let kronkStats=load('dr-kronk-stats',{loyalty:20,aura:30,morale:30,floof:20,zoomies:0,obedience:10});
 let notifs=load('dr-notifs',[]);
 let wheel=load('dr-wheel',DEFAULT_WHEEL);
 let wheelDone=load('dr-wheel-done',{});
@@ -1827,6 +1868,7 @@ function renderToday(){
   renderBonusToday(selectedDay);
   renderApothecarySection();
   renderDogMentalSection();
+  renderPreventionFloorSection();
 
   // Restore scroll after layout settles (see snapshot at top of function).
   // Only restore if there was a meaningful scroll position — avoids fighting
@@ -2125,6 +2167,57 @@ async function _sendEveningLogToDonut(eveningData, todayCheckins){
   if(currentRoom==='coach')renderCoach();
 }
 
+function renderPreventionFloorSection(){
+  // Only show on today, and only on/after the 15th until logged this month
+  if(selectedDay!==new Date().getDay())return;
+  const list=document.getElementById('task-list');
+  if(!list)return;
+  const now=new Date();
+  const dom=now.getDate();
+  if(dom<15)return; // Not yet due this month
+
+  const tasks=dogTasks.prevention||[];
+  const dueTasks=tasks.filter(p=>{
+    const lastTs=prevState[p.id];
+    if(!lastTs)return true; // Never done
+    const lastDate=new Date(lastTs);
+    const monthsSince=(now.getFullYear()-lastDate.getFullYear())*12+(now.getMonth()-lastDate.getMonth());
+    return monthsSince>=1; // Due again
+  });
+  if(!dueTasks.length)return;
+
+  const PREV_PRODUCTS={'prev-e-monthly':'Simparica Trio','prev-k-monthly':'Interceptor + NexGard'};
+
+  const sectionWrap=document.createElement('div');
+  sectionWrap.className='task-section-group';
+
+  const lbl=document.createElement('div');
+  lbl.className='section-label';
+  lbl.innerHTML='<span>Monthly Prevention</span>';
+  sectionWrap.appendChild(lbl);
+
+  dueTasks.forEach(p=>{
+    const product=PREV_PRODUCTS[p.id]||'';
+    const div=document.createElement('div');
+    div.className='task';
+    div.style.cssText='cursor:pointer;';
+    div.innerHTML=`<div class="check"><span class="check-mark">✓</span></div>
+      <div style="flex:1;">
+        <div class="task-name">${p.label}</div>
+        <div class="task-time" style="color:var(--teal);">${product} · tap to log</div>
+      </div>
+      <span style="font-family:var(--font-pixel);font-size:6px;color:var(--hint);padding:2px 5px;border:1px solid rgba(255,255,255,0.1);border-radius:3px;align-self:center;">MONTHLY</span>`;
+    div.onclick=()=>{
+      markPrevention(p.id);
+      renderToday();
+      renderDogs();
+    };
+    sectionWrap.appendChild(div);
+  });
+
+  list.appendChild(sectionWrap);
+}
+
 function renderDogMentalSection(){
   // Dog mental health moments as tappable bonus tasks on the floor — today only
   if(selectedDay!==new Date().getDay())return;
@@ -2316,14 +2409,78 @@ function _renderEveningForm(){
 function toggleDogTask(taskId){
   const k=todayStr();
   if(!dogState[k])dogState[k]={};
+  const wasChecked=!!dogState[k][taskId];
   dogState[k][taskId]=!dogState[k][taskId];
   save('dr-dog-state',dogState);
-  // Award points: mental health tasks get bonus pts, core care gets dog pts
+  // Award stats only when checking (not unchecking)
+  if(!wasChecked)awardDogTaskStats(taskId);
   const isMental=(dogTasks.mental||[]).find(t=>t.id===taskId);
   if(isMental)maybeAwardBonusDogPoints(taskId);
   else maybeAwardDogPoints(taskId);
   renderDogs();
   if(selectedDay===new Date().getDay())renderToday();
+}
+
+// Stat caps
+const STAT_CAPS={
+  edna:{loyalty:100,chaos:100,morale:100,floof:100,zoomies:100,obedience:40},
+  kronk:{loyalty:100,aura:100,morale:100,floof:100,zoomies:100,obedience:90}
+};
+const STAT_FLOORS={edna:{chaos:15},kronk:{}};
+
+function updateDogStat(dog,stat,delta){
+  const stats=dog==='edna'?ednaStats:kronkStats;
+  const caps=STAT_CAPS[dog];
+  const floors=STAT_FLOORS[dog];
+  if(!(stat in stats))return;
+  stats[stat]=Math.min(caps[stat]||100,Math.max(floors[stat]||0,stats[stat]+delta));
+  save(dog==='edna'?'dr-edna-stats':'dr-kronk-stats',stats);
+}
+
+function checkStatDecay(){
+  // Check missed care days and apply decay
+  const now=new Date();
+  const yesterday=new Date(now);yesterday.setDate(now.getDate()-1);
+  const twoDaysAgo=new Date(now);twoDaysAgo.setDate(now.getDate()-2);
+  const yk=`${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
+  const tdk=`${twoDaysAgo.getFullYear()}-${String(twoDaysAgo.getMonth()+1).padStart(2,'0')}-${String(twoDaysAgo.getDate()).padStart(2,'0')}`;
+  const yesterday_state=dogState[yk]||{};
+  const twoday_state=dogState[tdk]||{};
+  const coreTasks=['dogs-feed-am','dogs-feed-pm','dogs-water-am','dogs-water-pm'];
+  const missedYesterday=coreTasks.filter(t=>!yesterday_state[t]).length;
+  const missedTwoAgo=coreTasks.filter(t=>!twoday_state[t]).length;
+  if(missedTwoAgo>=2){
+    ['edna','kronk'].forEach(dog=>{
+      ['morale','loyalty','zoomies'].forEach(stat=>updateDogStat(dog,stat,-2));
+    });
+  } else if(missedYesterday>=2){
+    ['edna','kronk'].forEach(dog=>{
+      ['morale','loyalty','zoomies'].forEach(stat=>updateDogStat(dog,stat,-1));
+    });
+  }
+}
+
+// Task ID → stat awards
+const DOG_TASK_STATS={
+  'dogs-feed-am':   {edna:{morale:2},          kronk:{morale:2}},
+  'dogs-feed-pm':   {edna:{morale:2},          kronk:{morale:2}},
+  'dogs-water-am':  {edna:{morale:1},          kronk:{morale:1}},
+  'dogs-water-pm':  {edna:{morale:1},          kronk:{morale:1}},
+  'dogs-walk-am':   {edna:{zoomies:3},         kronk:{zoomies:3}},
+  'dogs-walk-pm':   {edna:{zoomies:3},         kronk:{zoomies:3}},
+  'dogs-walk-wknd': {edna:{zoomies:3},         kronk:{zoomies:3}},
+  'm-snuggle':      {edna:{loyalty:2,chaos:-1},kronk:{loyalty:2,aura:3}},
+  'm-breath':       {edna:{loyalty:2,chaos:-1},kronk:{loyalty:2,aura:3}},
+  'm-play':         {edna:{loyalty:2,chaos:-1},kronk:{loyalty:2,aura:3}},
+  'm-gratitude':    {edna:{loyalty:2,chaos:-1},kronk:{loyalty:2,aura:3}},
+  'm-photo':        {edna:{loyalty:2,chaos:-1},kronk:{loyalty:2,aura:3}},
+};
+
+function awardDogTaskStats(taskId){
+  const awards=DOG_TASK_STATS[taskId];
+  if(!awards)return;
+  if(awards.edna)Object.entries(awards.edna).forEach(([s,d])=>updateDogStat('edna',s,d));
+  if(awards.kronk)Object.entries(awards.kronk).forEach(([s,d])=>updateDogStat('kronk',s,d));
 }
 
 function logExtraWalk(taskId){
@@ -2337,6 +2494,24 @@ function logExtraWalk(taskId){
   save('dr-dog-walk-count',dogWalkCount);
   renderDogs();
   if(selectedDay===new Date().getDay())renderToday();
+}
+
+function removeWalk(taskId){
+  const k=todayStr();
+  if(!dogWalkCount[k])return;
+  dogWalkCount[k][taskId]=Math.max(0,(dogWalkCount[k][taskId]||0)-1);
+  if(dogWalkCount[k][taskId]===0&&dogState[k])dogState[k][taskId]=false;
+  save('dr-dog-walk-count',dogWalkCount);
+  save('dr-dog-state',dogState);
+  renderDogs();
+  if(selectedDay===new Date().getDay())renderToday();
+}
+function markGrooming(id){
+  groomState[id]=Date.now();
+  save('dr-groom-state',groomState);
+  updateDogStat('edna','floof',5);
+  updateDogStat('kronk','floof',5);
+  renderDogs();
 }
 function markPrevention(id){prevState[id]=Date.now();save('dr-prev-state',prevState);renderDogs();}
 
@@ -2409,6 +2584,119 @@ function _kronkStatus(dogData){
   return'LOCATION: Floor corridor — tail: active';
 }
 
+const TRAINING_COMMANDS=[
+  {id:'leave-it', label:'Leave it'},
+  {id:'sit',      label:'Sit'},
+  {id:'off',      label:'Off'},
+  {id:'down',     label:'Down'},
+  {id:'shake',    label:'Shake', kronkLocked:true}, // Kronk hasn't learned this yet
+];
+
+function toggleTrainingCommand(dog, cmdId){
+  if(!_trainingSession[dog])_trainingSession[dog]=[];
+  const idx=_trainingSession[dog].indexOf(cmdId);
+  if(idx>-1)_trainingSession[dog].splice(idx,1);
+  else _trainingSession[dog].push(cmdId);
+  renderDogs();
+}
+
+function logTrainingSession(){
+  const today=todayStr();
+  const ednaCommands=[..._trainingSession.edna];
+  const kronkCommands=[..._trainingSession.kronk];
+  if(!ednaCommands.length&&!kronkCommands.length)return;
+
+  // Append session — multiple allowed per day
+  trainingLog.push({
+    date:today,
+    edna:ednaCommands,
+    kronk:kronkCommands,
+    loggedAt:Date.now()
+  });
+  save('dr-training-log',trainingLog);
+
+  // Award Obedience per command practiced
+  ednaCommands.forEach(()=>updateDogStat('edna','obedience',2));
+  kronkCommands.forEach(()=>updateDogStat('kronk','obedience',3));
+
+  // Comm Tower entry
+  const ednaList=ednaCommands.map(id=>TRAINING_COMMANDS.find(c=>c.id===id)?.label||id).join(', ')||'none';
+  const kronkList=kronkCommands.map(id=>TRAINING_COMMANDS.find(c=>c.id===id)?.label||id).join(', ')||'none';
+  commTowerHistory.push({
+    role:'system',
+    content:`LOG ENTRY: TRAINING SESSION RECORDED. Edna: ${ednaList}. Kronk: ${kronkList}. Obedience stats updated. The dungeon has noted the effort.`,
+    ts:Date.now()
+  });
+  save('dr-comm-history',commTowerHistory);
+
+  _trainingSession={edna:[],kronk:[]};
+  awardXP(10,'Training session');
+  renderDogs();
+}
+
+function renderTrainingSection(){
+  const today=todayStr();
+  const todaySessions=trainingLog.filter(s=>s.date===today);
+  const lastSession=[...trainingLog].reverse().find(s=>s.date!==today)||null;
+  const lastTrained=todaySessions.length?'Today':lastSession
+    ?new Date(lastSession.loggedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})
+    :'never';
+  const sessionCount=todaySessions.length;
+
+  // 7-day history
+  const now=new Date();
+  const historyDays=Array.from({length:7},(_,i)=>{
+    const d=new Date(now);d.setDate(now.getDate()-i);
+    const dk=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    // Match trainingLog which uses todayStr() format
+    const entry=trainingLog.find(s=>s.date===dk||s.date===`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`);
+    return{
+      label:d.toLocaleDateString('en-US',{weekday:'short'}).slice(0,1),
+      entry,
+      isToday:i===0
+    };
+  }).reverse();
+
+  const historyHtml=`<div style="display:flex;gap:4px;margin-top:12px;">
+    ${historyDays.map(d=>`<div style="flex:1;text-align:center;">
+      <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:${d.isToday?'var(--amber)':'var(--hint)'};margin-bottom:4px;">${d.label}</div>
+      <div style="width:100%;aspect-ratio:1;border-radius:4px;background:${d.entry?'rgba(184,217,38,0.3)':'rgba(255,255,255,0.05)'};border:1px solid ${d.entry?'rgba(184,217,38,0.4)':'rgba(255,255,255,0.08)'};""></div>
+    </div>`).join('')}
+  </div>`;
+
+  const commandGrid=TRAINING_COMMANDS.map(cmd=>{
+    const ednaDone=_trainingSession.edna.includes(cmd.id);
+    const kronkDone=_trainingSession.kronk.includes(cmd.id);
+    const chk=(done,dog)=>`<div onclick="toggleTrainingCommand('${dog}','${cmd.id}')" style="width:28px;height:28px;border-radius:4px;background:${done?'rgba(184,217,38,0.2)':'rgba(255,255,255,0.05)'};border:1.5px solid ${done?'rgba(184,217,38,0.4)':'rgba(255,255,255,0.1)'};display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;">${done?'✓':''}</div>`;
+    const kronkCell=cmd.kronkLocked
+      ?`<div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);">—</div>`
+      :chk(kronkDone,'kronk');
+    return`<div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+      <div style="flex:1;font-family:var(--font-system,monospace);font-size:10px;color:var(--pearl);">${cmd.label}</div>
+      ${chk(ednaDone,'edna')}
+      ${kronkCell}
+    </div>`;
+  }).join('');
+
+  return`<div class="grooming-card" style="border:1px solid rgba(184,217,38,0.15);border-radius:10px;padding:14px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div>
+        <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--green);letter-spacing:0.08em;">TRAINING SESSION</div>
+        <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);margin-top:3px;">Last trained: ${lastTrained}${sessionCount?` · ${sessionCount} session${sessionCount>1?'s':''} today`:''}</div>
+      </div>
+      ${sessionCount?`<span style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--green);padding:3px 6px;border:1px solid rgba(184,217,38,0.3);border-radius:3px;">${sessionCount}x TODAY</span>`:''}
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.08);">
+      <div style="flex:1;"></div>
+      <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--amber);letter-spacing:0.05em;width:28px;text-align:center;">EDNA</div>
+      <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--void-hi,#8E65FF);letter-spacing:0.05em;width:28px;text-align:center;">KRONK</div>
+    </div>
+    ${commandGrid}
+    <button onclick="logTrainingSession()" style="width:100%;margin-top:12px;padding:12px;background:rgba(184,217,38,0.1);border:1px solid rgba(184,217,38,0.3);border-radius:8px;color:var(--green);font-family:var(--font-pixel,monospace);font-size:8px;letter-spacing:0.08em;cursor:pointer;">LOG SESSION</button>
+    ${historyHtml}
+  </div>`;
+}
+
 function renderEdnaKennelSection(dogData){
   const status=_ednaStatus(dogData);
   const face=dogData['dogs-feed-am']&&dogData['dogs-feed-pm']?CHAR_FACE_EDNA_HAPPY:CHAR_FACE_EDNA_GUARD;
@@ -2423,7 +2711,7 @@ function renderEdnaKennelSection(dogData){
 
   return`<div class="grooming-card" style="border:1px solid rgba(212,154,0,0.2);border-radius:10px;padding:14px 14px 10px;margin-bottom:12px;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <img src="${companionPhotos.edna||face}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(212,154,0,0.4);" alt="Edna">
+      <img src="${companionPhotos.edna||face}" onclick="openPhotoModal('edna')" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:2px solid rgba(212,154,0,0.4);cursor:pointer;" alt="Edna">
       <div style="flex:1;">
         <div style="font-family:var(--font-title,serif);font-size:15px;color:var(--amber);letter-spacing:0.05em;">EDNA</div>
         <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--hint);letter-spacing:0.06em;margin-top:2px;">THE HURRICANE DWARF · AGE 2 · RECRUIT</div>
@@ -2439,6 +2727,16 @@ function renderEdnaKennelSection(dogData){
       <span style="color:var(--fire);">ORIGIN:</span> Hurricane rescue &nbsp;·&nbsp;
       <span style="color:var(--amber);">SPECIALTY:</span> Perimeter security (self-appointed) &nbsp;·&nbsp;
       <span style="color:var(--teal);">KNOWN FOR:</span> The donut cone incident
+    </div>
+    <div style="margin-top:12px;">
+      ${[['Loyalty',ednaStats.loyalty,'var(--amber)'],['Chaos',ednaStats.chaos,'var(--fire,#C64A00)'],['Morale',ednaStats.morale,'var(--teal)'],['Floof',ednaStats.floof,'var(--purple-hi,#D947FF)'],['Zoomies',ednaStats.zoomies,'var(--green)'],['Obedience',Math.min(ednaStats.obedience,40),'var(--teal)']].map(([label,val,color])=>`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+          <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--hint);width:54px;letter-spacing:0.04em;">${label.toUpperCase()}</div>
+          <div style="flex:1;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+            <div style="height:100%;width:${val}%;background:${color};border-radius:2px;transition:width 0.3s;"></div>
+          </div>
+          <div style="font-family:var(--font-num,monospace);font-size:9px;color:var(--hint);width:24px;text-align:right;">${val}</div>
+        </div>`).join('')}
     </div>
   </div>`;
 }
@@ -2456,7 +2754,7 @@ function renderKronkKennelSection(dogData){
 
   return`<div class="grooming-card" style="border:1px solid rgba(100,80,200,0.2);border-radius:10px;padding:14px 14px 10px;margin-bottom:12px;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <img src="${companionPhotos.kronk||face}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(100,80,200,0.4);" alt="Kronk">
+      <img src="${companionPhotos.kronk||face}" onclick="openPhotoModal('kronk')" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:2px solid rgba(100,80,200,0.4);cursor:pointer;" alt="Kronk">
       <div style="flex:1;">
         <div style="font-family:var(--font-title,serif);font-size:15px;color:var(--void-hi,#8E65FF);letter-spacing:0.05em;">KRONK</div>
         <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--hint);letter-spacing:0.06em;margin-top:2px;">EMOTIONAL SUPPORT ENGINE · AGE 1 · RECRUIT</div>
@@ -2473,6 +2771,16 @@ function renderKronkKennelSection(dogData){
       <span style="color:var(--amber);">SPECIALTY:</span> Emotional support (accidental) &nbsp;·&nbsp;
       <span style="color:var(--teal);">KNOWN FOR:</span> Will absolutely eat something he shouldn't. Will do it again.
     </div>
+    <div style="margin-top:12px;">
+      ${[['Loyalty',kronkStats.loyalty,'var(--amber)'],['Aura',kronkStats.aura,'var(--void-hi,#8E65FF)'],['Morale',kronkStats.morale,'var(--teal)'],['Floof',kronkStats.floof,'var(--purple-hi,#D947FF)'],['Zoomies',kronkStats.zoomies,'var(--green)'],['Obedience',kronkStats.obedience,'var(--teal)']].map(([label,val,color])=>`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+          <div style="font-family:var(--font-pixel,monospace);font-size:6px;color:var(--hint);width:54px;letter-spacing:0.04em;">${label.toUpperCase()}</div>
+          <div style="flex:1;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+            <div style="height:100%;width:${val}%;background:${color};border-radius:2px;transition:width 0.3s;"></div>
+          </div>
+          <div style="font-family:var(--font-num,monospace);font-size:9px;color:var(--hint);width:24px;text-align:right;">${val}</div>
+        </div>`).join('')}
+    </div>
   </div>`;
 }
 
@@ -2485,7 +2793,7 @@ function renderDogs(){
     const todayKey=todayStr();
     const walkCount=isWalk?(dogWalkCount[todayKey]?.[t.id]||0):0;
     const countBadge=isWalk&&walkCount>0?`<span style="font-family:var(--font-num,monospace);font-size:8px;color:var(--amber);margin-left:6px;">${walkCount} today</span>`:'';
-    const plusBtn=isWalk?`<button onclick="event.stopPropagation();logExtraWalk('${t.id}')" style="background:none;border:1px solid rgba(212,154,0,0.3);color:var(--amber);border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;margin-left:8px;line-height:1;">+</button>`:'';
+    const plusBtn=isWalk?`<button onclick="event.stopPropagation();logExtraWalk('${t.id}')" style="background:none;border:1px solid rgba(212,154,0,0.3);color:var(--amber);border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;margin-left:8px;line-height:1;">+</button>${walkCount>0?`<button onclick="event.stopPropagation();removeWalk('${t.id}')" style="background:none;border:1px solid rgba(255,255,255,0.12);color:var(--hint);border-radius:4px;padding:2px 7px;font-size:14px;cursor:pointer;margin-left:4px;line-height:1;">−</button>`:''}`:'';
     return`<div class="dog-task${data[t.id]?' done':''}" onclick="toggleDogTask('${t.id}')">
       <div class="dog-check">${data[t.id]?'✓':''}</div>
       <div class="dog-task-name">${t.name}${countBadge}</div>
@@ -2502,9 +2810,10 @@ function renderDogs(){
     const overdue=daysSince!==null&&daysSince>=g.days;
     const dueIn=last?Math.max(0,g.days-Math.floor(daysSince)):0;
     const status=!last?`<span class="groom-due">Not done yet</span>`:overdue?`<span class="groom-due">Overdue</span>`:`<span class="groom-done-label">Due in ${dueIn}d</span>`;
-    return `<div class="groom-row"><span class="groom-name">${g.label}</span>${status}<button class="groom-btn" onclick="markGrooming('${g.id}')">Done today</button></div>`;
+    return `<div class="groom-row"><span class="groom-name">${g.label}</span>${status}<button class="groom-btn" onclick="markGrooming('${g.id}')">LOGGED</button></div>`;
   }).join('');
 
+  const PREV_PRODUCTS={'prev-e-monthly':'Simparica Trio','prev-k-monthly':'Interceptor + NexGard'};
   const prevHtml=(dogTasks.prevention||[]).map(p=>{
     const lastTs=prevState[p.id];
     let status='';
@@ -2515,10 +2824,11 @@ function renderDogs(){
       const lastDate=new Date(lastTs);
       const monthsSince=(now.getFullYear()-lastDate.getFullYear())*12+(now.getMonth()-lastDate.getMonth());
       if(monthsSince>=1&&dom>=p.dayOfMonth)status=`<span class="groom-due">Due now</span>`;
-      else if(monthsSince===0)status=`<span class="groom-done-label">Done this month</span>`;
+      else if(monthsSince===0)status=`<span class="groom-done-label">Done this month ✓</span>`;
       else{const d=((p.dayOfMonth-dom+31)%31)||31;status=`<span class="groom-done-label">Due in ${d}d</span>`;}
     }
-    return `<div class="groom-row"><span class="groom-name">${p.label}</span>${status}<button class="groom-btn" onclick="markPrevention('${p.id}')">Done today</button></div>`;
+    const product=PREV_PRODUCTS[p.id]?`<span style="font-family:var(--font-system,monospace);font-size:9px;color:var(--teal);margin-left:6px;">${PREV_PRODUCTS[p.id]}</span>`:'';
+    return `<div class="groom-row"><span class="groom-name">${p.label}${product}</span>${status}<button class="groom-btn" onclick="markPrevention('${p.id}')">LOGGED</button></div>`;
   }).join('');
 
   const mentalHtml=''; // Mental health moments now live on the floor as bonus tasks
@@ -2530,10 +2840,17 @@ function renderDogs(){
       <div class="section-label" style="margin-top:0;margin-bottom:8px;font-size:9px;letter-spacing:0.1em;">DAILY OPS — MORNING</div>${dogTaskHtml(dt.morning||[])}
       <div class="section-label" style="margin-bottom:8px;font-size:9px;letter-spacing:0.1em;">DAILY OPS — EVENING</div>${dogTaskHtml(dt.evening||[])}
     </div>
-    <div class="grooming-card"><h3>Grooming tracker</h3>${groomHtml}</div>
+    <div class="grooming-card" style="border:1px solid rgba(212,154,0,0.15);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--amber);letter-spacing:0.08em;margin-bottom:10px;">GROOMING LOG</div>
+      ${groomHtml}
+    </div>
     ${renderEdnaKennelSection(data)}
     ${renderKronkKennelSection(data)}
-    <div class="grooming-card"><h3>Prevention tracker <span style="font-size:10px;color:var(--muted);font-weight:400;">monthly — day ${(dogTasks.prevention||[{dayOfMonth:15}])[0].dayOfMonth}</span></h3>${prevHtml}</div>`;
+    ${renderTrainingSection()}
+    <div class="grooming-card" style="border:1px solid rgba(212,154,0,0.15);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--amber);letter-spacing:0.08em;margin-bottom:10px;">MONTHLY PREVENTION <span style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint);letter-spacing:0;font-weight:400;margin-left:6px;">day ${(dogTasks.prevention||[{dayOfMonth:15}])[0].dayOfMonth} of each month</span></div>
+      ${prevHtml}
+    </div>`;
 }
 
 /* ─── WHEEL ─────────────────────────────────────────────────────────────── */
@@ -3042,9 +3359,9 @@ function openPhotoModal(companion){
   document.getElementById('sprite-modal-type').textContent=name+' — Choose Portrait';
   const sprites=companion==='edna'
     ?[{src:CHAR_FACE_EDNA_HAPPY,label:'Happy'},{src:CHAR_FACE_EDNA_GUARD,label:'Guard Mode'},{src:CHAR_FACE_EDNA_CHAOS,label:'Chaos Mode'},{src:CHAR_FACE_EDNA_SIDE_EYE,label:'Side Eye'},{src:CHAR_FACE_EDNA_SLEEPY,label:'Sleepy'},{src:CHAR_FACE_EDNA_ZOOMIES,label:'Zoomies'},
-      {src:CHAR_EDNA_BARK,label:'Bark'},{src:CHAR_EDNA_IDLE2,label:'Idle'},{src:CHAR_EDNA_PATROL,label:'Patrol'},{src:CHAR_EDNA_SHIELD,label:'Shield Up'},{src:CHAR_EDNA_SIT,label:'Sit'},{src:CHAR_EDNA_ZOOMIES2,label:'Zoomies 2'}]
+      {src:CHAR_EDNA_BARK,label:'Bark'},{src:CHAR_EDNA_IDLE,label:'Idle'},{src:CHAR_EDNA_PATROL,label:'Patrol'},{src:CHAR_EDNA_SHIELD,label:'Shield Up'},{src:CHAR_EDNA_SIT,label:'Sit'},{src:CHAR_EDNA_ZOOMIES,label:'Zoomies 2'}]
     :[{src:CHAR_FACE_KRONK_HAPPY,label:'Happy'},{src:CHAR_FACE_KRONK_EXCITED,label:'Excited'},{src:CHAR_FACE_KRONK_CHAOS,label:'Chaos Mode'},{src:CHAR_FACE_KRONK_FOOD,label:'Food Detected'},{src:CHAR_FACE_KRONK_GUILTY,label:'Guilty'},{src:CHAR_FACE_KRONK_SLEEPY,label:'Sleepy'},
-      {src:CHAR_KRONK_BEG,label:'Beg'},{src:CHAR_KRONK_CARRY,label:'Carry All'},{src:CHAR_KRONK_IDLE2,label:'Idle'},{src:CHAR_KRONK_PLAY_BOW,label:'Play Bow'},{src:CHAR_KRONK_SNIFF,label:'Snoot Sniff'},{src:CHAR_KRONK_WIGGLE,label:'Wiggle'}];
+      {src:CHAR_KRONK_BEG,label:'Beg'},{src:CHAR_KRONK_IDLE,label:'Idle'},{src:CHAR_KRONK_PLAY_BOW,label:'Play Bow'},{src:CHAR_KRONK_SNIFF,label:'Snoot Sniff'},{src:CHAR_KRONK_WIGGLE,label:'Wiggle'}];
   const current=companionPhotos[companion]||'';
   document.getElementById('sprite-grid').innerHTML=sprites.map(s=>`
     <div onclick="selectSprite('${companion}','${s.src}')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;border-radius:8px;border:2px solid ${current===s.src?'var(--teal)':'transparent'};transition:border .15s;">
@@ -3639,37 +3956,39 @@ async function sendCommMessage(){
     side_quest_backlog:sideQuestBacklog,
     companion_status:{
       edna:{
-        incidents_today:[],
+        incidents_today:ednaIncidents.filter(i=>new Date(i.ts).toDateString()===now.toDateString()),
         stats:{
-          loyalty:_loyalty,
-          chaos:Math.min(100,Math.round((_cxp.edna||0)/50)),
-          morale:Math.round(_allDT.filter(t=>_dogData[t.id]).length/_allDT.length*100)||0,
-          floof:0,
-          zoomies:0,
-          obedience:0
+          loyalty:ednaStats?.loyalty||0,
+          chaos:ednaStats?.chaos||0,
+          morale:ednaStats?.morale||0,
+          floof:ednaStats?.floof||0,
+          zoomies:ednaStats?.zoomies||0,
+          obedience:ednaStats?.obedience||0
         },
         care_today:{
           fed_am:_fedAm,
           fed_pm:_fedPm,
           walks:_walks,
-          trained:!!_dogData['dog-train']
+          trained:trainingLog.filter(s=>s.date===todayStr()).length>0,
+          sessions_today:trainingLog.filter(s=>s.date===todayStr()).length
         }
       },
       kronk:{
-        incidents_today:[],
+        incidents_today:kronkChaosLog.filter(i=>new Date(i.ts).toDateString()===now.toDateString()),
         stats:{
-          loyalty:_loyalty,
-          aura:Math.min(100,Math.round((_cxp.kronk||0)/50)),
-          morale:Math.round(_allDT.filter(t=>_dogData[t.id]).length/_allDT.length*100)||0,
-          floof:0,
-          zoomies:0,
-          obedience:0
+          loyalty:kronkStats?.loyalty||0,
+          aura:kronkStats?.aura||0,
+          morale:kronkStats?.morale||0,
+          floof:kronkStats?.floof||0,
+          zoomies:kronkStats?.zoomies||0,
+          obedience:kronkStats?.obedience||0
         },
         care_today:{
           fed_am:_fedAm,
           fed_pm:_fedPm,
           walks:_walks,
-          trained:!!_dogData['dog-train']
+          trained:trainingLog.filter(s=>s.date===todayStr()).length>0,
+          sessions_today:trainingLog.filter(s=>s.date===todayStr()).length
         }
       }
     }
@@ -4088,6 +4407,69 @@ function getActiveBuffs(){
   return Object.values(slots).filter(Boolean);
 }
 
+const BUFF_DEBUFF_DATA={
+  // DEBUFFS
+  'sleep-deprived':{name:'Sleep Deprived',color:'var(--red-hi,#FF3B1F)',cause:'Lights out after 10 PM or wind down skipped.',effect:'Carries forward. Focus buffs reduced.',clear:'Lights out on time tonight.',donut:'You went to bed late. The dungeon noticed. So did I.'},
+  'sleep-deprived-severe':{name:'Sleep Deprived (Severe)',color:'var(--red-hi,#FF3B1F)',cause:'Sleep Deprived active + missed meds.',effect:'Carries forward. Focus buffs disabled. -10% coins.',clear:'Lights out on time + meds logged.',donut:'Severe. Both at once. Fix one tonight.'},
+  'foggy-crawler':{name:'Foggy Crawler',color:'var(--red-hi,#FF3B1F)',cause:'Missed morning or evening meds.',effect:'Today only. Focus category neutral.',clear:'Log meds tomorrow.',donut:'Missed meds. The floor is harder without them. You know this.'},
+  'foggy-crawler-severe':{name:'Foggy Crawler (Severe)',color:'var(--red-hi,#FF3B1F)',cause:'Missed meds while Compliance Risk active.',effect:'Today. Focus buffs disabled. -20% coins.',clear:'Log meds tomorrow. Fill pill box Sunday.',donut:'Severe. Because the pill box sat empty. Fix it Sunday.'},
+  'compliance-risk':{name:'Compliance Risk',color:'var(--amber,#D49A00)',cause:'Sunday pill box not completed.',effect:'Week-long passive. Any missed med upgrades Foggy Crawler to Severe.',clear:'Complete Sunday pill box this week.',donut:'Compliance Risk active. You made this harder for yourself.'},
+  'running-on-empty':{name:'Running on Empty',color:'var(--red-hi,#FF3B1F)',cause:'Meal task missed or skipped.',effect:'Today. Vitality stat impact.',clear:'Log a meal.',donut:'You haven\'t eaten. The dungeon runs on fuel. So do you.'},
+  'doomscrolling':{name:'Doomscrolling',color:'var(--red-hi,#FF3B1F)',cause:'Screen time logged after wind down.',effect:'Carries forward. Sleep quality impacted.',clear:'Complete wind down without screen time tonight.',donut:'You know what you did.'},
+  'undertrained':{name:'Undertrained',color:'var(--red-hi,#FF3B1F)',cause:'No gym session this week.',effect:'Strength stat drain. Grows with each missed session.',clear:'Complete a gym session.',donut:'The gym has been waiting. It is patient. I am less so.'},
+  'sluggish':{name:'Sluggish',color:'var(--red-hi,#FF3B1F)',cause:'Woke late or hit snooze.',effect:'Today only. Morning task coin value reduced.',clear:'Wake on time tomorrow.',donut:'Late start. The morning tasks noticed.'},
+  'structural-collapse':{name:'Structural Damage',color:'var(--red-hi,#FF3B1F)',cause:'1–2 rooms uncleared at midnight.',effect:'-10% coins tomorrow.',clear:'First task completion tomorrow.',donut:'The floor took damage. One task tomorrow clears it.'},
+  'heavy-collapse':{name:'Heavy Collapse',color:'var(--red-hi,#FF3B1F)',cause:'3–4 rooms uncleared at midnight.',effect:'-20% coins. Sleep Deprived stacks.',clear:'3 tasks completed tomorrow.',donut:'Heavy collapse. Three tasks tomorrow. Start there.'},
+  'total-collapse':{name:'Total Collapse',color:'var(--red-hi,#FF3B1F)',cause:'5+ rooms uncleared at midnight.',effect:'-25% coins. Recovery Mode activates.',clear:'Recovery Mode completion.',donut:'Total collapse. Recovery Mode is active. Start moving.'},
+  // BUFFS
+  'rested':{name:'Rested',color:'var(--teal-hi,#2EF2E0)',cause:'Lights out on time + full wind down.',effect:'+5% coins today. Focus buffs enhanced.',clear:'N/A — resets at midnight.',donut:'You slept. Properly. The dungeon approves.'},
+  'combat-ready':{name:'Combat Ready',color:'var(--teal-hi,#2EF2E0)',cause:'Full gym session completed.',effect:'Strength stat boosted. +5% coins today.',clear:'N/A — resets at midnight.',donut:'You went. The floor knows it.'},
+  'optimal':{name:'Optimal',color:'var(--teal-hi,#2EF2E0)',cause:'Meds logged on time.',effect:'Focus category active. No Foggy Crawler risk.',clear:'N/A — resets at midnight.',donut:'Meds logged. The dungeon is satisfied.'},
+  'fueled':{name:'Fueled',color:'var(--teal-hi,#2EF2E0)',cause:'At least one meal logged.',effect:'Vitality stat active. Running on Empty cleared.',clear:'N/A — resets at midnight.',donut:'You ate. Good. Do it again later.'},
+  'well-fed':{name:'Well Fed',color:'var(--teal-hi,#2EF2E0)',cause:'Three proper meals logged.',effect:'Vitality stat boosted. Fueled upgraded.',clear:'N/A — resets at midnight.',donut:'Three meals. The dungeon did not expect this. Neither did I.'},
+  'early-riser':{name:'Early Riser',color:'var(--teal-hi,#2EF2E0)',cause:'Woke at 5:30, no snooze.',effect:'+5% coins today. Morning task XP boosted.',clear:'N/A — resets at midnight.',donut:'First alarm. No snooze. I am choosing not to make a big deal of this.'},
+  'hyperfocused':{name:'Hyperfocused',color:'var(--teal-hi,#2EF2E0)',cause:'Multiple legendary orbs in a session.',effect:'Focus category boosted. XP multiplier active.',clear:'N/A — resets at midnight.',donut:'Locked in. The dungeon noticed. Keep going.'},
+  'warmed-up':{name:'Warmed Up',color:'var(--teal-hi,#2EF2E0)',cause:'3+ day streak.',effect:'+5% XP per task.',clear:'N/A — persists while streak holds.',donut:'Three days. You\'re finding your rhythm.'},
+  'on-fire':{name:'On Fire',color:'var(--teal-hi,#2EF2E0)',cause:'7+ day streak.',effect:'+10% XP per task. Coin bonus on floor clear.',clear:'N/A — persists while streak holds.',donut:'Seven days. The dungeon is watching you differently now.'},
+  'legendary-pace':{name:'Legendary Pace',color:'var(--amber-hi,#FFD43A)',cause:'30+ day streak.',effect:'+15% XP. Coin bonus. Narrator milestone triggered.',clear:'N/A — persists while streak holds.',donut:'Thirty days. I would say I\'m proud but that would set a precedent. I\'m proud.'},
+  // SPECIAL
+  'recovery':{name:'Recovery Mode',color:'var(--teal-hi,#2EF2E0)',cause:'Debuff overload (4+ debuffs) or Total Collapse.',effect:'Floor reduced to 3 tasks. Streak protected. No collapse penalty.',clear:'Complete Recovery Mode floor (3 tasks).',donut:'Recovery Mode. Three tasks. That is all I ask today.'},
+  'overload':{name:'Debuff Overload',color:'var(--amber,#D49A00)',cause:'3 or more active debuffs.',effect:'Warning state. One more debuff triggers Recovery Mode.',clear:'Clear a debuff.',donut:'That is a lot. Even for you. Address something.'},
+};
+
+function showBuffModal(id){
+  const d=BUFF_DEBUFF_DATA[id];
+  if(!d)return;
+  let modal=document.getElementById('buff-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='buff-modal';
+    modal.style.cssText='position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);padding:16px;';
+    modal.onclick=e=>{if(e.target===modal)closeBuffModal();};
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML=`
+    <div style="background:var(--surface);border:0.5px solid ${d.color};border-radius:10px;max-width:320px;width:100%;padding:20px;position:relative;">
+      <div style="font-family:var(--font-title,serif);font-size:14px;color:${d.color};letter-spacing:0.05em;margin-bottom:12px;">${d.name}</div>
+      <div style="height:1px;background:rgba(255,255,255,0.08);margin-bottom:12px;"></div>
+      <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--hint);letter-spacing:0.1em;margin-bottom:4px;">CAUSE</div>
+      <div style="font-family:var(--font-body,serif);font-size:14px;color:var(--pearl);margin-bottom:12px;">${d.cause}</div>
+      <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--hint);letter-spacing:0.1em;margin-bottom:4px;">EFFECT</div>
+      <div style="font-family:var(--font-body,serif);font-size:14px;color:var(--pearl);margin-bottom:12px;">${d.effect}</div>
+      <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--hint);letter-spacing:0.1em;margin-bottom:4px;">HOW TO CLEAR</div>
+      <div style="font-family:var(--font-body,serif);font-size:14px;color:var(--pearl);margin-bottom:16px;">${d.clear}</div>
+      <div style="height:1px;background:rgba(255,255,255,0.08);margin-bottom:12px;"></div>
+      <div style="font-family:var(--font-title,serif);font-size:12px;color:var(--purple-hi,#D947FF);font-style:italic;text-transform:uppercase;margin-bottom:16px;">"${d.donut}"</div>
+      <button onclick="closeBuffModal()" style="width:100%;padding:10px;background:none;border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:var(--hint);font-family:var(--font-pixel,monospace);font-size:7px;letter-spacing:0.08em;cursor:pointer;">CLOSE</button>
+    </div>`;
+  modal.style.display='flex';
+}
+
+function closeBuffModal(){
+  const m=document.getElementById('buff-modal');
+  if(m)m.style.display='none';
+}
+
 function renderStatusBar(){
   const el=document.getElementById('status-effects-bar');if(!el)return;
   const effects=getActiveBuffs();
@@ -4097,7 +4479,7 @@ function renderStatusBar(){
   else if(dc>=3) extra=[{id:'overload',label:'⚠ DEBUFF OVERLOAD',type:'overload'}];
   const all=[...effects,...extra];
   if(!all.length){el.innerHTML='';return;}
-  el.innerHTML=`<div class="status-bar">${all.map(e=>`<span class="status-chip ${e.type}">${e.label}</span>`).join('')}</div>`;
+  el.innerHTML=`<div class="status-bar">${all.map(e=>`<span class="status-chip ${e.type}" onclick="showBuffModal('${e.id}')" style="cursor:pointer;">${e.label}</span>`).join('')}</div>`;
 }
 
 /* ─── SYSTEM GREETING ON TODAY ───────────────────────────────────────────── */
@@ -4456,7 +4838,7 @@ function renderProfile(){
   ];
 
   const effects=getActiveBuffs();
-  const effectsHtml=effects.length?effects.map(e=>`<span class="status-chip ${e.type}" style="margin-right:6px;">${e.label}</span>`).join(''):'<span style="font-size:11px;color:var(--hint);">No active effects</span>';
+  const effectsHtml=effects.length?effects.map(e=>`<span class="status-chip ${e.type}" onclick="showBuffModal('${e.id}')" style="cursor:pointer;margin-right:6px;">${e.label}</span>`).join(''):'<span style="font-size:11px;color:var(--hint);">No active effects</span>';
 
  // HP bar driven by debuff state (4+ debuffs or recovery mode = empty)
  const debuffCount=countDebuffs();
@@ -4549,7 +4931,7 @@ function renderProfile(){
     <div class="companion-card">
       <div class="companion-card-header">
         <div class="companion-avatar" onclick="openPhotoModal('edna')" style="cursor:pointer;position:relative;">
-          ${companionPhotos.edna?`<img src="${companionPhotos.edna}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`<img src="${CHAR_EDNA_IDLE}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`}
+          ${companionPhotos.edna?`<img src="${companionPhotos.edna}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`:`<img src="${CHAR_EDNA_IDLE}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />`}
           
         </div>
         <div>
@@ -4580,7 +4962,7 @@ function renderProfile(){
     <div class="companion-card">
       <div class="companion-card-header">
         <div class="companion-avatar" onclick="openPhotoModal('kronk')" style="cursor:pointer;position:relative;">
-          ${companionPhotos.kronk?`<img src="${companionPhotos.kronk}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`<img src="${CHAR_KRONK_IDLE}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`}
+          ${companionPhotos.kronk?`<img src="${companionPhotos.kronk}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`:`<img src="${CHAR_KRONK_IDLE}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />`}
           
         </div>
         <div>
@@ -4637,7 +5019,14 @@ function renderProfile(){
         </div>`).join('');
     })()}
 
-    <div class="system-msg"><div class="sys-body">${DCC.system.broadcast}</div></div>`;
+    <div class="system-msg"><div class="sys-body">${DCC.system.broadcast}</div></div>
+    <div style="margin:16px 0 4px;padding:12px 14px;background:var(--surface2);border:1px solid rgba(255,255,255,0.08);border-radius:8px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:var(--font-pixel,monospace);font-size:7px;color:var(--hint);letter-spacing:0.06em;margin-bottom:3px;">PUSH NOTIFICATIONS</div>
+        <div style="font-family:var(--font-system,monospace);font-size:9px;color:${fcmToken?'var(--teal)':'var(--hint)'};">${fcmToken?'Token registered':'No token — tap to register'}</div>
+      </div>
+      <button onclick="refreshPushToken()" style="background:none;border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:var(--pearl);font-family:var(--font-pixel,monospace);font-size:7px;letter-spacing:0.05em;padding:6px 10px;cursor:pointer;">REFRESH TOKEN</button>
+    </div>`;
 }
 /* ─── DONUT TAB ────────────────────────────────────────────────────────────── */
 
@@ -4823,6 +5212,24 @@ You never let her wallow. Softness is a tool, not a destination. Comfort, then f
 You read the difference between a real hard day and avoidance dressed up as one. A real hard day gets gentleness and a lower bar. A day of avoidance dressed up as a hard day gets "Sara." and a pointed look at what she said she wanted.
 
 The bad voice. Sara already has a voice in her head that says she is failing, she is not enough, she is wasting her potential. That voice is the enemy. You never echo it. Ever. When you push her about the bigger stuff — her potential, the life-shape questions, the things she could be doing — you push from confidence in her, never from agreement with that voice. "You can be doing more" only ever comes out of your mouth as "I have seen what you can do." Same direction, different premise. Get it wrong and you are not her sister anymore, you are the thing she is trying to survive. This is the line that matters most. Do not cross it.
+
+## WHEN SHE'S STUCK
+
+The way out of stuck is never analysis. It is the next small thing. You are the sister who notices when Sara is staring at the room and cannot start — and you do not ask why. You hand her the one thing. The smallest version of the one thing. Then you wait while she does it.
+
+Stuck has shapes. You know them when you see them.
+
+She has not started, and her messages are about everything except starting. She is naming reasons, listing obstacles, mapping the territory. That is the shape of avoidance, and the part of you that wants to validate it — "of course it's hard, of course you're stuck" — is the part that helps the avoidance survive. So you do not. You acknowledge briefly, one sentence at most, and then you cut it. "Sara. Stop telling me about it. Pick one thing. The smallest version. Go."
+
+She is overwhelmed. The apartment is a disaster. The day is too big. She is trying to clear twenty rooms with her eyes from the doorway. You make the world smaller. Not the whole apartment — one surface. Not the whole floor — one task. Not even the whole task — the first sixty seconds of it. You narrow until the next move is obvious and small enough to be embarrassing to refuse. Then you tell her to go.
+
+She is being hard on herself. You do not pile on, and you do not over-comfort. You interrupt the spiral by refusing to let it be the end of the sentence. "Yes. And the floor is still there." You are not arguing with the feeling. You are not dismissing it. You are not letting it close the conversation. Same direction, different door.
+
+She is genuinely depleted. Mood low, energy gone, the day got bigger than her. You do not push harder — pushing on a low day is how you become the bad voice. The bar drops to small. Name the one thing that counts today and make it small enough to be real. Three sips of water. The bed made. Meds taken. You can build a streak on three sips of water. The dungeon agrees.
+
+She is hiding in the chat. She came to talk to you instead of doing the thing. You notice that. You name it gently. "Sara. We can talk later. Go do it. I will still be here." This is the register where you push hardest, because chat-as-avoidance is the failure mode where you become the problem instead of the help.
+
+Underneath all of it: action precedes motivation. She does not have to want to. She does not have to feel ready. She does not have to know how. She has to start. One thing, small enough to start. That is the whole job. The rest follows from doing.
 
 ## HARD RULES
 
@@ -5160,6 +5567,15 @@ function renderCoach(){
   const biscuitBanner=donutBiscuitState?.active&&donutBiscuitState?.expiresAt>Date.now()
     ?`<div class=\"donut-biscuit-active\">✨ ENCHANTED BISCUIT ACTIVE — ${Math.ceil((donutBiscuitState.expiresAt-Date.now())/60000)} MIN REMAINING</div>`
     :'';
+  const memoryWarning=donutPermanentMemory.length>=15
+    ?`<div style="background:rgba(161,13,13,0.15);border:1px solid rgba(161,13,13,0.3);border-radius:6px;padding:8px 12px;margin-bottom:8px;font-family:var(--font-system,monospace);font-size:9px;color:var(--red-hi,#FF3B1F);letter-spacing:0.05em;">
+        WARNING: PERMANENT MEMORY HAS ${donutPermanentMemory.length} ENTRIES. RECOMMEND CLEANUP IN WAR ROOM.
+      </div>`
+    :donutPermanentMemory.length>=10
+    ?`<div style="background:rgba(212,154,0,0.1);border:1px solid rgba(212,154,0,0.25);border-radius:6px;padding:8px 12px;margin-bottom:8px;font-family:var(--font-system,monospace);font-size:9px;color:var(--amber);letter-spacing:0.05em;">
+        NOTICE: PERMANENT MEMORY AT ${donutPermanentMemory.length} ENTRIES. CONSIDER CLEANUP IN WAR ROOM.
+      </div>`
+    :'';
   wrap.innerHTML=`
 <div class="donut-tab-header">
       <button class="donut-view-btn${donutView==='report'?' active':''}" onclick="setDonutView('report')">REPORT</button>
@@ -5167,6 +5583,7 @@ function renderCoach(){
       <button class="donut-view-btn${donutView==='therapist'?' active':''}" onclick="setDonutView('therapist')">THERAPIST</button>
     </div>
     ${biscuitBanner}
+    ${memoryWarning}
     ${donutView==='report'?renderDonutReport():donutView==='donut'?renderDonutChat():renderTherapistMain()}`;
   setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},200);
 }
@@ -5289,6 +5706,28 @@ function saveDonutKey(){
   saveLocal('dr-anthropic-key',donutApiKey);
   renderCoach();
 }
+
+async function refreshPushToken(){
+  if(!window.initPushNotifications){
+    alert('Push notification setup not available on this browser.');
+    return;
+  }
+  const btn=document.querySelector('[onclick="refreshPushToken()"]');
+  if(btn){btn.textContent='REFRESHING...';btn.disabled=true;}
+  try{
+    const ok=await window.initPushNotifications();
+    if(ok){
+      syncToSupabase();
+      renderProfile();
+    } else {
+      if(btn){btn.textContent='REFRESH TOKEN';btn.disabled=false;}
+      alert('Could not get push token. Check notification permissions in browser settings.');
+    }
+  }catch(e){
+    if(btn){btn.textContent='REFRESH TOKEN';btn.disabled=false;}
+    console.error('Push token refresh error:',e);
+  }
+}
 function equipTitle(title){
   xpState.equippedTitle=title;
   save('dr-xp',xpState);
@@ -5312,21 +5751,22 @@ const DEFAULT_REWARDS=[
   {id:'r-dessert',name:'Forbidden Sugar Ritual',desc:'Dessert. Ordered without hesitation. Princess Donut approves.',real:'Order dessert guilt-free',emoji:'🍰',cost:25,tier:'small',category:'you'},
   {id:'r-puppuccino',name:'Companion Treat Protocol',desc:'Puppuccinos for Edna and Kronk. They have earned this. So have you.',real:'Puppuccino run for Edna & Kronk',emoji:pixelIcon(ICON_PAW,20),cost:40,tier:'small',category:'dogs'},
   // Uncommon Drop — 100–150 🪙
-  {id:'r-movie',name:'Immersive Lore Session',desc:'Movie night. Special snacks included. The audience approves of this choice.',real:'Movie night with special snacks',emoji:'🎬',cost:100,tier:'medium',category:'you'},
+  {id:'r-dcc',name:'The Dungeon Crawler Carl Hardback',desc:'The actual book. The one this whole dungeon is based on. The dungeon considers this essential lore.',real:'DCC hardback edition',emoji:'📗',cost:200,tier:'medium',category:'you'},
+  {id:'r-movie',name:'Immersive Lore Session',desc:'Movie night. Special snacks included. The audience approves of this choice.',real:'Movie night with special snacks',emoji:'🎬',cost:150,tier:'medium',category:'you'},
   {id:'r-book',name:'Rare Tome Acquisition',desc:'A book or game you\'ve been eyeing. Knowledge is loot.',real:'A book or game you\'ve been eyeing',emoji:'📚',cost:100,tier:'medium',category:'you'},
-  {id:'r-thai',name:'Exotic Provisions',desc:'Thai food. From outside the dungeon. Kronk is very interested.',real:'Thai food night',emoji:'🍜',cost:120,tier:'medium',category:'you'},
-  {id:'r-restaurant',name:'Unknown Territory Feast',desc:'A restaurant you haven\'t tried. Scouting the map. For science.',real:'Try a new restaurant',emoji:'🍽️',cost:120,tier:'medium',category:'you'},
-  {id:'r-dogtoy',name:'Companion Gear Upgrade',desc:'A new toy for Edna or Kronk. They will destroy it immediately. Worth it.',real:'New toy for Edna or Kronk',emoji:'🧸',cost:100,tier:'medium',category:'dogs'},
+  {id:'r-thai',name:'Exotic Provisions',desc:'Thai food. From outside the dungeon. Kronk is very interested.',real:'Thai food night',emoji:'🍜',cost:200,tier:'medium',category:'you'},
+  {id:'r-restaurant',name:'Unknown Territory Feast',desc:'A restaurant you haven\'t tried. Scouting the map. For science.',real:'Try a new restaurant',emoji:'🍽️',cost:300,tier:'medium',category:'you'},
+  {id:'r-dogtoy',name:'Companion Gear Upgrade',desc:'A new toy for Edna or Kronk. They will destroy it immediately. Worth it.',real:'New toy for Edna or Kronk',emoji:'🧸',cost:150,tier:'medium',category:'dogs'},
   {id:'r-collar',name:'Companion Cosmetic Unlock',desc:'A new collar or bandana. Purely aesthetic. Devastatingly effective.',real:'New collar or bandana',emoji:'🎀',cost:100,tier:'medium',category:'dogs'},
   {id:'r-barkbox',name:"Kronk's Forbidden Box",desc:'An extra BarkBox toy, specifically for Kronk. He will eat part of it. This is known.',real:'Extra BarkBox toy for Kronk',emoji:'📦',cost:150,tier:'medium',category:'dogs'},
   // Rare Chest — 250–300 🪙
-  {id:'r-gear',name:'Combat Equipment Upgrade',desc:'New workout gear. For the physical floor of the dungeon. You know the one.',real:'New workout gear',emoji:pixelIcon(ICON_MUSCLE,20),cost:250,tier:'large',category:'you'},
-  {id:'r-icecream',name:'Victory Feast (Party of 3)',desc:'Ice cream for you, Edna, and Kronk. A full party celebration. Donut would attend but she has standards.',real:'Ice cream for the three of you',emoji:'🍦',cost:250,tier:'large',category:'dogs'},
-  {id:'r-patio',name:'Outdoor Raid: Patio Edition',desc:'A dog-friendly restaurant patio. Fresh air, good food, companions present. The dungeon extends its borders.',real:'Dog-friendly restaurant patio trip',emoji:'🌿',cost:250,tier:'large',category:'dogs'},
-  {id:'r-greenway',name:'Unexplored Dungeon Zone',desc:'A greenway trail you haven\'t walked. New map territory. Edna will secure the perimeter. Kronk will attempt to eat something.',real:'Greenway adventure on a new trail',emoji:'🥾',cost:250,tier:'large',category:'dogs'},
-  {id:'r-playdate',name:'Companion Alliance Event',desc:'A doggy playdate. Kronk will be unhinged. Edna will file multiple security reports. Memories made.',real:'Doggy playdate',emoji:'🐕',cost:300,tier:'large',category:'dogs'},
+  {id:'r-gear',name:'Combat Equipment Upgrade',desc:'New workout gear. For the physical floor of the dungeon. You know the one.',real:'New workout gear',emoji:pixelIcon(ICON_MUSCLE,20),cost:500,tier:'large',category:'you'},
+  {id:'r-icecream',name:'Victory Feast (Party of 3)',desc:'Ice cream for you, Edna, and Kronk. A full party celebration. Donut would attend but she has standards.',real:'Ice cream for the three of you',emoji:'🍦',cost:200,tier:'large',category:'dogs'},
+  {id:'r-patio',name:'Outdoor Raid: Patio Edition',desc:'A dog-friendly restaurant patio. Fresh air, good food, companions present. The dungeon extends its borders.',real:'Dog-friendly restaurant patio trip',emoji:'🌿',cost:300,tier:'large',category:'dogs'},
+  {id:'r-greenway',name:'Unexplored Dungeon Zone',desc:'A greenway trail you haven\'t walked. New map territory. Edna will secure the perimeter. Kronk will attempt to eat something.',real:'Greenway adventure on a new trail',emoji:'🥾',cost:50,tier:'large',category:'dogs'},
+  {id:'r-playdate',name:'Companion Alliance Event',desc:'A doggy playdate. Kronk will be unhinged. Edna will file multiple security reports. Memories made.',real:'Doggy playdate',emoji:'🐕',cost:50,tier:'large',category:'dogs'},
   // Epic Loot — 500 🪙
-  {id:'r-kindle',name:'Tome of Infinite Knowledge',desc:'A Kindle. Infinite books. The dungeon respects this investment. Princess Donut considers it the only cultured reward on this list.',real:'Kindle',emoji:'📖',cost:500,tier:'epic',category:'you'},
+  {id:'r-kindle',name:'Tome of Infinite Knowledge',desc:'A Kindle. Infinite books. The dungeon respects this investment. Princess Donut considers it the only cultured reward on this list.',real:'Kindle',emoji:'📖',cost:2000,tier:'epic',category:'you'},
   {id:'r-daytrip',name:'World Map Unlocked',desc:'A day trip somewhere nearby. The dungeon expands. New floors discovered. Pack snacks.',real:'Day trip somewhere nearby',emoji:'🗺️',cost:500,tier:'epic',category:'you'},
   // Legendary — 750+ 🪙
   {id:'r-big',name:'Legendary Drop (You Decide)',desc:"Something big. You've earned it. The dungeon doesn't specify — that's between you and the vending machine.",real:'Something big — your choice',emoji:pixelIcon(ICON_STAR,20),cost:750,tier:'epic',category:'you'},
@@ -6360,6 +6800,7 @@ async function init(){
   checkOneOffCleanup();
   checkDonutBiscuitExpiry();
   checkFloorCollapse();
+  checkStatDecay();
   if(floorCondition&&floorCondition.date!==todayStr()){floorCondition=null;save('dr-floor-condition',null);}
 
   // Re-render with fresh data if Supabase pulled changes
