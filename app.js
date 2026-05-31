@@ -4804,6 +4804,18 @@ function toggleQuestStep(questId,stepId){
   save('dr-quests',quests);
   if(typeof checkQuestCompletion==='function')checkQuestCompletion(); // pay out if now complete
   renderQuestLog();
+  if(typeof renderArenaQuests==='function')renderArenaQuests();
+}
+
+// Non-floor quests (oneoff/longhaul) also surface in The Arena. Both this and
+// renderQuestLog read the same `quests` state and toggle via toggleQuestStep,
+// so checking a step in either room updates the other (screens are hidden, not
+// removed, so re-rendering both keeps the two DOMs in sync).
+function renderArenaQuests(){
+  const wrap=document.getElementById('arena-quests'); if(!wrap)return;
+  const list=(Array.isArray(quests)?quests:[]).filter(q=>(q.type==='oneoff'||q.type==='longhaul')&&q.status!=='completed');
+  if(!list.length){ wrap.innerHTML=''; return; }
+  wrap.innerHTML='<div class="section-label" style="color:var(--fire);margin:4px 0 8px;">SIDE DIRECTIVES</div>'+list.map(renderQuestCard).join('');
 }
 
 // ─── QUEST CREATION FLOW (in-app: goal → review → confirm) ────────────────
@@ -4878,6 +4890,7 @@ function confirmQuest(){
   const r=commitQuestProposal(_questFlow.proposal);
   closeQuestPrompt();
   if(typeof renderQuestLog==='function')renderQuestLog();
+  if(typeof renderArenaQuests==='function')renderArenaQuests();
   if(r&&r.ok&&typeof showPtsToast==='function')showPtsToast('DIRECTIVE REGISTERED. Begin.');
 }
 
@@ -7282,7 +7295,7 @@ function showRoom(name){
     renderRoomBorder(name);
     if(name==='today')renderToday();
     else if(name==='dogs')renderDogs();
-    else if(name==='spin'){updateProjectDropdown();refreshWheel();renderAvoidance();renderTaskManager();}
+    else if(name==='spin'){updateProjectDropdown();refreshWheel();renderAvoidance();renderTaskManager();renderArenaQuests();}
     else if(name==='inbox'){renderInbox();setTimeout(()=>{const h=document.getElementById('comm-history');if(h)h.scrollTop=h.scrollHeight;},500);}    else if(name==='rewards')renderRewards();
     else if(name==='profile')renderProfile();
     else if(name==='coach')renderCoach();
