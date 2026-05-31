@@ -4743,6 +4743,68 @@ function commitQuestProposal(proposal){
   return {ok:true, quest:q};
 }
 
+// ─── QUEST LOG (The Archive room) ─────────────────────────────────────────
+function _escHtml(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function renderQuestCard(q){
+  const steps=q.steps||[];
+  const total=steps.length, doneN=steps.filter(s=>s.done).length;
+  const pct=total?Math.round(doneN/total*100):0;
+  const r=q.reward||{};
+  const rewardStr = q.type==='longhaul' ? 'Milestone rewards'
+    : `${r.coins||0}🪙${r.boxTier?' + '+_escHtml(r.boxTier)+' box':''}`;
+  const stepsHtml=steps.map(s=>{
+    const manual=!s.taskRef&&!s.blockRef&&!s.dayRef;
+    const box=s.done?'☑':'☐';
+    const note=s.taskRef?' · auto (routine)':s.blockRef?` · auto (${_escHtml(s.blockRef)} block)`:s.dayRef?' · auto (floor cleared)':'';
+    const ls=s.done?'opacity:0.5;text-decoration:line-through;':'';
+    if(manual){
+      return `<div onclick="toggleQuestStep('${q.id}','${s.id}')" style="cursor:pointer;padding:7px 10px;display:flex;gap:8px;align-items:flex-start;border-top:1px solid rgba(255,255,255,0.05);">
+        <span style="font-size:16px;line-height:1.2;">${box}</span>
+        <span style="font-family:var(--font-body);font-size:13px;${ls}">${_escHtml(s.label)}</span></div>`;
+    }
+    return `<div style="padding:7px 10px;display:flex;gap:8px;align-items:flex-start;border-top:1px solid rgba(255,255,255,0.05);opacity:0.85;">
+      <span style="font-size:16px;line-height:1.2;">${box}</span>
+      <span style="font-family:var(--font-body);font-size:13px;${s.done?'opacity:0.5;':''}">${_escHtml(s.label)}<span style="color:var(--hint,#888);font-size:11px;">${note}</span></span></div>`;
+  }).join('');
+  return `<div style="border:1px solid rgba(212,154,0,0.3);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--surface,#111116);">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
+      <div style="font-family:var(--font-game,'Cinzel');font-size:14px;color:var(--amber);">${_escHtml(q.name)}</div>
+      <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint,#888);text-transform:uppercase;letter-spacing:0.05em;">${_escHtml(q.type)}</div>
+    </div>
+    <div style="font-family:var(--font-system,monospace);font-size:11px;color:var(--teal);margin:4px 0 8px;">Reward: ${rewardStr}</div>
+    <div style="height:6px;background:var(--surface2,#1a1a22);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:var(--amber);transition:width 0.3s;"></div></div>
+    <div style="font-family:var(--font-system,monospace);font-size:10px;color:var(--hint,#888);margin:6px 0;">${doneN}/${total} steps${pct===100?' · COMPLETE':''}</div>
+    ${stepsHtml}
+  </div>`;
+}
+
+function renderQuestLog(){
+  const wrap=document.getElementById('archive-content'); if(!wrap)return;
+  const list=Array.isArray(quests)?quests:[];
+  const active=list.filter(q=>q.status!=='completed');
+  const done=list.filter(q=>q.status==='completed');
+  if(!active.length&&!done.length){
+    wrap.innerHTML='<div style="padding:24px 16px;text-align:center;color:var(--hint,#888);font-family:var(--font-body);font-size:13px;">No directives yet.<br>Petition the System with a goal to receive one.</div>';
+    return;
+  }
+  let html='';
+  if(active.length) html+='<div class="section-label" style="color:var(--amber);margin:4px 0 8px;">ACTIVE DIRECTIVES</div>'+active.map(renderQuestCard).join('');
+  if(done.length) html+='<div class="section-label" style="color:var(--teal);margin:20px 0 8px;">COMPLETED</div>'+
+    done.map(q=>`<div style="opacity:0.65;padding:8px 12px;font-family:var(--font-body);font-size:13px;border-left:2px solid var(--teal);margin-bottom:6px;">☑ ${_escHtml(q.name)}</div>`).join('');
+  wrap.innerHTML=html;
+}
+
+function toggleQuestStep(questId,stepId){
+  const q=(Array.isArray(quests)?quests:[]).find(x=>x.id===questId); if(!q)return;
+  const s=(q.steps||[]).find(x=>x.id===stepId); if(!s)return;
+  if(s.taskRef||s.blockRef||s.dayRef)return; // auto-tracked steps aren't manually toggleable
+  s.done=!s.done; s.doneAt=s.done?Date.now():null;
+  save('dr-quests',quests);
+  if(typeof checkQuestCompletion==='function')checkQuestCompletion(); // pay out if now complete
+  renderQuestLog();
+}
+
 // Starter quest set — block-based, so it works every day (Morning/Evening exist
 // on weekdays and weekends) and survives task edits. Idempotent: only adds a
 // quest whose id is missing, so it's safe to call on every open and across
@@ -7052,6 +7114,7 @@ const ROOMS={
   coach:  {name:"Donut's Chamber", label:'DONUT',    door:()=>ENV_DOOR_ROYAL,      header:"DONUT'S CHAMBER", color:'var(--purple)'},
   apothecary:{name:'The Apothecary',label:'APOTH',  door:()=>typeof ENV_DOOR_APOTHECARY!=='undefined'?ENV_DOOR_APOTHECARY:ENV_DOOR_TEAL_LOCKED, header:'THE APOTHECARY', color:'var(--green)'},
   inventory:{name:'The Stash',      label:'STASH',  door:()=>typeof ENV_DOOR_PURPLE!=='undefined'?ENV_DOOR_PURPLE:ENV_DOOR_GOLD_CLOSED, header:'THE STASH', color:'var(--purple)'},
+  archive:{name:'The Archive',     label:'ARCHIVE', door:()=>ENV_DOOR_GOLD_CLOSED, header:'THE ARCHIVE \u2014 QUEST LOG', color:'var(--blue)'},
 };
 
 const ROOM_ADJ={
@@ -7061,10 +7124,11 @@ const ROOM_ADJ={
   gym:    ['today','spin','profile'],
   inbox:  ['profile'],
   rewards:['profile','inventory'],
-  profile:['gym','rewards','inbox','inventory'],
+  profile:['gym','rewards','inbox','inventory','archive'],
   coach:  ['dogs','today'],
   apothecary:['today'],
   inventory:['rewards','profile'],
+  archive:['profile'],
 };
 
 
@@ -7080,11 +7144,11 @@ const MAP_POS={
   inbox:  {x:47, y:75},  // The Comm Tower
   apothecary:{x:17,y:15},// The Apothecary
   inventory:{x:90,y:50}, // The Stash
+  archive:{x:23,y:87},   // The Archive — quest log
 };
 
 const SEALED_ROOMS=[
   {id:'mess-hall',       label:'The Mess Hall',       x:83, y:15},
-  {id:'archive',         label:'The Archive',         x:23,  y:87},
   {id:'shrine',          label:'The Shrine',          x:47, y:88},
   {id:'counting-house',  label:'The Counting House',  x:77, y:88},
 ];
@@ -7150,6 +7214,7 @@ function showRoom(name){
     else if(name==='gym')renderGym();
     else if(name==='apothecary')renderApothecaryRoom();
     else if(name==='inventory'){if(typeof renderInventory==='function')renderInventory();}
+    else if(name==='archive'){if(typeof renderQuestLog==='function')renderQuestLog();}
   },150);
 }
 
