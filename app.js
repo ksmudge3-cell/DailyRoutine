@@ -4295,8 +4295,10 @@ let pendingBoxes=load('dr-pending-boxes',[]);
    Logic only — no UX. The reveal moment + inventory grid (other chat) call
    into these. Defaults locked this build:
    • currency in a box AUTO-DEPOSITS via awardPoints/awardXP on openBox()
-   • items STACK by itemId+qty (food/voucher/junk/buff); cosmetics stored
-     once (dupes ignored); donutLines recorded as unlocked flags.
+   • food/voucher/junk STACK by itemId+qty; buffs are NON-FUNGIBLE (one row
+     each — preserves per-instance description + room for future per-instance
+     state like expiry / earmarked floor); cosmetics stored once (dupes
+     ignored); donutLines recorded as unlocked flags.
    Buff EFFECT wiring (payload.effect → debuff/floor systems) is a later piece. */
 
 // Grant an earned box. Rolls + appraises now; stores it UNOPENED so the
@@ -4356,7 +4358,11 @@ function addToInventory(item){
     inventory.push({...item,qty:1,equipped:false});
     return item;
   }
-  // food / voucher / junk / buff → merge into an unused stack of the same item
+  if(item.type==='buff'){ // non-fungible — one row per buff (keeps its own description + room for per-instance state)
+    inventory.push({...item,qty:1});
+    return item;
+  }
+  // food / voucher / junk → merge into an unused stack of the same item
   const stack=inventory.find(r=>r.itemId===item.itemId&&r.type===item.type&&!r.usedAt);
   if(stack){stack.qty=(stack.qty||1)+(item.qty||1);return stack;}
   inventory.push({...item,qty:(item.qty||1)});
