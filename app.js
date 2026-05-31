@@ -4488,6 +4488,7 @@ function isFloorClearedToday(){
 // Grant any newly-earned boxes. Safe to call often — the guards prevent dupes.
 function checkLootEarnHooks(){
   if(typeof reconcileActiveEffects==='function')reconcileActiveEffects(); // maintain lingering buff effects
+  if(typeof syncQuestSteps==='function')syncQuestSteps(); // advance quest steps from task completions
   if(!window.DCCLoot)return; // loot engine not loaded yet
   let changed=false;
   // FLOOR CLEAR — once per calendar day
@@ -4619,6 +4620,31 @@ function advanceQuests(taskId){
       if(step.taskRef!==taskId)continue;
       const done=isTaskDoneToday(taskId);
       if(step.done!==done){step.done=done;step.doneAt=done?Date.now():null;changed=true;}
+    }
+  }
+  if(changed)save('dr-quests',quests);
+}
+
+/* ─── QUEST SYSTEM (build: step 2 — step auto-advance) ─────────────────────
+   Quest steps with a taskRef mirror the underlying task's completion, so the
+   normal routine advances quests with no extra ticking. Daily repeatables
+   mirror today (advance + revert on uncheck); one-offs / long-hauls advance
+   only (a finished step stays finished). No payout here — that's step 3. */
+function syncQuestSteps(){
+  if(!quests||!quests.length)return;
+  const todayState=state[dayKey(new Date().getDay())]||{};
+  let changed=false;
+  for(const q of quests){
+    if(q.status==='completed'&&q.type!=='repeatable')continue; // finished one-offs/long-hauls stay put
+    const mirror=(q.type==='repeatable'&&q.resetCadence==='daily'); // dailies track today both ways
+    for(const st of (q.steps||[])){
+      if(!st.taskRef)continue; // quest-only steps are ticked manually
+      const done=!!todayState[st.taskRef];
+      if(mirror){
+        if(st.done!==done){st.done=done;st.doneAt=done?Date.now():null;changed=true;}
+      }else if(done&&!st.done){
+        st.done=true;st.doneAt=Date.now();changed=true; // advance only
+      }
     }
   }
   if(changed)save('dr-quests',quests);
