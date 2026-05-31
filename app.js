@@ -285,7 +285,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,activeEffects,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -370,6 +370,7 @@ async function loadFromSupabase(){
       if(d.inventory)inventory=d.inventory;
       if(d.pendingBoxes)pendingBoxes=d.pendingBoxes;
       if(d.lootClaims)lootClaims={...lootClaims,...d.lootClaims};
+      if(d.activeEffects)activeEffects=d.activeEffects;
       if(d.qualityState)qualityState={...qualityState,...d.qualityState};
       if(d.customRewards)customRewards=d.customRewards;
       if(d.donutChat)donutChat=d.donutChat;
@@ -437,6 +438,7 @@ async function loadFromSupabase(){
       saveLocal('dr-inventory',inventory);
       saveLocal('dr-pending-boxes',pendingBoxes);
       saveLocal('dr-loot-claims',lootClaims);
+      saveLocal('dr-active-effects',activeEffects);
       saveLocal('dr-archived',archived);
       saveLocal('dr-rewards',rewardsState);
       saveLocal('dr-xp',xpState);
@@ -495,7 +497,7 @@ window.addEventListener('beforeunload',()=>{
       fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
+        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,activeEffects,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
         keepalive:true
       });
     }catch(e){}
@@ -4294,6 +4296,7 @@ let xpState=load('dr-xp',{totalXP:0,level:1,equippedTitle:null,unlockedTitles:['
 let inventory=load('dr-inventory',[]);
 let pendingBoxes=load('dr-pending-boxes',[]);
 let lootClaims=load('dr-loot-claims',{floors:{},streakMilestone:0}); // dedupe guard for earned boxes (Piece 3)
+let activeEffects=load('dr-active-effects',[]); // lingering buff effects, e.g. Surge double-rewards (Piece 4)
 
 /* ── Asset bridge for loot-ui.js ───────────────────────────────────────────
    assets.js declares icons as top-level `const` (global-lexical scope: usable
@@ -4452,6 +4455,7 @@ function isFloorClearedToday(){
 
 // Grant any newly-earned boxes. Safe to call often — the guards prevent dupes.
 function checkLootEarnHooks(){
+  if(typeof reconcileActiveEffects==='function')reconcileActiveEffects(); // maintain lingering buff effects
   if(!window.DCCLoot)return; // loot engine not loaded yet
   let changed=false;
   // FLOOR CLEAR — once per calendar day
@@ -4487,6 +4491,8 @@ function activateBuff(id, arg){
   if(!row||row.type!=='buff')return {ok:false,msg:'No such buff.'};
   switch(row.payload&&row.payload.effect){
     case 'preclear_one_task': return _buffHeadStart(row,arg);
+    case 'double_rewards_one_floor': return _buffSurge(row);
+    case 'recovery_mode_voluntary': return _buffRecovery(row);
     default: return {ok:false,msg:'That buff is not wired yet.'};
   }
 }
@@ -4506,6 +4512,59 @@ function _buffHeadStart(row,taskId){
   useInventoryItem(row.id);           // consume the buff
   if(typeof renderToday==='function')renderToday();
   return {ok:true,msg:'HEAD START DEPLOYED. One task pre-cleared. Sponsors note the shortcut.'};
+}
+
+// surge — voluntary: double this floor's task + clear rewards. The buff is
+// consumed now; the effect lingers via activeEffects. Binds to today's floor
+// if it's still live & uncovered, else banks (floorId:null) for the next floor.
+function _buffSurge(row){
+  const todayKey=dayKey(new Date().getDay());
+  const cleared=isFloorClearedToday();
+  const covered=activeEffects.some(e=>e.effect==='double_rewards_one_floor'&&e.floorId===todayKey);
+  const floorId=(!cleared&&!covered)?todayKey:null;
+  activeEffects.push({effect:'double_rewards_one_floor',instanceId:row.id,floorId,activatedAt:Date.now()});
+  save('dr-active-effects',activeEffects);
+  useInventoryItem(row.id);
+  return floorId
+    ? {ok:true,msg:'SPONSOR SURGE ACTIVE. Rewards doubled for this floor. Perform accordingly.'}
+    : {ok:true,msg:'SPONSOR SURGE BANKED. It doubles your next floor. (The sponsors prefer you start one.)'};
+}
+
+// 2 if a Surge is bound to the given floor (defaults to today), else 1.
+function surgeMultiplier(dayIdx){
+  const k=dayKey(dayIdx==null?new Date().getDay():dayIdx);
+  return activeEffects.some(e=>e.effect==='double_rewards_one_floor'&&e.floorId===k)?2:1;
+}
+
+// Maintain activeEffects: drop bindings whose floor has passed; let a banked
+// Surge claim today's live floor. Called from the earn-hook checkpoints.
+function reconcileActiveEffects(){
+  const todayKey=dayKey(new Date().getDay());
+  let changed=false;
+  const before=activeEffects.length;
+  activeEffects=activeEffects.filter(e=>e.floorId===null||e.floorId===todayKey); // purge past-floor bindings
+  if(activeEffects.length!==before)changed=true;
+  const covered=activeEffects.some(e=>e.effect==='double_rewards_one_floor'&&e.floorId===todayKey);
+  if(!covered&&!isFloorClearedToday()){
+    const bank=activeEffects.find(e=>e.effect==='double_rewards_one_floor'&&e.floorId===null);
+    if(bank){bank.floorId=todayKey;changed=true;} // banked Surge claims this live floor
+  }
+  if(changed)save('dr-active-effects',activeEffects);
+}
+
+// recovery_token — voluntary: invoke Recovery Mode for today via a "Wellness
+// Package" floor condition (effect: recovery-mode). That routes through the
+// existing system — 3 tasks clears the floor, streak protected. Rejected (not
+// consumed) if already in Recovery Mode, so it can't be spent into a no-op.
+function _buffRecovery(row){
+  if(typeof isRecoveryMode==='function'&&isRecoveryMode())
+    return {ok:false,msg:'Already in Recovery Mode — save the package.'};
+  floorCondition={id:'wellness-package',name:'Wellness Package',tasks:'all',effect:'recovery-mode',date:todayStr()};
+  save('dr-floor-condition',floorCondition);
+  useInventoryItem(row.id);
+  if(typeof renderToday==='function')renderToday();
+  if(typeof renderProfile==='function')renderProfile();
+  return {ok:true,msg:'Crawler Wellness Package activated. (This is not charity. Deceased crawlers generate no revenue.)'};
 }
 
 function getLevelInfo(xp){
@@ -6071,18 +6130,20 @@ function maybeAwardTaskPoints(taskId,dayIdx,quality){
   // Use quality-specific rates; default to green if quality not specified
   const q=quality||getQuality(dayIdx,taskId)||'green';
   if(q==='red'||q==='gray')return; // no coins for skip/N/A
-  const coins=QUALITY_PTS[q]||QUALITY_PTS.green;
-  const xp=QUALITY_XP[q]||QUALITY_XP.green;
+  const m=(typeof surgeMultiplier==='function')?surgeMultiplier(dayIdx):1; // Sponsor Surge doubles this floor's rewards
+  const sfx=m>1?' (×'+m+' Surge)':'';
+  const coins=(QUALITY_PTS[q]||QUALITY_PTS.green)*m;
+  const xp=(QUALITY_XP[q]||QUALITY_XP.green)*m;
   const qLabel={purple:'⚡ Legendary!',green:'Done',yellow:'Barely',gray:'N/A',red:'Skipped'}[q]||'Done';
-  awardPoints(coins,'Routine task — '+qLabel,taskId);
+  awardPoints(coins,'Routine task — '+qLabel+sfx,taskId);
   awardXP(xp,'Routine task');
   const dateStr=k;
   if(!rewardsState.lastDayBonuses[dateStr]){
     const pct=dayPct(dayIdx);
     if(pct===100){
       rewardsState.lastDayBonuses[dateStr]=true;
-      awardPoints(PTS.dayComplete,'Floor cleared!','day-complete');
-      awardXP(XP_PTS.dayComplete,'Floor cleared!');
+      awardPoints(PTS.dayComplete*m,'Floor cleared!'+sfx,'day-complete');
+      awardXP(XP_PTS.dayComplete*m,'Floor cleared!');
     }
   }
   checkStreakBonuses();
