@@ -4474,6 +4474,40 @@ function checkLootEarnHooks(){
   if(changed)save('dr-loot-claims',lootClaims);
 }
 
+/* ─── BUFF ACTIVATION (build: loot wiring Piece 4 — buff effects) ──────────
+   Entry point for VOLUNTARY / INSTANT buffs; the Stash "Activate" button calls
+   activateBuff(id[, arg]). Armed buffs (debuff_shield) will use armBuff(); auto
+   buffs (streak_freeze) need no control. Effects wired per the Buff Activation
+   Contract, one at a time. Returns {ok, msg} — msg is a System-voice line for
+   the UI to surface. Consuming a spent buff = useInventoryItem (removes the row;
+   we don't keep a usedAt trail — keeps active-buff scans simple and inventory
+   from growing unbounded. Flip to usedAt-retain later if a "spent" log is wanted). */
+function activateBuff(id, arg){
+  const row=inventory.find(r=>r.id===id&&!r.usedAt);
+  if(!row||row.type!=='buff')return {ok:false,msg:'No such buff.'};
+  switch(row.payload&&row.payload.effect){
+    case 'preclear_one_task': return _buffHeadStart(row,arg);
+    default: return {ok:false,msg:'That buff is not wired yet.'};
+  }
+}
+
+// head_start — voluntary: pre-clear one of today's incomplete tasks.
+function _buffHeadStart(row,taskId){
+  if(!taskId)return {ok:false,msg:'Choose a task to pre-clear.'};
+  const idx=new Date().getDay(), k=dayKey(idx);
+  const ids=getScheduleFor(idx,new Date()).reduce((a,s)=>a.concat(s.tasks.map(t=>t.id)),[]);
+  if(!ids.includes(taskId))return {ok:false,msg:'That task is not on today\u2019s floor.'};
+  if(state[k]&&state[k][taskId])return {ok:false,msg:'That task is already done.'};
+  if(!state[k])state[k]={};
+  state[k][taskId]=true; state[k][taskId+'_ts']=Date.now();
+  save('dr-state',state);
+  maybeAwardTaskPoints(taskId,idx);   // green completion + (guarded) floor-clear bonus
+  checkLootEarnHooks();               // a head_start floor-clear still earns its box
+  useInventoryItem(row.id);           // consume the buff
+  if(typeof renderToday==='function')renderToday();
+  return {ok:true,msg:'HEAD START DEPLOYED. One task pre-cleared. Sponsors note the shortcut.'};
+}
+
 function getLevelInfo(xp){
   let current=XP_LEVELS[0];
   for(const l of XP_LEVELS){if(xp>=l.xp)current=l;else break;}

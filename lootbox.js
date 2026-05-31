@@ -166,12 +166,14 @@
     const eligible = POOL.filter((e) => e.minRank <= rank);
 
     const drawByType = (excludeTypes = []) => {
+      const taken = new Set(out.map((it) => it.itemId)); // no dup items in one box
+      const avail = eligible.filter((e) => !taken.has(e.itemId));
       const types = Object.keys(typeW).filter(
-        (t) => typeW[t] > 0 && !excludeTypes.includes(t) && eligible.some((e) => e.type === t)
+        (t) => typeW[t] > 0 && !excludeTypes.includes(t) && avail.some((e) => e.type === t)
       );
       if (!types.length) return null;
       const chosenType = weightedPick(types, (t) => typeW[t]);
-      const ofType = eligible.filter((e) => e.type === chosenType);
+      const ofType = avail.filter((e) => e.type === chosenType);
       const entry = weightedPick(ofType, (e) => e.weight);
       return entry ? toInventoryItem(entry, source) : null;
     };
