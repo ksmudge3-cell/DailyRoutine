@@ -4757,42 +4757,42 @@ function renderQuestCard(q){
     const manual=!s.taskRef&&!s.blockRef&&!s.dayRef;
     const box=s.done?'☑':'☐';
     const note=s.taskRef?' · auto (routine)':s.blockRef?` · auto (${_escHtml(s.blockRef)} block)`:s.dayRef?' · auto (floor cleared)':'';
-    const ls=s.done?'opacity:0.5;text-decoration:line-through;':'';
+    const cls='quest-step'+(s.done?' is-done':'')+(manual?'':' is-auto');
     if(manual){
-      return `<div onclick="toggleQuestStep('${q.id}','${s.id}')" style="cursor:pointer;padding:7px 10px;display:flex;gap:8px;align-items:flex-start;border-top:1px solid rgba(255,255,255,0.05);">
-        <span style="font-size:16px;line-height:1.2;">${box}</span>
-        <span style="font-family:var(--font-body);font-size:13px;${ls}">${_escHtml(s.label)}</span></div>`;
+      return `<div class="${cls}" onclick="toggleQuestStep('${q.id}','${s.id}')">
+        <span class="quest-step-box">${box}</span>
+        <span class="quest-step-label">${_escHtml(s.label)}</span></div>`;
     }
-    return `<div style="padding:7px 10px;display:flex;gap:8px;align-items:flex-start;border-top:1px solid rgba(255,255,255,0.05);opacity:0.85;">
-      <span style="font-size:16px;line-height:1.2;">${box}</span>
-      <span style="font-family:var(--font-body);font-size:13px;${s.done?'opacity:0.5;':''}">${_escHtml(s.label)}<span style="color:var(--hint,#888);font-size:11px;">${note}</span></span></div>`;
+    return `<div class="${cls}">
+      <span class="quest-step-box">${box}</span>
+      <span class="quest-step-label">${_escHtml(s.label)}<span class="quest-step-note">${note}</span></span></div>`;
   }).join('');
-  return `<div style="border:1px solid rgba(212,154,0,0.3);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--surface,#111116);">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
-      <div style="font-family:var(--font-game,'Cinzel');font-size:14px;color:var(--amber);">${_escHtml(q.name)}</div>
-      <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint,#888);text-transform:uppercase;letter-spacing:0.05em;">${_escHtml(q.type)}</div>
+  return `<div class="quest-card">
+    <div class="quest-card-head">
+      <div class="quest-card-title">${_escHtml(q.name)}</div>
+      <div class="quest-card-type">${_escHtml(q.type)}</div>
     </div>
-    <div style="font-family:var(--font-system,monospace);font-size:11px;color:var(--teal);margin:4px 0 8px;">Reward: ${rewardStr}</div>
-    <div style="height:6px;background:var(--surface2,#1a1a22);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:var(--amber);transition:width 0.3s;"></div></div>
-    <div style="font-family:var(--font-system,monospace);font-size:10px;color:var(--hint,#888);margin:6px 0;">${doneN}/${total} steps${pct===100?' · COMPLETE':''}</div>
+    <div class="quest-card-reward">Reward: ${rewardStr}</div>
+    <div class="quest-progress"><img class="quest-progress-fill" src="${ICON_BAR_FILL_GOLD}" style="--fill:${pct}%;" alt=""></div>
+    <div class="quest-progress-label">${doneN}/${total} steps${pct===100?' · COMPLETE':''}</div>
     ${stepsHtml}
   </div>`;
 }
 
 function renderQuestLog(){
   const wrap=document.getElementById('archive-content'); if(!wrap)return;
-  const newBtn=`<button onclick="openQuestPrompt()" style="width:100%;box-sizing:border-box;background:rgba(212,154,0,0.12);border:1px solid var(--amber);color:var(--amber);border-radius:8px;padding:12px;font-family:var(--font-game,'Cinzel');font-size:11px;letter-spacing:0.05em;cursor:pointer;margin-bottom:14px;">+ PETITION THE SYSTEM — NEW DIRECTIVE</button>`;
+  const newBtn=`<button class="quest-new-btn" onclick="openQuestPrompt()">+ PETITION THE SYSTEM — NEW DIRECTIVE</button>`;
   const list=Array.isArray(quests)?quests:[];
   const active=list.filter(q=>q.status!=='completed');
   const done=list.filter(q=>q.status==='completed');
   if(!active.length&&!done.length){
-    wrap.innerHTML=newBtn+'<div style="padding:24px 16px;text-align:center;color:var(--hint,#888);font-family:var(--font-body);font-size:13px;">No directives yet.<br>Petition the System with a goal to receive one.</div>';
+    wrap.innerHTML=newBtn+'<div class="quest-empty">No directives yet.<br>Petition the System with a goal to receive one.</div>';
     return;
   }
   let html=newBtn;
-  if(active.length) html+='<div class="section-label" style="color:var(--amber);margin:4px 0 8px;">ACTIVE DIRECTIVES</div>'+active.map(renderQuestCard).join('');
-  if(done.length) html+='<div class="section-label" style="color:var(--teal);margin:20px 0 8px;">COMPLETED</div>'+
-    done.map(q=>`<div style="opacity:0.65;padding:8px 12px;font-family:var(--font-body);font-size:13px;border-left:2px solid var(--teal);margin-bottom:6px;">☑ ${_escHtml(q.name)}</div>`).join('');
+  if(active.length) html+='<div class="section-label">ACTIVE DIRECTIVES</div>'+active.map(renderQuestCard).join('');
+  if(done.length) html+='<div class="section-label">COMPLETED</div>'+
+    done.map(q=>`<div class="quest-done-row">☑ ${_escHtml(q.name)}</div>`).join('');
   wrap.innerHTML=html;
 }
 
@@ -4815,7 +4815,7 @@ function renderArenaQuests(){
   const wrap=document.getElementById('arena-quests'); if(!wrap)return;
   const list=(Array.isArray(quests)?quests:[]).filter(q=>(q.type==='oneoff'||q.type==='longhaul')&&q.status!=='completed');
   if(!list.length){ wrap.innerHTML=''; return; }
-  wrap.innerHTML='<div class="section-label" style="color:var(--fire);margin:4px 0 8px;">SIDE DIRECTIVES</div>'+list.map(renderQuestCard).join('');
+  wrap.innerHTML='<div class="section-label">SIDE DIRECTIVES</div>'+list.map(renderQuestCard).join('');
 }
 
 // ─── QUEST CREATION FLOW (in-app: goal → review → confirm) ────────────────
@@ -4824,8 +4824,8 @@ function openQuestPrompt(){
   if(!donutApiKey){ alert("Princess Donut needs an API key first (Donut tab) — the System uses it to draft directives."); return; }
   _questFlow={state:'input', goal:'', proposal:null};
   let ov=document.getElementById('quest-flow-overlay');
-  if(!ov){ ov=document.createElement('div'); ov.id='quest-flow-overlay';
-    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  if(!ov){ ov=document.createElement('div'); ov.id='quest-flow-overlay'; ov.className='qf-overlay';
+    ov.style.cssText='position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;';
     document.body.appendChild(ov); }
   renderQuestFlow();
 }
@@ -4833,35 +4833,35 @@ function closeQuestPrompt(){ const ov=document.getElementById('quest-flow-overla
 function renderQuestFlow(){
   const ov=document.getElementById('quest-flow-overlay'); if(!ov||!_questFlow)return;
   const f=_questFlow;
-  const wrap=b=>`<div style="background:var(--surface,#111116);border:1px solid rgba(212,154,0,0.3);border-radius:10px;padding:20px;max-width:380px;width:100%;max-height:85vh;overflow-y:auto;">${b}</div>`;
-  const hdr='<div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--amber);letter-spacing:0.1em;margin-bottom:12px;">THE SYSTEM · DIRECTIVE INTAKE</div>';
+  const wrap=b=>`<div class="qf-card">${b}</div>`;
+  const hdr='<div class="qf-header">THE SYSTEM · DIRECTIVE INTAKE</div>';
   let inner='';
   if(f.state==='input'){
-    inner=wrap(hdr+`<div style="font-family:var(--font-body);font-size:13px;color:var(--muted,#bbb);margin-bottom:10px;">State your goal. The System will decompose it into a directive.</div>
-      <textarea id="quest-goal-input" rows="3" placeholder="e.g. reclaim my apartment" style="width:100%;box-sizing:border-box;background:var(--surface2,#1a1a22);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;font-family:var(--font-body);font-size:14px;padding:10px;margin-bottom:14px;resize:vertical;"></textarea>
-      <div style="display:flex;gap:10px;">
-        <button onclick="submitQuestGoal()" style="flex:1;background:rgba(212,154,0,0.15);border:1px solid var(--amber);color:var(--amber);border-radius:6px;padding:11px;font-family:var(--font-game,'Cinzel');font-size:10px;letter-spacing:0.05em;cursor:pointer;">PETITION THE SYSTEM</button>
-        <button onclick="closeQuestPrompt()" style="background:var(--surface2,#1a1a22);border:1px solid rgba(255,255,255,0.1);color:var(--hint,#888);border-radius:6px;padding:11px 14px;font-family:var(--font-game,'Cinzel');font-size:10px;cursor:pointer;">CANCEL</button>
+    inner=wrap(hdr+`<div class="qf-prompt">State your goal. The System will decompose it into a directive.</div>
+      <textarea id="quest-goal-input" class="qf-input" rows="3" placeholder="e.g. reclaim my apartment"></textarea>
+      <div class="qf-actions">
+        <button class="qf-btn-primary" onclick="submitQuestGoal()">PETITION THE SYSTEM</button>
+        <button class="qf-btn-secondary" onclick="closeQuestPrompt()">CANCEL</button>
       </div>`);
   } else if(f.state==='loading'){
-    inner=wrap(hdr+`<div style="font-family:var(--font-body);font-size:14px;color:var(--teal);padding:24px 0;text-align:center;">The System is deliberating…</div>`);
+    inner=wrap(hdr+`<div class="qf-loading">The System is deliberating…</div>`);
   } else if(f.state==='error'){
-    inner=wrap(hdr+`<div style="font-family:var(--font-body);font-size:13px;color:var(--red-hi,#FF3B1F);margin-bottom:14px;">The System could not parse that request. Try rephrasing your goal.</div>
-      <div style="display:flex;gap:10px;">
-        <button onclick="_questFlow.state='input';renderQuestFlow()" style="flex:1;background:rgba(212,154,0,0.15);border:1px solid var(--amber);color:var(--amber);border-radius:6px;padding:11px;font-family:var(--font-game,'Cinzel');font-size:10px;cursor:pointer;">TRY AGAIN</button>
-        <button onclick="closeQuestPrompt()" style="background:var(--surface2,#1a1a22);border:1px solid rgba(255,255,255,0.1);color:var(--hint,#888);border-radius:6px;padding:11px 14px;font-family:var(--font-game,'Cinzel');font-size:10px;cursor:pointer;">CLOSE</button>
+    inner=wrap(hdr+`<div class="qf-error">The System could not parse that request. Try rephrasing your goal.</div>
+      <div class="qf-actions">
+        <button class="qf-btn-primary" onclick="_questFlow.state='input';renderQuestFlow()">TRY AGAIN</button>
+        <button class="qf-btn-secondary" onclick="closeQuestPrompt()">CLOSE</button>
       </div>`);
   } else if(f.state==='review'&&f.proposal){
     const q=f.proposal;
-    const steps=q.steps.map((s,i)=>`<div style="padding:6px 0;border-top:1px solid rgba(255,255,255,0.05);font-family:var(--font-body);font-size:13px;color:#ddd;">${i+1}. ${_escHtml(s.label)}${s.taskRef?' — routine: '+_escHtml(s.taskRef):''}</div>`).join('');
-    inner=wrap(hdr+`<div style="font-family:var(--font-game,'Cinzel');font-size:16px;color:var(--amber);margin-bottom:2px;">${_escHtml(q.name)}</div>
-      <div style="font-family:var(--font-system,monospace);font-size:9px;color:var(--hint,#888);text-transform:uppercase;margin-bottom:10px;">${_escHtml(q.type)} · ${q.steps.length} steps</div>
-      ${q.rationale?`<div style="font-family:var(--font-body);font-size:12px;color:var(--muted,#aaa);font-style:italic;margin-bottom:10px;border-left:2px solid rgba(212,154,0,0.4);padding-left:8px;">${_escHtml(q.rationale)}</div>`:''}
-      <div style="margin-bottom:14px;">${steps}</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button onclick="confirmQuest()" style="flex:1;min-width:120px;background:rgba(46,242,224,0.12);border:1px solid var(--teal);color:var(--teal);border-radius:6px;padding:11px;font-family:var(--font-game,'Cinzel');font-size:10px;letter-spacing:0.05em;cursor:pointer;">ACCEPT DIRECTIVE</button>
-        <button onclick="regenerateQuest()" style="background:var(--surface2,#1a1a22);border:1px solid rgba(255,255,255,0.15);color:var(--muted,#bbb);border-radius:6px;padding:11px 12px;font-family:var(--font-game,'Cinzel');font-size:10px;cursor:pointer;">REGENERATE</button>
-        <button onclick="closeQuestPrompt()" style="background:transparent;border:1px solid rgba(255,255,255,0.1);color:var(--hint,#888);border-radius:6px;padding:11px 12px;font-family:var(--font-game,'Cinzel');font-size:10px;cursor:pointer;">DISCARD</button>
+    const steps=q.steps.map((s,i)=>`<div class="qf-step">${i+1}. ${_escHtml(s.label)}${s.taskRef?' — routine: '+_escHtml(s.taskRef):''}</div>`).join('');
+    inner=wrap(hdr+`<div class="qf-quest-name">${_escHtml(q.name)}</div>
+      <div class="qf-quest-meta">${_escHtml(q.type)} · ${q.steps.length} steps</div>
+      ${q.rationale?`<div class="qf-rationale">${_escHtml(q.rationale)}</div>`:''}
+      <div class="qf-steps">${steps}</div>
+      <div class="qf-actions">
+        <button class="qf-btn-primary" onclick="confirmQuest()">ACCEPT DIRECTIVE</button>
+        <button class="qf-btn-secondary" onclick="regenerateQuest()">REGENERATE</button>
+        <button class="qf-btn-secondary" onclick="closeQuestPrompt()">DISCARD</button>
       </div>`);
   }
   ov.innerHTML=inner;
