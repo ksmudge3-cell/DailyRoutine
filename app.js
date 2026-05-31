@@ -860,7 +860,6 @@ function toggleTask(dayIdx,taskId){
   save('dr-state',state);
   maybeAwardTaskPoints(taskId,dayIdx);
   checkLootEarnHooks();
-  advanceQuests(taskId);
   renderToday();
 }
 
@@ -4489,6 +4488,7 @@ function isFloorClearedToday(){
 function checkLootEarnHooks(){
   if(typeof reconcileActiveEffects==='function')reconcileActiveEffects(); // maintain lingering buff effects
   if(typeof syncQuestSteps==='function')syncQuestSteps(); // advance quest steps from task completions
+  if(typeof checkQuestCompletion==='function')checkQuestCompletion(); // pay any newly-completed quests
   if(!window.DCCLoot)return; // loot engine not loaded yet
   let changed=false;
   // FLOOR CLEAR — once per calendar day
@@ -4541,8 +4541,7 @@ function _buffHeadStart(row,taskId){
   state[k][taskId]=true; state[k][taskId+'_ts']=Date.now();
   save('dr-state',state);
   maybeAwardTaskPoints(taskId,idx);   // green completion + (guarded) floor-clear bonus
-  checkLootEarnHooks();               // a head_start floor-clear still earns its box
-  advanceQuests(taskId);              // head_start completion advances any matching quest step
+  checkLootEarnHooks();               // a head_start floor-clear still earns its box (also runs syncQuestSteps + quest payout)
   useInventoryItem(row.id);           // consume the buff
   if(typeof renderToday==='function')renderToday();
   return {ok:true,msg:'HEAD START DEPLOYED. One task pre-cleared. Sponsors note the shortcut.'};
@@ -4611,19 +4610,11 @@ function isTaskDoneToday(taskId){
   const q=qualityState[k]&&qualityState[k][taskId];
   return q!=='gray';                                       // N/A doesn't count as done
 }
-function advanceQuests(taskId){
-  if(!Array.isArray(quests)||!quests.length)return;
-  let changed=false;
-  for(const qst of quests){
-    if(qst.status==='completed')continue;
-    for(const step of (qst.steps||[])){
-      if(step.taskRef!==taskId)continue;
-      const done=isTaskDoneToday(taskId);
-      if(step.done!==done){step.done=done;step.doneAt=done?Date.now():null;changed=true;}
-    }
-  }
-  if(changed)save('dr-quests',quests);
-}
+/* advanceQuests() removed — it was a duplicate step-advance left over from a
+   crashed first build attempt (the retry added syncQuestSteps on top). The
+   single source of step-advance is now syncQuestSteps() in the checkpoint,
+   which also reverts stale steps on a new day (preventing repeat auto-payouts)
+   — something advanceQuests didn't do. */
 
 /* ─── QUEST SYSTEM (build: step 2 — step auto-advance) ─────────────────────
    Quest steps with a taskRef mirror the underlying task's completion, so the
@@ -4648,6 +4639,45 @@ function syncQuestSteps(){
     }
   }
   if(changed)save('dr-quests',quests);
+}
+
+/* ─── QUEST PAYOUT (build: step 3 — completion, payout, idempotency) ───────
+   When every step of a quest is done, pay its reward. Coins via awardPoints
+   (Surge-doubled if a Surge is bound to today's floor); box via grantBox.
+   Idempotency: a repeatable pays once per cycle key (lastCompletedKey); a
+   one-off/long-haul pays once (status). Dormant until quests are defined.
+   NOTE: per-task coins are still ON — the flip to XP-only happens when real
+   starter quests are wired, so coins never stop flowing in between. */
+function checkQuestCompletion(){
+  if(!quests||!quests.length)return;
+  const dayK=_localDateStr();
+  let changed=false;
+  for(const q of quests){
+    const steps=q.steps||[];
+    if(!steps.length||!steps.every(s=>s.done))continue; // not all steps done
+    if(q.type==='repeatable'){
+      const cycleKey=(q.resetCadence==='weekly'&&typeof getWeekNumber==='function')?('W'+getWeekNumber()):dayK;
+      if(q.lastCompletedKey===cycleKey)continue;        // already paid this cycle — idempotent
+      _payQuest(q);
+      q.lastCompletedKey=cycleKey;                       // steps re-sync to today via syncQuestSteps; key guards re-pay
+      changed=true;
+    }else{
+      if(q.status==='completed')continue;                // one-off/long-haul pays once
+      _payQuest(q);
+      q.status='completed'; q.completedAt=Date.now();
+      changed=true;
+    }
+  }
+  if(changed)save('dr-quests',quests);
+}
+
+function _payQuest(q){
+  const r=q.reward||{};
+  if(r.coins){
+    const m=(typeof surgeMultiplier==='function')?surgeMultiplier(new Date().getDay()):1; // Surge doubles quest payout
+    awardPoints(r.coins*m,'Quest: '+q.name+(m>1?' (\u00d7'+m+' Surge)':''),'quest');
+  }
+  if(r.boxTier&&typeof grantBox==='function')grantBox(r.boxTier,'quest:'+(q.id||q.name)); // sealed box reward
 }
 
 function getLevelInfo(xp){
