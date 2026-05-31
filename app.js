@@ -285,7 +285,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,activeEffects,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,activeEffects,quests,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -371,6 +371,7 @@ async function loadFromSupabase(){
       if(d.pendingBoxes)pendingBoxes=d.pendingBoxes;
       if(d.lootClaims)lootClaims={...lootClaims,...d.lootClaims};
       if(d.activeEffects)activeEffects=d.activeEffects;
+      if(d.quests)quests=d.quests;
       if(d.qualityState)qualityState={...qualityState,...d.qualityState};
       if(d.customRewards)customRewards=d.customRewards;
       if(d.donutChat)donutChat=d.donutChat;
@@ -439,6 +440,7 @@ async function loadFromSupabase(){
       saveLocal('dr-pending-boxes',pendingBoxes);
       saveLocal('dr-loot-claims',lootClaims);
       saveLocal('dr-active-effects',activeEffects);
+      saveLocal('dr-quests',quests);
       saveLocal('dr-archived',archived);
       saveLocal('dr-rewards',rewardsState);
       saveLocal('dr-xp',xpState);
@@ -497,7 +499,7 @@ window.addEventListener('beforeunload',()=>{
       fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,activeEffects,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
+        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,activeEffects,quests,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
         keepalive:true
       });
     }catch(e){}
@@ -4297,6 +4299,14 @@ let inventory=load('dr-inventory',[]);
 let pendingBoxes=load('dr-pending-boxes',[]);
 let lootClaims=load('dr-loot-claims',{floors:{},streakMilestone:0}); // dedupe guard for earned boxes (Piece 3)
 let activeEffects=load('dr-active-effects',[]); // lingering buff effects, e.g. Surge double-rewards (Piece 4)
+let quests=load('dr-quests',[]); // Quest System — the coin engine (single tasks give XP only; quests pay coins). Shape:
+/* quest = { id, name, type:'repeatable'|'oneoff'|'longhaul',
+     steps:[{id,label,taskRef,done,doneAt}],   // taskRef = existing task id, or null for a quest-only step
+     reward:{coins,boxTier},                    // boxTier: null|'common'..'legendary'
+     status:'available'|'active'|'completed',
+     resetCadence,lastCompletedKey,             // repeatable only (daily/weekly + idempotency guard)
+     milestones,progressMode,                   // longhaul only
+     createdAt,completedAt } */
 
 /* ── Asset bridge for loot-ui.js ───────────────────────────────────────────
    assets.js declares icons as top-level `const` (global-lexical scope: usable
@@ -4425,6 +4435,27 @@ function useInventoryItem(id){
 // Read helpers for the UX.
 function getInventory(){return inventory.filter(r=>!r.usedAt);}
 function getPendingBoxes(){return pendingBoxes.filter(b=>!b.openedAt);}
+
+// Lingering effects currently in play (for a Stash "In Play" strip). Surfaces
+// Surge as 'active' (bound to today's floor) or 'banked' (awaiting next floor);
+// skips stale past-floor entries that reconcile will purge.
+function getActiveEffects(){
+  const todayKey=dayKey(new Date().getDay());
+  const out=[];
+  for(const e of (activeEffects||[])){
+    if(e.effect==='double_rewards_one_floor'){
+      if(e.floorId!==null&&e.floorId!==todayKey)continue; // stale; will be purged
+      const active=e.floorId===todayKey;
+      out.push({effect:e.effect,itemId:'surge',name:'Sponsor Surge',tier:'rare',
+        status:active?'active':'banked',
+        note:active?'Doubling this floor\u2019s rewards':'Banked \u2014 wakes on your next floor',
+        activatedAt:e.activatedAt});
+    }else{
+      out.push({effect:e.effect,itemId:null,name:e.effect,tier:'common',status:'active',note:'',activatedAt:e.activatedAt});
+    }
+  }
+  return out;
+}
 
 /* ─── LOOT EARN HOOKS (build: loot wiring Piece 3) ─────────────────────────
    Turns the engine on: floor clears + streak milestones hand you a SEALED box
