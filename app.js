@@ -860,6 +860,7 @@ function toggleTask(dayIdx,taskId){
   save('dr-state',state);
   maybeAwardTaskPoints(taskId,dayIdx);
   checkLootEarnHooks();
+  advanceQuests(taskId);
   renderToday();
 }
 
@@ -4540,6 +4541,7 @@ function _buffHeadStart(row,taskId){
   save('dr-state',state);
   maybeAwardTaskPoints(taskId,idx);   // green completion + (guarded) floor-clear bonus
   checkLootEarnHooks();               // a head_start floor-clear still earns its box
+  advanceQuests(taskId);              // head_start completion advances any matching quest step
   useInventoryItem(row.id);           // consume the buff
   if(typeof renderToday==='function')renderToday();
   return {ok:true,msg:'HEAD START DEPLOYED. One task pre-cleared. Sponsors note the shortcut.'};
@@ -4596,6 +4598,30 @@ function _buffRecovery(row){
   if(typeof renderToday==='function')renderToday();
   if(typeof renderProfile==='function')renderProfile();
   return {ok:true,msg:'Crawler Wellness Package activated. (This is not charity. Deceased crawlers generate no revenue.)'};
+}
+
+// ─── QUEST AUTO-TICK (build: Quest step 2) ────────────────────────────────
+// A quest step whose taskRef points at a real task mirrors that task's
+// completion. Recomputes from source, so it's correct on complete AND
+// un-complete. No payout here — that's step 3.
+function isTaskDoneToday(taskId){
+  const k=dayKey(new Date().getDay());
+  if(!(state[k]&&state[k][taskId]))return false;          // red clears state, so excluded automatically
+  const q=qualityState[k]&&qualityState[k][taskId];
+  return q!=='gray';                                       // N/A doesn't count as done
+}
+function advanceQuests(taskId){
+  if(!Array.isArray(quests)||!quests.length)return;
+  let changed=false;
+  for(const qst of quests){
+    if(qst.status==='completed')continue;
+    for(const step of (qst.steps||[])){
+      if(step.taskRef!==taskId)continue;
+      const done=isTaskDoneToday(taskId);
+      if(step.done!==done){step.done=done;step.doneAt=done?Date.now():null;changed=true;}
+    }
+  }
+  if(changed)save('dr-quests',quests);
 }
 
 function getLevelInfo(xp){
