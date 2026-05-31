@@ -12,11 +12,13 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Reads from payload.data (data-only messages). This is now the SINGLE display
+// path — FCM no longer auto-displays, so notifications fire exactly once.
 messaging.onBackgroundMessage((payload) => {
-  const { title, body, icon } = payload.notification;
-  self.registration.showNotification(title, {
-    body,
-    icon: icon || '/DailyRoutine/icons/icon-192.png',
+  const { title, body } = payload.data || {};
+  self.registration.showNotification(title || 'Daily Crawler Chronicles', {
+    body: body || '',
+    icon: '/DailyRoutine/icons/icon-192.png',
     badge: '/DailyRoutine/icons/icon-192.png',
     data: payload.data,
     vibrate: [200, 100, 200],
@@ -32,7 +34,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 /* ── existing cache / offline ── */
-const CACHE = 'dcc-v2';
+const CACHE = 'dcc-v3';
 const OFFLINE_URL = '/DailyRoutine/offline.html';
 
 self.addEventListener('install', e => {
