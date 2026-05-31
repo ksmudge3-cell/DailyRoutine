@@ -4725,6 +4725,24 @@ ${taskList}`;
   }catch(e){ console.warn('Quest gen failed', e); return {ok:false,error:'network'}; }
 }
 
+// Commit a validated proposal as a real quest: rewards assigned BY RULE here
+// (never from the model), ids/status/createdAt stamped, then saved (+synced via
+// the dr-quests key). Accepts either a bare quest or the {ok,quest} wrapper.
+function commitQuestProposal(proposal){
+  const q = (proposal && proposal.quest) ? proposal.quest : proposal;
+  if(!q || !q.name || !Array.isArray(q.steps) || !q.steps.length) return {ok:false,error:'invalid'};
+  if(q.type!=='oneoff' && q.type!=='longhaul') q.type='oneoff'; // generation never makes repeatables
+  assignQuestReward(q);                                   // type in → reward out
+  q.id = 'q_'+Date.now();
+  q.steps = q.steps.map((s,i)=>({ id:q.id+'_s'+i, label:s.label, taskRef:s.taskRef||null, done:false, doneAt:null }));
+  q.status = 'active';
+  q.createdAt = Date.now();
+  if(!Array.isArray(quests)) quests=[];
+  quests.push(q);
+  save('dr-quests', quests);
+  return {ok:true, quest:q};
+}
+
 // Starter quest set — block-based, so it works every day (Morning/Evening exist
 // on weekdays and weekends) and survives task edits. Idempotent: only adds a
 // quest whose id is missing, so it's safe to call on every open and across
