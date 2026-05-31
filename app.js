@@ -285,7 +285,7 @@ async function syncToSupabase(){
     await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()})
     });
   }catch(e){console.warn('Sync failed',e);}
 }
@@ -369,6 +369,7 @@ async function loadFromSupabase(){
       if(d.shopItems)shopItems=d.shopItems;
       if(d.inventory)inventory=d.inventory;
       if(d.pendingBoxes)pendingBoxes=d.pendingBoxes;
+      if(d.lootClaims)lootClaims={...lootClaims,...d.lootClaims};
       if(d.qualityState)qualityState={...qualityState,...d.qualityState};
       if(d.customRewards)customRewards=d.customRewards;
       if(d.donutChat)donutChat=d.donutChat;
@@ -435,6 +436,7 @@ async function loadFromSupabase(){
       saveLocal('dr-shop',shopItems);
       saveLocal('dr-inventory',inventory);
       saveLocal('dr-pending-boxes',pendingBoxes);
+      saveLocal('dr-loot-claims',lootClaims);
       saveLocal('dr-archived',archived);
       saveLocal('dr-rewards',rewardsState);
       saveLocal('dr-xp',xpState);
@@ -493,7 +495,7 @@ window.addEventListener('beforeunload',()=>{
       fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
+        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutApiKey,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
         keepalive:true
       });
     }catch(e){}
@@ -853,6 +855,7 @@ function toggleTask(dayIdx,taskId){
   else delete state[k][taskId+'_ts'];
   save('dr-state',state);
   maybeAwardTaskPoints(taskId,dayIdx);
+  checkLootEarnHooks();
   renderToday();
 }
 
@@ -4290,6 +4293,7 @@ let xpState=load('dr-xp',{totalXP:0,level:1,equippedTitle:null,unlockedTitles:['
                  openBox(id) to animate + move contents into inventory.       */
 let inventory=load('dr-inventory',[]);
 let pendingBoxes=load('dr-pending-boxes',[]);
+let lootClaims=load('dr-loot-claims',{floors:{},streakMilestone:0}); // dedupe guard for earned boxes (Piece 3)
 
 /* ─── LOOT / INVENTORY API (build: loot wiring Piece 2) ────────────────────
    Logic only — no UX. The reveal moment + inventory grid (other chat) call
@@ -4306,12 +4310,10 @@ let pendingBoxes=load('dr-pending-boxes',[]);
 function grantBox(tier,source){
   tier=(tier||'common').toLowerCase();
   if(!window.DCCLoot||!window.DCCLoot.BOX_TIERS[tier]){console.warn('grantBox: unknown tier',tier);return null;}
-  const items=window.DCCLoot.rollBox(tier);
-  if(window.DCCNarrator)window.DCCNarrator.appraiseAll(items); // fills .description
-  const box={
+  const box={ // SEALED — contents are rolled at openBox(), not now (keeps the reveal the moment)
     id:'box_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
     tier,source:source||('box:'+tier),
-    items,earnedAt:Date.now(),openedAt:null,
+    earnedAt:Date.now(),openedAt:null,
   };
   pendingBoxes.push(box);
   save('dr-pending-boxes',pendingBoxes);
@@ -4324,9 +4326,12 @@ function openBox(boxId){
   const idx=pendingBoxes.findIndex(b=>b.id===boxId);
   if(idx<0){console.warn('openBox: no pending box',boxId);return null;}
   const box=pendingBoxes[idx];
+  if(!window.DCCLoot){console.warn('openBox: loot engine not loaded');return null;}
+  const items=window.DCCLoot.rollBox(box.tier);          // roll AT open — the reveal is the roll
+  if(window.DCCNarrator)window.DCCNarrator.appraiseAll(items); // fill .description
   const deposited={coins:0,xp:0};
   const landed=[];
-  for(const it of box.items){
+  for(const it of items){
     if(it.type==='currency'){
       const p=it.payload||{};
       if(p.coins){awardPoints(p.coins,'Loot box ('+box.tier+')','loot');deposited.coins+=p.coins;}
@@ -4384,6 +4389,57 @@ function useInventoryItem(id){
 // Read helpers for the UX.
 function getInventory(){return inventory.filter(r=>!r.usedAt);}
 function getPendingBoxes(){return pendingBoxes.filter(b=>!b.openedAt);}
+
+/* ─── LOOT EARN HOOKS (build: loot wiring Piece 3) ─────────────────────────
+   Turns the engine on: floor clears + streak milestones hand you a SEALED box
+   (grantBox). Opening stays your choice (openBox → reveal). Idempotent via
+   lootClaims so a milestone/floor can't double-grant on re-render or re-sync. */
+
+// floor clear → mostly Common, small chance higher (spec §2 "or a roll for higher"). Tune freely.
+const FLOOR_BOX_ODDS=[['common',0.70],['uncommon',0.20],['rare',0.08],['epic',0.02]];
+// streak milestones → tier scales up (spec §2). Tune freely.
+const STREAK_MILESTONES=[{days:3,tier:'uncommon'},{days:7,tier:'rare'},{days:14,tier:'epic'},{days:30,tier:'legendary'}];
+
+function rollWeightedTier(odds){
+  let n=Math.random(),acc=0;
+  for(const [tier,p] of odds){acc+=p;if(n<=acc)return tier;}
+  return odds[odds.length-1][0];
+}
+
+// Floor cleared today? 100% completion, or a Recovery-Mode 3-task clear.
+function isFloorClearedToday(){
+  const idx=new Date().getDay();
+  if(dayPct(idx)===100)return true;
+  if(typeof isRecoveryMode==='function'&&isRecoveryMode()){
+    const done=Object.entries(state[todayStr()]||{}).filter(([k,v])=>v&&!k.endsWith('_ts')).length;
+    return done>=3;
+  }
+  return false;
+}
+
+// Grant any newly-earned boxes. Safe to call often — the guards prevent dupes.
+function checkLootEarnHooks(){
+  if(!window.DCCLoot)return; // loot engine not loaded yet
+  let changed=false;
+  // FLOOR CLEAR — once per calendar day
+  const day=todayStr();
+  if(isFloorClearedToday()&&!lootClaims.floors[day]){
+    lootClaims.floors[day]=true;
+    grantBox(rollWeightedTier(FLOOR_BOX_ODDS),'floor:'+day);
+    changed=true;
+  }
+  // STREAK MILESTONES — once per run; re-arms after the streak drops below the claimed mark
+  const streak=calcStreak();
+  if(streak<lootClaims.streakMilestone)lootClaims.streakMilestone=0;
+  let tier=null,days=0;
+  for(const m of STREAK_MILESTONES){if(streak>=m.days&&m.days>lootClaims.streakMilestone){tier=m.tier;days=m.days;}}
+  if(tier){
+    lootClaims.streakMilestone=days;
+    grantBox(tier,'streak:'+days);
+    changed=true;
+  }
+  if(changed)save('dr-loot-claims',lootClaims);
+}
 
 function getLevelInfo(xp){
   let current=XP_LEVELS[0];
@@ -6861,6 +6917,7 @@ async function init(){
   // Initial render with whatever local data exists, so the UI shows something
   // during the network round-trip to Supabase.
   renderToday();updateProjectDropdown();refreshWheel();renderTaskManager();
+  checkLootEarnHooks(); // app-open catch-up (idempotent); finer cross-device catch-up can hook the pull path later
 
   setInterval(renderFloorCountdown, 60000);
   // Poll Supabase periodically so two-devices-both-open stays in sync without
