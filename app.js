@@ -4295,6 +4295,39 @@ let inventory=load('dr-inventory',[]);
 let pendingBoxes=load('dr-pending-boxes',[]);
 let lootClaims=load('dr-loot-claims',{floors:{},streakMilestone:0}); // dedupe guard for earned boxes (Piece 3)
 
+/* ── Asset bridge for loot-ui.js ───────────────────────────────────────────
+   assets.js declares icons as top-level `const` (global-lexical scope: usable
+   as bare identifiers the way app.js does, but NOT properties of window).
+   loot-ui.js resolves assets via window[name], so mirror the loot set onto
+   window. typeof-guarded so a future renamed/removed asset degrades to
+   loot-ui's glyph fallback instead of throwing at boot. */
+(function(){
+  var w=window;
+  if(typeof ICON_CHEST!=='undefined')w.ICON_CHEST=ICON_CHEST;
+  if(typeof CHEST_CLOSED_PX!=='undefined')w.CHEST_CLOSED_PX=CHEST_CLOSED_PX;
+  if(typeof CHEST_OPEN_PX!=='undefined')w.CHEST_OPEN_PX=CHEST_OPEN_PX;
+  if(typeof ORB_GRAY!=='undefined')w.ORB_GRAY=ORB_GRAY;
+  if(typeof ICON_ORB_WHITE!=='undefined')w.ICON_ORB_WHITE=ICON_ORB_WHITE;
+  if(typeof ICON_ORB_GREEN!=='undefined')w.ICON_ORB_GREEN=ICON_ORB_GREEN;
+  if(typeof ICON_ORB_BLUE!=='undefined')w.ICON_ORB_BLUE=ICON_ORB_BLUE;
+  if(typeof ORB_PURPLE!=='undefined')w.ORB_PURPLE=ORB_PURPLE;
+  if(typeof ORB_YELLOW!=='undefined')w.ORB_YELLOW=ORB_YELLOW;
+  if(typeof ICON_COOKIE!=='undefined')w.ICON_COOKIE=ICON_COOKIE;
+  if(typeof ICON_FRIES!=='undefined')w.ICON_FRIES=ICON_FRIES;
+  if(typeof ICON_SANDWICH!=='undefined')w.ICON_SANDWICH=ICON_SANDWICH;
+  if(typeof ICON_DINNER_PLATE!=='undefined')w.ICON_DINNER_PLATE=ICON_DINNER_PLATE;
+  if(typeof ICON_PIZZA!=='undefined')w.ICON_PIZZA=ICON_PIZZA;
+  if(typeof ICON_SHIELD!=='undefined')w.ICON_SHIELD=ICON_SHIELD;
+  if(typeof ICON_FIRST_AID!=='undefined')w.ICON_FIRST_AID=ICON_FIRST_AID;
+  if(typeof ICON_POTION!=='undefined')w.ICON_POTION=ICON_POTION;
+  if(typeof ICON_FIRE!=='undefined')w.ICON_FIRE=ICON_FIRE;
+  if(typeof ICON_STAR!=='undefined')w.ICON_STAR=ICON_STAR;
+  if(typeof ICON_LOCK!=='undefined')w.ICON_LOCK=ICON_LOCK;
+  if(typeof ICON_CROWN!=='undefined')w.ICON_CROWN=ICON_CROWN;
+  if(typeof ICON_MONEY_BAG!=='undefined')w.ICON_MONEY_BAG=ICON_MONEY_BAG;
+  if(typeof ICON_PRINCESS_DONUT_PORTRAIT!=='undefined')w.ICON_PRINCESS_DONUT_PORTRAIT=ICON_PRINCESS_DONUT_PORTRAIT;
+})();
+
 /* ─── LOOT / INVENTORY API (build: loot wiring Piece 2) ────────────────────
    Logic only — no UX. The reveal moment + inventory grid (other chat) call
    into these. Defaults locked this build:
