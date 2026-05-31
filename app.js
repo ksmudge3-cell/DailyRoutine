@@ -4686,6 +4686,45 @@ function assignQuestReward(quest){
   return quest;
 }
 
+// Client-side quest generation — mirrors the Donut Anthropic call (same key,
+// same direct-browser fetch). The model only proposes structure; the result is
+// run through validateQuestProposal (untrusted-input guard) before use, and
+// rewards are assigned by assignQuestReward, never by the model.
+async function generateQuestProposal(goal){
+  if(!donutApiKey) return {ok:false,error:'no-key'};
+  const g=(goal||'').trim();
+  if(!g) return {ok:false,error:'no-goal'};
+  const inv=getTaskInventory();
+  const taskList=inv.map(t=>`${t.id} - ${t.label}`).join('\n')||'(none)';
+  const sys=`You are the System's quest-decomposition subroutine for Dungeon Crawler Chronicles, a gamified personal-productivity app. The crawler will give you a goal. Decompose it into a short, ordered quest of small, concrete, achievable steps.
+
+Rules:
+- Output ONLY valid JSON matching the schema. No prose, no markdown, no code fences.
+- 3-7 steps. Each step is ONE small, concrete action you could finish in a single sitting. Break overwhelming goals into gentle, non-intimidating pieces - never one giant step. Favor momentum: the first step should be easy.
+- Order steps so each builds on the last.
+- type: "oneoff" if achievable in a few days; "longhaul" if it spans weeks. Never "repeatable".
+- If a step matches an existing routine task in the inventory below, set taskRef to that task's id. Otherwise taskRef: null.
+- Do NOT include rewards, coins, points, tiers, ids, or status. Those are assigned by the app, not by you.
+- The name may be lightly in-world (the System issues "directives"); keep step labels plain and actionable.
+
+Schema:
+{ "name": string, "type": "oneoff"|"longhaul", "steps": [ { "label": string, "taskRef": string|null } ], "rationale": string }
+
+Existing routine tasks (id - label):
+${taskList}`;
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':donutApiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1024, system:sys, messages:[{role:'user',content:g}] })
+    });
+    const data=await resp.json();
+    const text=(data&&data.content&&data.content[0]&&data.content[0].text)?data.content[0].text.trim():'';
+    if(!text){ console.warn('Quest gen: no text returned', data); return {ok:false,error:'empty',detail:data&&data.error}; }
+    return validateQuestProposal(text, inv.map(t=>t.id)); // {ok:true,quest} or {ok:false,error}
+  }catch(e){ console.warn('Quest gen failed', e); return {ok:false,error:'network'}; }
+}
+
 // Starter quest set — block-based, so it works every day (Morning/Evening exist
 // on weekdays and weekends) and survives task edits. Idempotent: only adds a
 // quest whose id is missing, so it's safe to call on every open and across
