@@ -6064,9 +6064,13 @@ function submitDonutMsg(){
 }
 
 /* ── Render ── */
+let donutKeyEditMode=false; // lets the key panel show even when a key is already set (Change key flow)
+function editDonutKey(){ donutKeyEditMode=true; renderCoach(); }
+function cancelDonutKeyEdit(){ donutKeyEditMode=false; renderCoach(); }
+
 function renderCoach(){
   const wrap=document.getElementById('coach-content');if(!wrap)return;
-  if(!donutApiKey){wrap.innerHTML=renderDonutSetup();return;}
+  if(!donutApiKey||donutKeyEditMode){wrap.innerHTML=renderDonutSetup();return;}
   // Monday auto-generate
   if(new Date().getDay()===1&&donutWeeklySummary?.week_number!==getWeekNumber()&&!donutLoading)generateWeeklySummary();
   checkDonutBiscuitExpiry();
@@ -6087,6 +6091,7 @@ function renderCoach(){
       <button class="donut-view-btn${donutView==='report'?' active':''}" onclick="setDonutView('report')">REPORT</button>
       <button class="donut-view-btn${donutView==='donut'?' active':''}" onclick="setDonutView('donut')">DONUT</button>
       <button class="donut-view-btn${donutView==='therapist'?' active':''}" onclick="setDonutView('therapist')">THERAPIST</button>
+      <button class="donut-view-btn" onclick="editDonutKey()" title="Change API key" style="margin-left:auto;">🔑</button>
     </div>
     ${biscuitBanner}
     ${memoryWarning}
@@ -6196,12 +6201,14 @@ function copyTherapistSummary(){
 }
 
 function renderDonutSetup(){
+  const editing = donutKeyEditMode && donutApiKey;
   return`<div class="donut-setup">
     <img src="${ICON_PRINCESS_DONUT_PORTRAIT}" class="donut-portrait" alt="Princess Donut">
-    <div class="donut-setup-title">DONUT TAB SETUP</div>
-    <div class="donut-setup-desc">An Anthropic API key is required to activate Princess Donut. Your key is stored in your sync profile — never in the app source code.</div>
+    <div class="donut-setup-title">${editing?'CHANGE API KEY':'DONUT TAB SETUP'}</div>
+    <div class="donut-setup-desc">An Anthropic API key is required to activate Princess Donut. Your key is stored on this device only — never synced, never in the app source code.</div>
     <input type="password" id="donut-key-input" class="donut-key-input" placeholder="sk-ant-...">
-    <button class="donut-key-save-btn" onclick="saveDonutKey()">ACTIVATE</button>
+    <button class="donut-key-save-btn" onclick="saveDonutKey()">${editing?'SAVE NEW KEY':'ACTIVATE'}</button>
+    ${editing?`<button class="donut-key-save-btn" onclick="cancelDonutKeyEdit()" style="background:transparent;border:1px solid rgba(255,255,255,0.2);color:var(--hint,#888);margin-top:8px;">CANCEL</button>`:''}
   </div>`;
 }
 
@@ -6210,6 +6217,7 @@ function saveDonutKey(){
   if(!inp||!inp.value.trim())return;
   donutApiKey=inp.value.trim();
   saveLocal('dr-anthropic-key',donutApiKey);
+  donutKeyEditMode=false;
   renderCoach();
 }
 
