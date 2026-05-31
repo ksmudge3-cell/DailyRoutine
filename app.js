@@ -4621,6 +4621,39 @@ function isTaskDoneToday(taskId){
    normal routine advances quests with no extra ticking. Daily repeatables
    mirror today (advance + revert on uncheck); one-offs / long-hauls advance
    only (a finished step stays finished). No payout here — that's step 3. */
+// Starter quest set — block-based, so it works every day (Morning/Evening exist
+// on weekdays and weekends) and survives task edits. Idempotent: only adds a
+// quest whose id is missing, so it's safe to call on every open and across
+// devices. Coins tuned to ~20🪙 for a full day (8 / 7 / 5).
+function seedStarterQuests(){
+  if(!Array.isArray(quests))quests=[];
+  const defs=[
+    {id:'q-morning-crawl',name:'Morning Crawl',type:'repeatable',resetCadence:'daily',status:'active',
+     reward:{coins:8,boxTier:null},
+     steps:[{id:'mc1',label:'Clear your Morning block',blockRef:'Morning',done:false,doneAt:null}],createdAt:Date.now()},
+    {id:'q-decompress',name:'Decompress',type:'repeatable',resetCadence:'daily',status:'active',
+     reward:{coins:7,boxTier:null},
+     steps:[{id:'dc1',label:'Clear your Evening block',blockRef:'Evening',done:false,doneAt:null}],createdAt:Date.now()},
+    {id:'q-full-clear',name:'Full Clear',type:'repeatable',resetCadence:'daily',status:'active',
+     reward:{coins:5,boxTier:null},
+     steps:[{id:'fc1',label:'Clear the whole floor',dayRef:true,done:false,doneAt:null}],createdAt:Date.now()},
+  ];
+  let added=false;
+  for(const def of defs){ if(!quests.some(q=>q.id===def.id)){quests.push(def);added=true;} }
+  if(added)save('dr-quests',quests);
+}
+
+// A "block" quest step is done when every one of today's tasks in that schedule
+// section (e.g. 'Morning') is complete. Reads today's schedule so it adapts as
+// tasks are added/removed/renamed — the step tracks the block, not fixed ids.
+function isBlockDoneToday(sectionName, todayState){
+  todayState = todayState || state[dayKey(new Date().getDay())] || {};
+  const sched = getScheduleFor(new Date().getDay(), new Date());
+  const sec = sched.find(s=>s.section===sectionName);
+  if(!sec || !sec.tasks || !sec.tasks.length) return false; // block absent or empty today
+  return sec.tasks.every(t=>!!todayState[t.id]);
+}
+
 function syncQuestSteps(){
   if(!quests||!quests.length)return;
   const todayState=state[dayKey(new Date().getDay())]||{};
@@ -4629,12 +4662,20 @@ function syncQuestSteps(){
     if(q.status==='completed'&&q.type!=='repeatable')continue; // finished one-offs/long-hauls stay put
     const mirror=(q.type==='repeatable'&&q.resetCadence==='daily'); // dailies track today both ways
     for(const st of (q.steps||[])){
-      if(!st.taskRef)continue; // quest-only steps are ticked manually
-      const done=!!todayState[st.taskRef];
+      let done;
+      if(st.dayRef){
+        done=(typeof isFloorClearedToday==='function')&&isFloorClearedToday();  // whole-day: floor cleared
+      }else if(st.blockRef){
+        done=isBlockDoneToday(st.blockRef,todayState);                          // whole-block: all its tasks done
+      }else if(st.taskRef){
+        done=!!todayState[st.taskRef];                                          // single task
+      }else{
+        continue;                                                               // manual step — ticked directly
+      }
       if(mirror){
         if(st.done!==done){st.done=done;st.doneAt=done?Date.now():null;changed=true;}
       }else if(done&&!st.done){
-        st.done=true;st.doneAt=Date.now();changed=true; // advance only
+        st.done=true;st.doneAt=Date.now();changed=true;                         // advance only
       }
     }
   }
@@ -6242,22 +6283,19 @@ function maybeAwardTaskPoints(taskId,dayIdx,quality){
   if(!(state[k]&&state[k][taskId]))return;
   // Use quality-specific rates; default to green if quality not specified
   const q=quality||getQuality(dayIdx,taskId)||'green';
-  if(q==='red'||q==='gray')return; // no coins for skip/N/A
-  const m=(typeof surgeMultiplier==='function')?surgeMultiplier(dayIdx):1; // Sponsor Surge doubles this floor's rewards
-  const sfx=m>1?' (×'+m+' Surge)':'';
-  const coins=(QUALITY_PTS[q]||QUALITY_PTS.green)*m;
-  const xp=(QUALITY_XP[q]||QUALITY_XP.green)*m;
-  const qLabel={purple:'⚡ Legendary!',green:'Done',yellow:'Barely',gray:'N/A',red:'Skipped'}[q]||'Done';
-  awardPoints(coins,'Routine task — '+qLabel+sfx,taskId);
+  if(q==='red'||q==='gray')return; // nothing for skip/N/A
+  // ECONOMY: a single task gives XP only. Coins come from quests (which these
+  // tasks advance) and loot boxes. Surge now doubles QUEST payouts (see _payQuest),
+  // so it is no longer applied here.
+  const xp=(QUALITY_XP[q]||QUALITY_XP.green);
   awardXP(xp,'Routine task');
   const dateStr=k;
   if(!rewardsState.lastDayBonuses[dateStr]){
     const pct=dayPct(dayIdx);
     if(pct===100){
       rewardsState.lastDayBonuses[dateStr]=true;
-      // Floor-clear COIN bonus removed: clearing a floor now rewards a loot box
-      // (granted in checkLootEarnHooks), not loose coins. Coins come from quests + boxes only.
-      awardXP(XP_PTS.dayComplete*m,'Floor cleared!');
+      // Floor clear rewards a loot box (granted in checkLootEarnHooks) + this XP — no coins.
+      awardXP(XP_PTS.dayComplete,'Floor cleared!');
     }
   }
   checkStreakBonuses();
@@ -7205,6 +7243,7 @@ async function init(){
   migrateDogTasks();
   migrateGymIntoSchedule();
   migrateScheduleToRecurrence();
+  seedStarterQuests();            // ensure starter quests exist (idempotent; after schedule migrations)
   checkCommTowerReset();
   checkDonutChatReset();
   checkOneOffCleanup();
