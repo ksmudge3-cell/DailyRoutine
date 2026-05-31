@@ -57,12 +57,12 @@
      Buff `effect` keys are wired to real mechanics in a later step. */
   const POOL = [
     // —— BUFFS (the timing-decision items; the shields you liked) ——
-    { itemId: 'head_start',     name: 'Head Start',        type: 'buff', minRank: 0, weight: 3, effect: 'preclear_one_task',          tier: 'common' },
-    { itemId: 'debuff_shield',  name: 'Containment Field', type: 'buff', minRank: 1, weight: 3, effect: 'block_one_debuff',           tier: 'uncommon' },
-    { itemId: 'cleanse',        name: 'Decontamination',   type: 'buff', minRank: 1, weight: 3, effect: 'clear_one_active_debuff',    tier: 'uncommon' },
-    { itemId: 'streak_freeze',  name: 'Continuity Clause', type: 'buff', minRank: 1, weight: 2, effect: 'streak_freeze_one_day',      tier: 'rare' },
-    { itemId: 'surge',          name: 'Sponsor Surge',     type: 'buff', minRank: 2, weight: 2, effect: 'double_rewards_one_floor',   tier: 'rare' },
-    { itemId: 'recovery_token', name: 'Wellness Package',  type: 'buff', minRank: 2, weight: 2, effect: 'recovery_mode_voluntary',    tier: 'epic' },
+    { itemId: 'head_start',     name: 'Head Start',        type: 'buff', minRank: 0, weight: 3, effect: 'preclear_one_task',          activation: 'voluntary', tier: 'common' },
+    { itemId: 'debuff_shield',  name: 'Containment Field', type: 'buff', minRank: 1, weight: 3, effect: 'block_one_debuff',           activation: 'armed',     tier: 'uncommon' },
+    { itemId: 'cleanse',        name: 'Decontamination',   type: 'buff', minRank: 1, weight: 3, effect: 'clear_one_active_debuff',    activation: 'instant',   tier: 'uncommon' },
+    { itemId: 'streak_freeze',  name: 'Continuity Clause', type: 'buff', minRank: 1, weight: 2, effect: 'streak_freeze_one_day',      activation: 'auto',      tier: 'rare' },
+    { itemId: 'surge',          name: 'Sponsor Surge',     type: 'buff', minRank: 2, weight: 2, effect: 'double_rewards_one_floor',   activation: 'voluntary', tier: 'rare' },
+    { itemId: 'recovery_token', name: 'Wellness Package',  type: 'buff', minRank: 2, weight: 2, effect: 'recovery_mode_voluntary',    activation: 'voluntary', tier: 'epic' },
 
     // —— FOOD TREATS (the vending menu; go to inventory, used when ready) ——
     { itemId: 'food_cookie',    name: 'Cookie',     type: 'food', minRank: 0, weight: 4, vendKey: 'cookie',    tier: 'common' },
