@@ -6173,7 +6173,8 @@ function maybeAwardTaskPoints(taskId,dayIdx,quality){
     const pct=dayPct(dayIdx);
     if(pct===100){
       rewardsState.lastDayBonuses[dateStr]=true;
-      awardPoints(PTS.dayComplete*m,'Floor cleared!'+sfx,'day-complete');
+      // Floor-clear COIN bonus removed: clearing a floor now rewards a loot box
+      // (granted in checkLootEarnHooks), not loose coins. Coins come from quests + boxes only.
       awardXP(XP_PTS.dayComplete*m,'Floor cleared!');
     }
   }
