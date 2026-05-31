@@ -4621,6 +4621,71 @@ function isTaskDoneToday(taskId){
    normal routine advances quests with no extra ticking. Daily repeatables
    mirror today (advance + revert on uncheck); one-offs / long-hauls advance
    only (a finished step stays finished). No payout here — that's step 3. */
+// Full routine-task inventory (id + label) across BOTH weekday and weekend
+// schedules, deduped. Feeds the generator prompt ({{taskInventory}}) and the
+// validateQuestProposal taskRef check. Pulls from the base schedules (not a
+// single day) so weekend-only tasks like training are included.
+function getTaskInventory(){
+  const seen=new Set(), out=[];
+  for(const dayType of [schedule&&schedule.weekday, schedule&&schedule.weekend]){
+    for(const sec of (dayType||[])){
+      for(const t of (sec.tasks||[])){
+        if(t&&t.id&&!seen.has(t.id)){ seen.add(t.id); out.push({id:t.id, label:t.name||t.id}); }
+      }
+    }
+  }
+  return out;
+}
+
+/* ─── QUEST GENERATION GUARDS (AI proposes structure; the APP owns rewards) ──
+   validateQuestProposal: treat model output as untrusted — strip fences, parse,
+   check shape, clamp steps 1–8, and null out any taskRef not in the real task
+   inventory (kills hallucinated refs). assignQuestReward: rewards come from the
+   payout table BY TYPE, never from the model — the load-bearing economy rule. */
+function validateQuestProposal(raw, validTaskIds){
+  let txt = (typeof raw==='string') ? raw : JSON.stringify(raw||'');
+  txt = txt.replace(/```json/gi,'').replace(/```/g,'').trim();
+  const a=txt.indexOf('{'), b=txt.lastIndexOf('}');
+  if(a>=0&&b>a) txt=txt.slice(a,b+1);                 // isolate the JSON object if wrapped in prose
+  let obj; try{ obj=JSON.parse(txt); }catch(e){ return {ok:false,error:'parse'}; }
+  if(!obj||typeof obj!=='object') return {ok:false,error:'shape'};
+  const name=(typeof obj.name==='string')?obj.name.trim():'';
+  if(!name) return {ok:false,error:'name'};
+  if(obj.type!=='oneoff'&&obj.type!=='longhaul') return {ok:false,error:'type'};
+  if(!Array.isArray(obj.steps)) return {ok:false,error:'steps'};
+  const valid=new Set(validTaskIds||[]);
+  const steps=obj.steps
+    .filter(s=>s&&typeof s.label==='string'&&s.label.trim())
+    .slice(0,8)                                        // clamp to 1–8 steps
+    .map(s=>({
+      label:s.label.trim(),
+      taskRef:(typeof s.taskRef==='string'&&valid.has(s.taskRef))?s.taskRef:null, // hallucinated ids → null
+      done:false, doneAt:null
+    }));
+  if(!steps.length) return {ok:false,error:'steps'};
+  return {ok:true, quest:{ name, type:obj.type, steps,
+    rationale:(typeof obj.rationale==='string'?obj.rationale.trim():'') }};
+}
+
+function assignQuestReward(quest){
+  const n=quest.steps.length;
+  quest.progressMode='steps';
+  if(quest.type==='oneoff'){
+    quest.reward={ coins: Math.max(5,Math.min(12, n*2)),                 // 5–12🪙
+                   boxTier: n>=4?'uncommon': n>=2?'common': null };
+    quest.milestones=null;
+  }else{ // longhaul — coins are per-milestone, not on complete
+    quest.reward={ coins:0, boxTier:null };
+    const thresholds=[...new Set(
+      [Math.round(n*0.25),Math.round(n*0.5),Math.round(n*0.75),n].map(x=>Math.max(1,x))
+    )].sort((a,b)=>a-b);
+    quest.milestones=thresholds.map(at=>({ at,
+      coins: at>=n?40:20,                                                // tune vs payout table
+      boxTier: at>=n?'epic':null, claimed:false }));
+  }
+  return quest;
+}
+
 // Starter quest set — block-based, so it works every day (Morning/Evening exist
 // on weekdays and weekends) and survives task edits. Idempotent: only adds a
 // quest whose id is missing, so it's safe to call on every open and across
