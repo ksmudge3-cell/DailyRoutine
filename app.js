@@ -6649,6 +6649,7 @@ const ROOMS={
   profile:{name:'The War Room',    label:'WAR ROOM', door:()=>ENV_DOOR_TEAL_CROSS, header:'THE WAR ROOM',    color:'var(--teal)'},
   coach:  {name:"Donut's Chamber", label:'DONUT',    door:()=>ENV_DOOR_ROYAL,      header:"DONUT'S CHAMBER", color:'var(--purple)'},
   apothecary:{name:'The Apothecary',label:'APOTH',  door:()=>typeof ENV_DOOR_APOTHECARY!=='undefined'?ENV_DOOR_APOTHECARY:ENV_DOOR_TEAL_LOCKED, header:'THE APOTHECARY', color:'var(--green)'},
+  inventory:{name:'The Stash',      label:'STASH',  door:()=>typeof ENV_DOOR_PURPLE!=='undefined'?ENV_DOOR_PURPLE:ENV_DOOR_GOLD_CLOSED, header:'THE STASH', color:'var(--purple)'},
 };
 
 const ROOM_ADJ={
@@ -6657,10 +6658,11 @@ const ROOM_ADJ={
   spin:   ['today','gym'],
   gym:    ['today','spin','profile'],
   inbox:  ['profile'],
-  rewards:['profile'],
-  profile:['gym','rewards','inbox'],
+  rewards:['profile','inventory'],
+  profile:['gym','rewards','inbox','inventory'],
   coach:  ['dogs','today'],
   apothecary:['today'],
+  inventory:['rewards','profile'],
 };
 
 
@@ -6675,6 +6677,7 @@ const MAP_POS={
   rewards:{x:73, y:65},  // The Vault
   inbox:  {x:47, y:75},  // The Comm Tower
   apothecary:{x:17,y:15},// The Apothecary
+  inventory:{x:90,y:50}, // The Stash
 };
 
 const SEALED_ROOMS=[
@@ -6744,6 +6747,7 @@ function showRoom(name){
     else if(name==='coach')renderCoach();
     else if(name==='gym')renderGym();
     else if(name==='apothecary')renderApothecaryRoom();
+    else if(name==='inventory'){if(typeof renderInventory==='function')renderInventory();}
   },150);
 }
 
@@ -6847,6 +6851,8 @@ function renderMap(){
       attention=pixelIcon(ICON_SKULL,16);
     else if(id==='coach'&&donutWeeklySummary?.week_number===getWeekNumber())
       attention=pixelIcon(ICON_CROWN,16);
+    else if(id==='inventory'&&typeof getPendingBoxes==='function'&&getPendingBoxes().length>0)
+      attention=pixelIcon(ICON_CHEST,16);
     if(!attention)return'';
     return`<div class="map-attn-wrap map-attn-pulse" style="position:absolute;left:${p.x}%;top:${p.y}%;transform:translate(-50%,-170%);pointer-events:none;">${attention}</div>`;
   }).join('');
