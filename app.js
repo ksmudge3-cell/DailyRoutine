@@ -4818,6 +4818,10 @@ function renderQuestCard(q){
       <div class="quest-card-type">${_escHtml(q.type)}</div>
     </div>
     <div class="quest-card-reward">Reward: ${rewardStr}</div>
+    ${(q.type==='oneoff'||q.type==='longhaul')?`<div class="quest-card-cat">
+      <label class="quest-cat-label">WHEEL CATEGORY</label>
+      <select class="quest-cat-select" onchange="setQuestCategory('${q.id}',this.value)">${['','clean','admin','mental','bonus'].map(c=>`<option value="${c}"${(q.category||'')===c?' selected':''}>${c?c[0].toUpperCase()+c.slice(1):'None'}</option>`).join('')}</select>
+    </div>`:''}
     <div class="quest-progress"><img class="quest-progress-fill" src="${ICON_BAR_FILL_GOLD}" style="--fill:${pct}%;" alt=""></div>
     <div class="quest-progress-label">${doneN}/${total} steps${pct===100?' · COMPLETE':''}</div>
     ${stepsHtml}
@@ -4850,6 +4854,20 @@ function toggleQuestStep(questId,stepId){
   if(typeof checkQuestCompletion==='function')checkQuestCompletion(); // pay out if now complete
   renderQuestLog();
   if(typeof renderArenaQuests==='function')renderArenaQuests();
+}
+
+// Tag a quest with a wheel category (clean/admin/mental/bonus) or clear it (None).
+// Drives the cross-listing: a tagged quest shows as a project in BOTH the Quests
+// tab and its category's dropdown; untagged quests appear only under Quests.
+// Persisted to dr-quests (synced), so the tag follows across devices.
+function setQuestCategory(questId,cat){
+  const q=(Array.isArray(quests)?quests:[]).find(x=>x.id===questId); if(!q)return;
+  q.category=['clean','admin','mental','bonus'].includes(cat)?cat:null;
+  save('dr-quests',quests);
+  renderQuestLog();
+  if(typeof renderArenaQuests==='function')renderArenaQuests();
+  if(typeof updateProjectDropdown==='function')updateProjectDropdown();
+  if(typeof refreshWheel==='function')refreshWheel();
 }
 
 // Non-floor quests (oneoff/longhaul) also surface in The Arena. Both this and
