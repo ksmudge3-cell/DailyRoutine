@@ -4025,3 +4025,258 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 .stash-inplay-status { font-family: var(--font-hotdog); font-size: 6px; letter-spacing: 0.1em; color: var(--gold); }
 .stash-inplay-chip.banked .stash-inplay-status { color: var(--muted); }
 .stash-inplay-note { font-family: var(--font-system); font-size: 9.5px; color: var(--muted); letter-spacing: 0.02em; }
+
+/* ═══════════════════════════════════════════════════════════════
+   QUESTS — Archive log, shared quest card (Archive + Arena), and
+   the System's directive-intake overlay.
+   Voice: System = Share Tech Mono (terminal). Directive names = Cinzel.
+   Step body = Crimson Pro. Counts/numbers = Silkscreen.
+   amber = directive  ·  teal = accept/done  ·  red = error/discard
+   "Petition the System" lives at #archive-content; cards are room-agnostic.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── "Petition the System" button ──────────────────────────────── */
+.quest-new-btn {
+  width: 100%;
+  font-family: var(--font-game);
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--amber);
+  background: var(--amber-dim);
+  border: 0.75px solid rgba(212,154,0,0.45);
+  border-radius: var(--radius-sm);
+  padding: 13px; margin: 4px 0 8px;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.2s, transform 0.1s;
+}
+.quest-new-btn:hover { background: rgba(212,154,0,0.18); box-shadow: 0 0 14px rgba(212,154,0,0.18); }
+.quest-new-btn:active { transform: scale(0.985); }
+
+/* Archive headings amber (Arena's SIDE DIRECTIVES is fire — scoped below) */
+#archive-content .section-label { color: var(--amber); }
+
+/* Arena SIDE DIRECTIVES heading = fire, scoped to the arena quest container
+   (fails safe: if the container id differs, the heading just stays default) */
+#arena-quests .section-label { color: var(--neon-fire); text-shadow: 0 0 10px rgba(255,138,30,0.35); }
+
+/* ── quest card (shared: Archive + Arena) — Heavy gold-corner frame ─ */
+.quest-card {
+  position: relative;
+  background: var(--surface);
+  border: 0.75px solid rgba(212,154,0,0.3);
+  border-radius: var(--radius);
+  padding: 14px 14px 13px;
+  margin-bottom: 10px;
+}
+/* gold corner accents (Design System v2.1 Heavy) — no border-image */
+.quest-card::before, .quest-card::after {
+  content: ''; position: absolute; width: 14px; height: 14px; pointer-events: none;
+  border: 1.5px solid rgba(212,154,0,0.6);
+}
+.quest-card::before { top: 6px; left: 6px; border-right: none; border-bottom: none; }
+.quest-card::after  { bottom: 6px; right: 6px; border-left: none; border-top: none; }
+
+.quest-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.quest-card-title { font-family: var(--font-title); font-size: 16px; line-height: 1.2; color: var(--text); }
+.quest-card-type {
+  flex-shrink: 0;
+  font-family: var(--font-hotdog); font-size: 7px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--amber);
+  background: var(--amber-dim);
+  border: 0.5px solid rgba(212,154,0,0.35);
+  border-radius: 99px; padding: 4px 8px; margin-top: 2px; white-space: nowrap;
+}
+.quest-card-reward {
+  font-family: var(--font-game); font-size: 11px; letter-spacing: 0.02em;
+  color: var(--amber); margin-top: 8px;
+}
+
+/* ── progress bar: neon-tube IMG fill (mirrors .hero-bar-fill) ──── */
+.quest-progress {
+  position: relative; overflow: hidden; isolation: isolate;
+  height: 9px; margin-top: 11px;
+  background: var(--surface2);
+  border: 0.5px solid var(--border);
+  border-radius: 99px;
+}
+.quest-progress-fill {
+  position: absolute; top: 0; left: -12%;
+  width: 124%; height: 100%; object-fit: fill;
+  image-rendering: pixelated;
+  clip-path: inset(0 calc(100% - var(--fill, 0%)) 0 0);
+  transition: clip-path 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  mix-blend-mode: screen;
+}
+.quest-progress-label {
+  font-family: var(--font-game); font-size: 9px; letter-spacing: 0.04em;
+  color: var(--muted); margin-top: 6px;
+}
+
+/* ── steps ─────────────────────────────────────────────────────── */
+.quest-steps { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
+.quest-step {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 7px 2px;
+}
+.quest-step-box {
+  flex-shrink: 0; width: 19px; height: 19px; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-game); font-size: 13px; line-height: 1;
+  color: var(--hint);
+  border: 1.25px solid var(--border2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.1s;
+}
+/* manual steps are tappable + feel satisfying */
+.quest-step:not(.is-auto) { cursor: pointer; }
+.quest-step:not(.is-auto):hover .quest-step-box { border-color: var(--teal); color: var(--teal); }
+.quest-step:not(.is-auto):active .quest-step-box { transform: scale(0.88); }
+/* done state — teal fill + check */
+.quest-step.is-done .quest-step-box {
+  color: var(--bg);
+  background: var(--teal);
+  border-color: var(--teal);
+  box-shadow: 0 0 8px rgba(0,122,122,0.4);
+}
+.quest-step.is-done .quest-step-label { color: var(--muted); }
+/* auto steps — read-only, dimmed, not tappable */
+.quest-step.is-auto { opacity: 0.6; cursor: default; }
+.quest-step.is-auto .quest-step-box {
+  border-style: dashed; border-color: var(--hint); color: var(--hint);
+  background: transparent; box-shadow: none;
+}
+.quest-step-label {
+  font-family: var(--font-body); font-size: 14px; line-height: 1.35; color: var(--text);
+  padding-top: 1px;
+}
+.quest-step-note {
+  font-family: var(--font-system); font-size: 9px; letter-spacing: 0.03em;
+  color: var(--hint); margin-left: 4px;
+}
+
+/* ── COMPLETED rows ────────────────────────────────────────────── */
+.quest-done-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 12px; margin-bottom: 6px;
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-left: 2px solid rgba(0,122,122,0.5);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body); font-size: 13px; color: var(--muted);
+}
+.quest-done-row::before { content: '✓'; font-family: var(--font-game); font-size: 12px; color: var(--teal); }
+
+.quest-empty {
+  font-family: var(--font-system); font-size: 12px; color: var(--muted);
+  text-align: center; line-height: 1.7; padding: 30px 18px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DIRECTIVE-INTAKE OVERLAY (#quest-flow-overlay)
+   .qf-overlay owns the backdrop (positioning stays inline).
+   ═══════════════════════════════════════════════════════════════ */
+.qf-overlay {
+  background: rgba(6,6,9,0.82);
+  backdrop-filter: blur(6px);
+  padding: 20px;
+}
+.qf-card {
+  position: relative;
+  width: 100%; max-width: 460px; max-height: 86vh; overflow-y: auto;
+  background: var(--surface2);
+  border: 0.75px solid rgba(212,154,0,0.3);
+  border-radius: var(--radius);
+  padding: 20px 18px;
+  background-image: var(--scanline);
+  animation: qf-rise 0.22s cubic-bezier(0.2, 0, 0.2, 1);
+}
+.qf-card::before, .qf-card::after {
+  content: ''; position: absolute; width: 14px; height: 14px; pointer-events: none;
+  border: 1.5px solid rgba(212,154,0,0.6);
+}
+.qf-card::before { top: 7px; left: 7px; border-right: none; border-bottom: none; }
+.qf-card::after  { bottom: 7px; right: 7px; border-left: none; border-top: none; }
+@keyframes qf-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.qf-header {
+  font-family: var(--font-system); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--amber);
+  border-bottom: 0.5px solid rgba(212,154,0,0.25);
+  padding-bottom: 10px; margin-bottom: 14px;
+}
+.qf-prompt {
+  font-family: var(--font-system); font-size: 12px; line-height: 1.55;
+  color: var(--muted); margin-bottom: 12px;
+}
+
+.qf-input {
+  width: 100%; min-height: 96px; resize: vertical;
+  font-family: var(--font-body); font-size: 15px; line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+  border: 0.75px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  transition: border-color 0.15s, box-shadow 0.2s;
+}
+.qf-input:focus { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-dim); }
+.qf-input::placeholder { color: var(--hint); }
+
+/* loading — "the System is deliberating…" */
+.qf-loading {
+  font-family: var(--font-system); font-size: 12px; letter-spacing: 0.06em;
+  color: var(--amber); text-align: center; padding: 34px 16px;
+  animation: qf-pulse 1.4s ease-in-out infinite;
+}
+@keyframes qf-pulse { 0%,100% { opacity: 0.45; } 50% { opacity: 1; } }
+
+/* review state — the trust moment */
+.qf-quest-name { font-family: var(--font-title); font-size: 21px; line-height: 1.15; color: var(--text); margin-bottom: 4px; }
+.qf-quest-meta { font-family: var(--font-game); font-size: 11px; letter-spacing: 0.03em; color: var(--amber); margin-bottom: 12px; }
+.qf-rationale {
+  font-family: var(--font-system); font-size: 11.5px; line-height: 1.55;
+  color: #8fc9c1; white-space: pre-line;
+  background: rgba(0,0,0,0.3);
+  border-left: 2px solid rgba(46,242,224,0.4);
+  border-radius: 4px; padding: 10px 12px; margin-bottom: 14px;
+}
+.qf-steps { display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; counter-reset: qf-step; }
+.qf-step {
+  display: flex; gap: 10px; align-items: baseline;
+  font-family: var(--font-body); font-size: 14.5px; line-height: 1.4; color: var(--text);
+  padding: 4px 0;
+}
+.qf-step::before {
+  counter-increment: qf-step; content: counter(qf-step);
+  flex-shrink: 0; min-width: 18px;
+  font-family: var(--font-game); font-size: 12px; color: var(--amber); text-align: right;
+}
+
+.qf-error {
+  font-family: var(--font-system); font-size: 12.5px; line-height: 1.55;
+  color: var(--neon-red);
+  background: rgba(161,13,13,0.08);
+  border-left: 2px solid rgba(255,59,31,0.5);
+  border-radius: 4px; padding: 12px 13px; margin-bottom: 14px;
+}
+
+/* actions */
+.qf-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+.qf-btn-primary, .qf-btn-secondary {
+  flex: 1 1 auto; min-width: 96px;
+  font-family: var(--font-game); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  border-radius: var(--radius-sm); padding: 12px 14px; cursor: pointer;
+  transition: background 0.15s, box-shadow 0.2s, transform 0.1s, border-color 0.15s;
+}
+.qf-btn-primary { color: var(--bg); background: var(--teal); border: none; }
+.qf-btn-primary:hover { box-shadow: 0 0 16px rgba(0,122,122,0.45); }
+.qf-btn-primary:active { transform: scale(0.98); }
+.qf-btn-secondary { color: var(--muted); background: transparent; border: 0.75px solid var(--border2); }
+.qf-btn-secondary:hover { color: var(--text); border-color: var(--text); }
+.qf-btn-secondary:active { transform: scale(0.98); }
+
+@media (prefers-reduced-motion: reduce) {
+  .qf-card { animation: none; }
+  .qf-loading { animation: none; opacity: 1; }
+  .quest-progress-fill { transition: none; }
+}
