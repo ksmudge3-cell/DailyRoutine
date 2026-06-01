@@ -2959,8 +2959,29 @@ function getPriorityPool(){
   return out;
 }
 
+// Synthetic wheel "projects" built from active side quests (oneoff/longhaul).
+// Each project = one quest; its tasks = the quest's incomplete MANUAL steps.
+// Not persisted to `wheel`; rebuilt on demand so completed steps drop off and
+// the questId/stepId ride along so markSpinDone can route back to the quest.
+function getQuestWheelProjects(){
+  return (Array.isArray(quests)?quests:[])
+    .filter(q=>(q.type==='oneoff'||q.type==='longhaul')&&q.status!=='completed')
+    .map(q=>({
+      id:'quest:'+q.id, name:q.name,
+      tasks:(q.steps||[])
+        .filter(s=>!s.done&&!s.taskRef&&!s.blockRef&&!s.dayRef)
+        .map(s=>({id:'qstep:'+q.id+':'+s.id, name:s.label, dur:0, repeat:false, cooldown:0, questId:q.id, stepId:s.id}))
+    }))
+    .filter(p=>p.tasks.length);
+}
+
 function getAvailableTasks(){
   if(spinCat==='priority')return getPriorityPool().filter(t=>spinDuration===0||t.dur<=spinDuration);
+  if(spinCat==='directives'){
+    const projs=getQuestWheelProjects();
+    const tasks=spinProject==='all'?projs.flatMap(p=>p.tasks):(projs.find(p=>p.id===spinProject)?.tasks||[]);
+    return tasks.filter(t=>isAvailable(t)&&(spinDuration===0||t.dur<=spinDuration));
+  }
   const cat=wheel[spinCat];if(!cat)return[];
   let tasks;
   if(spinProject==='all')tasks=[...(cat.standalone||[]),...(cat.projects||[]).flatMap(p=>p.tasks||[])];
@@ -2981,6 +3002,14 @@ function setDuration(min,el){spinDuration=min;document.querySelectorAll('.dur-bt
 function updateProjectDropdown(){
   const sel=document.getElementById('spin-project-select');if(!sel)return;
   if(spinCat==='priority'){sel.innerHTML='<option value="all">All priority tasks</option>';sel.disabled=true;return;}
+  if(spinCat==='directives'){
+    const projs=getQuestWheelProjects();
+    if(!projs.length){sel.innerHTML='<option value="all">No active directives</option>';sel.disabled=true;return;}
+    sel.disabled=false;
+    sel.innerHTML='<option value="all">All side directives</option>';
+    projs.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;sel.appendChild(o);});
+    sel.value=spinProject; return;
+  }
   sel.disabled=false;
   const cat=wheel[spinCat]||{};
   sel.innerHTML='<option value="all">All tasks in category</option>';
@@ -3187,6 +3216,12 @@ function formatTime(s){return`${~~(s/60)}:${String(s%60).padStart(2,'0')}`;}
 
 function markSpinDone(){
   if(!currentSpinTask)return;
+  if(currentSpinTask.questId){ // quest step spun from the Directives category
+    if(typeof toggleQuestStep==='function')toggleQuestStep(currentSpinTask.questId,currentSpinTask.stepId);
+    awardXP(XP_PTS.spinTask,'Directive step cleared'); // XP only — the quest pays coins on completion
+    hideResult();refreshWheel();renderAvoidance();
+    return;
+  }
   if(currentSpinTask.cooldown!==0){wheelDone[currentSpinTask.id]=Date.now();}
   else{sessionDone.add(currentSpinTask.id);setTimeout(()=>{sessionDone.delete(currentSpinTask.id);renderTaskManager();},3000);}
   save('dr-wheel-done',wheelDone);
@@ -3449,7 +3484,7 @@ function togglePin(id){
 function renderTaskManager(){
   const list=document.getElementById('tm-list'),lbl=document.getElementById('tm-cat-label');
   if(!list)return;
-  const catNames={clean:'🧹 Clean',admin:'📋 Admin',mental:'🧠 Mental',bonus:'💪 Bonus',priority:'🔥 Priority'};
+  const catNames={clean:'🧹 Clean',admin:'📋 Admin',mental:'🧠 Mental',bonus:'💪 Bonus',priority:'🔥 Priority',directives:'⚔️ Directives'};
   if(lbl)lbl.textContent='Editing: '+catNames[spinCat];
   updateBulkImportTargets();
 
@@ -3462,6 +3497,11 @@ function renderTaskManager(){
           <div style="font-size:10px;color:var(--muted);">${(wheelSkips[t.id]||0)>=3?'⚠ '+wheelSkips[t.id]+'× skipped':wheelPinned[t.id]?'📌 pinned':''}</div>
         </div>`).join('')
       :'<div style="font-size:12px;color:var(--hint);text-align:center;padding:16px;">No priority tasks — skip things 3× or pin them to see them here.</div>'}`;
+    return;
+  }
+
+  if(spinCat==='directives'){
+    list.innerHTML='<div style="font-size:12px;color:var(--hint);text-align:center;padding:16px;line-height:1.7;">Side directives come from your active quests. Manage them in The Archive — they show up here automatically as spinnable projects.</div>';
     return;
   }
 
