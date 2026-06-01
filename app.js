@@ -2963,11 +2963,12 @@ function getPriorityPool(){
 // Each project = one quest; its tasks = the quest's incomplete MANUAL steps.
 // Not persisted to `wheel`; rebuilt on demand so completed steps drop off and
 // the questId/stepId ride along so markSpinDone can route back to the quest.
-function getQuestWheelProjects(){
+function getQuestWheelProjects(catFilter){
   return (Array.isArray(quests)?quests:[])
     .filter(q=>(q.type==='oneoff'||q.type==='longhaul')&&q.status!=='completed')
+    .filter(q=>!catFilter||q.category===catFilter)
     .map(q=>({
-      id:'quest:'+q.id, name:q.name,
+      id:'quest:'+q.id, name:q.name, category:q.category||null,
       tasks:(q.steps||[])
         .filter(s=>!s.done&&!s.taskRef&&!s.blockRef&&!s.dayRef)
         .map(s=>({id:'qstep:'+q.id+':'+s.id, name:s.label, dur:0, repeat:false, cooldown:0, questId:q.id, stepId:s.id}))
@@ -2977,14 +2978,15 @@ function getQuestWheelProjects(){
 
 function getAvailableTasks(){
   if(spinCat==='priority')return getPriorityPool().filter(t=>spinDuration===0||t.dur<=spinDuration);
-  if(spinCat==='directives'){
+  if(spinCat==='quests'){
     const projs=getQuestWheelProjects();
     const tasks=spinProject==='all'?projs.flatMap(p=>p.tasks):(projs.find(p=>p.id===spinProject)?.tasks||[]);
     return tasks.filter(t=>isAvailable(t)&&(spinDuration===0||t.dur<=spinDuration));
   }
   const cat=wheel[spinCat];if(!cat)return[];
   let tasks;
-  if(spinProject==='all')tasks=[...(cat.standalone||[]),...(cat.projects||[]).flatMap(p=>p.tasks||[])];
+  if(spinProject&&spinProject.indexOf('quest:')===0)tasks=getQuestWheelProjects().find(p=>p.id===spinProject)?.tasks||[];
+  else if(spinProject==='all')tasks=[...(cat.standalone||[]),...(cat.projects||[]).flatMap(p=>p.tasks||[]),...getQuestWheelProjects(spinCat).flatMap(p=>p.tasks)];
   else if(spinProject==='standalone')tasks=cat.standalone||[];
   else tasks=(cat.projects||[]).find(p=>p.id===spinProject)?.tasks||[];
   return tasks.filter(t=>isAvailable(t)&&(spinDuration===0||t.dur<=spinDuration));
@@ -3002,11 +3004,11 @@ function setDuration(min,el){spinDuration=min;document.querySelectorAll('.dur-bt
 function updateProjectDropdown(){
   const sel=document.getElementById('spin-project-select');if(!sel)return;
   if(spinCat==='priority'){sel.innerHTML='<option value="all">All priority tasks</option>';sel.disabled=true;return;}
-  if(spinCat==='directives'){
+  if(spinCat==='quests'){
     const projs=getQuestWheelProjects();
-    if(!projs.length){sel.innerHTML='<option value="all">No active directives</option>';sel.disabled=true;return;}
+    if(!projs.length){sel.innerHTML='<option value="all">No active quests</option>';sel.disabled=true;return;}
     sel.disabled=false;
-    sel.innerHTML='<option value="all">All side directives</option>';
+    sel.innerHTML='<option value="all">All quests</option>';
     projs.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;sel.appendChild(o);});
     sel.value=spinProject; return;
   }
@@ -3014,6 +3016,7 @@ function updateProjectDropdown(){
   const cat=wheel[spinCat]||{};
   sel.innerHTML='<option value="all">All tasks in category</option>';
   (cat.projects||[]).forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;sel.appendChild(o);});
+  getQuestWheelProjects(spinCat).forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent='⚔ '+p.name;sel.appendChild(o);});
   const st=document.createElement('option');st.value='standalone';st.textContent='Standalone tasks only';sel.appendChild(st);
   sel.value=spinProject;
 }
@@ -3484,7 +3487,7 @@ function togglePin(id){
 function renderTaskManager(){
   const list=document.getElementById('tm-list'),lbl=document.getElementById('tm-cat-label');
   if(!list)return;
-  const catNames={clean:'🧹 Clean',admin:'📋 Admin',mental:'🧠 Mental',bonus:'💪 Bonus',priority:'🔥 Priority',directives:'⚔️ Directives'};
+  const catNames={clean:'🧹 Clean',admin:'📋 Admin',mental:'🧠 Mental',bonus:'💪 Bonus',priority:'🔥 Priority',quests:'⚔️ Quests'};
   if(lbl)lbl.textContent='Editing: '+catNames[spinCat];
   updateBulkImportTargets();
 
@@ -3500,8 +3503,8 @@ function renderTaskManager(){
     return;
   }
 
-  if(spinCat==='directives'){
-    list.innerHTML='<div style="font-size:12px;color:var(--hint);text-align:center;padding:16px;line-height:1.7;">Side directives come from your active quests. Manage them in The Archive — they show up here automatically as spinnable projects.</div>';
+  if(spinCat==='quests'){
+    list.innerHTML='<div style="font-size:12px;color:var(--hint);text-align:center;padding:16px;line-height:1.7;">Quests are managed in The Archive. They show up here automatically as spinnable projects — and a quest tagged with a category (e.g. Clean) also appears in that category\'s list.</div>';
     return;
   }
 
@@ -4703,7 +4706,8 @@ function validateQuestProposal(raw, validTaskIds){
       done:false, doneAt:null
     }));
   if(!steps.length) return {ok:false,error:'steps'};
-  return {ok:true, quest:{ name, type:obj.type, steps,
+  const category=['clean','admin','mental','bonus'].includes(obj.category)?obj.category:null;
+  return {ok:true, quest:{ name, type:obj.type, steps, category,
     rationale:(typeof obj.rationale==='string'?obj.rationale.trim():'') }};
 }
 
@@ -4744,11 +4748,12 @@ Rules:
 - Order steps so each builds on the last.
 - type: "oneoff" if achievable in a few days; "longhaul" if it spans weeks. Never "repeatable".
 - If a step matches an existing routine task in the inventory below, set taskRef to that task's id. Otherwise taskRef: null.
+- category: classify the quest as one of "clean", "admin", "mental", or "bonus" — whichever best fits the goal's domain (chores/tidying→clean, errands/logistics/paperwork→admin, wellbeing/rest/connection→mental, fitness/health→bonus). If none fit, use null. This is a classification, NOT a number — you may set it.
 - Do NOT include rewards, coins, points, tiers, ids, or status. Those are assigned by the app, not by you.
 - The name may be lightly in-world (the System issues "directives"); keep step labels plain and actionable.
 
 Schema:
-{ "name": string, "type": "oneoff"|"longhaul", "steps": [ { "label": string, "taskRef": string|null } ], "rationale": string }
+{ "name": string, "type": "oneoff"|"longhaul", "category": "clean"|"admin"|"mental"|"bonus"|null, "steps": [ { "label": string, "taskRef": string|null } ], "rationale": string }
 
 Existing routine tasks (id - label):
 ${taskList}`;
@@ -4895,7 +4900,7 @@ function renderQuestFlow(){
     const q=f.proposal;
     const steps=q.steps.map((s,i)=>`<div class="qf-step">${i+1}. ${_escHtml(s.label)}${s.taskRef?' — routine: '+_escHtml(s.taskRef):''}</div>`).join('');
     inner=wrap(hdr+`<div class="qf-quest-name">${_escHtml(q.name)}</div>
-      <div class="qf-quest-meta">${_escHtml(q.type)} · ${q.steps.length} steps</div>
+      <div class="qf-quest-meta">${_escHtml(q.type)} · ${q.steps.length} steps${q.category?' · '+_escHtml(q.category):''}</div>
       ${q.rationale?`<div class="qf-rationale">${_escHtml(q.rationale)}</div>`:''}
       <div class="qf-steps">${steps}</div>
       <div class="qf-actions">
