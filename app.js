@@ -2996,7 +2996,7 @@ function setSpinCat(cat,el){
   spinCat=cat;spinProject='all';
   document.querySelectorAll('#spin-cat-tabs .stab').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
-  updateProjectDropdown();refreshWheel();renderTaskManager();
+  updateProjectDropdown();refreshWheel();renderTaskManager();renderArenaQuests();
 }
 function setSpinProject(val){spinProject=val;refreshWheel();}
 function setDuration(min,el){spinDuration=min;document.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');refreshWheel();}
@@ -4876,7 +4876,10 @@ function setQuestCategory(questId,cat){
 // removed, so re-rendering both keeps the two DOMs in sync).
 function renderArenaQuests(){
   const wrap=document.getElementById('arena-quests'); if(!wrap)return;
-  const list=(Array.isArray(quests)?quests:[]).filter(q=>(q.type==='oneoff'||q.type==='longhaul')&&q.status!=='completed');
+  let list=(Array.isArray(quests)?quests:[]).filter(q=>(q.type==='oneoff'||q.type==='longhaul')&&q.status!=='completed');
+  // Follow the wheel's category tab: clean/admin/mental/bonus show only that
+  // category's quests; the Quests tab (and Priority) show all side directives.
+  if(['clean','admin','mental','bonus'].includes(spinCat)) list=list.filter(q=>q.category===spinCat);
   if(!list.length){ wrap.innerHTML=''; return; }
   wrap.innerHTML='<div class="section-label">SIDE DIRECTIVES</div>'+list.map(renderQuestCard).join('');
 }
