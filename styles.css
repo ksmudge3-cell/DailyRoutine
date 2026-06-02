@@ -4294,14 +4294,14 @@ select {
   /* custom amber caret replaces the native arrow */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.5l4 4 4-4' fill='none' stroke='%23D49A00' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 11px;
+  background-position: right 11px center;
+  background-size: 10px;
   color: var(--text);
   font-family: var(--mono);
-  font-size: 13px; letter-spacing: 0.01em;
+  font-size: 12px; letter-spacing: 0.01em;
   border: 0.75px solid rgba(212,154,0,0.18);   /* medium gold frame */
   border-radius: 6px;
-  padding: 10px 34px 10px 13px;                 /* right pad clears the caret */
+  padding: 7px 30px 7px 11px;                   /* right pad clears the caret */
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.2s, background-color 0.15s;
 }
@@ -4323,4 +4323,4 @@ select option { background: var(--surface2); color: var(--text); }
 select option:disabled { color: var(--hint); }
 
 /* the wheel control is prominent — a hair more breathing room */
-#spin-project-select { padding: 11px 34px 11px 13px; }
+#spin-project-select { padding: 8px 30px 8px 11px; }
