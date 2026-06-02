@@ -4282,42 +4282,45 @@ body.map-active                    { padding-bottom: 0; overflow-x: hidden; widt
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   WHEEL category dropdown — #spin-project-select
-   id-scoped on purpose: .cat-select is shared with #bulk-import-target,
-   so wheel-only polish lives here. Inline width:100%; margin-bottom:8px
-   stays for layout. The closed control is fully ours; the open native
-   option list can't be themed cross-browser.
+   THEMED DROPDOWNS — applied to every <select> so all category
+   pickers match (the wheel select, bulk-import, and the JS-generated
+   WHEEL CATEGORY select inside quest cards, whose id we don't own).
+   The closed control is fully ours; the open native option list can't
+   be themed cross-browser.
    ═══════════════════════════════════════════════════════════════ */
-#spin-project-select {
+select {
   -webkit-appearance: none; -moz-appearance: none; appearance: none;
   background-color: var(--surface2);
-  /* custom amber caret (kills the default browser arrow) */
+  /* custom amber caret replaces the native arrow */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.5l4 4 4-4' fill='none' stroke='%23D49A00' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 13px center;
+  background-position: right 12px center;
   background-size: 11px;
   color: var(--text);
   font-family: var(--mono);
   font-size: 13px; letter-spacing: 0.01em;
-  border: 0.75px solid rgba(212,154,0,0.15);   /* medium gold frame */
+  border: 0.75px solid rgba(212,154,0,0.18);   /* medium gold frame */
   border-radius: 6px;
-  padding: 11px 34px 11px 13px;                /* right pad clears the caret */
+  padding: 10px 34px 10px 13px;                 /* right pad clears the caret */
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.2s, background-color 0.15s;
 }
-#spin-project-select:hover { border-color: rgba(212,154,0,0.4); }
-#spin-project-select:focus {
+select:hover { border-color: rgba(212,154,0,0.42); }
+select:focus {
   outline: none;
   border-color: var(--amber);
   box-shadow: 0 0 0 3px var(--amber-dim), 0 0 14px rgba(212,154,0,0.18);
 }
-#spin-project-select:disabled {
+select:disabled {
   color: var(--hint);
   background-color: var(--surface);
   border-color: var(--border);
   cursor: not-allowed;
   opacity: 0.7;
 }
-/* honored by some browsers; harmless where the native list ignores it */
-#spin-project-select option { background: var(--surface2); color: var(--text); }
-#spin-project-select option:disabled { color: var(--hint); }
+/* honored where browsers allow it; native list ignores it elsewhere */
+select option { background: var(--surface2); color: var(--text); }
+select option:disabled { color: var(--hint); }
+
+/* the wheel control is prominent — a hair more breathing room */
+#spin-project-select { padding: 11px 34px 11px 13px; }
