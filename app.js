@@ -489,22 +489,28 @@ async function pullFromSupabase(opts){
 
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible')pullFromSupabase({rerender:true});
+  else flushSyncOnExit(); // backgrounding — iOS PWAs fire this, not beforeunload
 });
 
-// Force a sync on page close/refresh — fetch with keepalive survives unload
-window.addEventListener('beforeunload',()=>{
-  if(syncTimer){
-    clearTimeout(syncTimer);syncTimer=null;
-    try{
-      fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,activeEffects,quests,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutRollingMemory,donutPermanentMemory,donutYesterdayChat,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
-        keepalive:true
-      });
-    }catch(e){}
-  }
-});
+// Force any pending debounced sync out before the page goes away. iOS standalone
+// PWAs do NOT reliably fire beforeunload — they fire pagehide / visibilitychange:hidden
+// instead — so we bind to all three. fetch keepalive survives unload. The syncTimer
+// guard makes repeated hidden/pagehide events a no-op once flushed (no double writes),
+// and this also tightens general cross-device sync independent of notifications.
+function flushSyncOnExit(){
+  if(!syncTimer)return;
+  clearTimeout(syncTimer);syncTimer=null;
+  try{
+    fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,activeEffects,quests,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutRollingMemory,donutPermanentMemory,donutYesterdayChat,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
+      keepalive:true
+    });
+  }catch(e){}
+}
+window.addEventListener('pagehide',flushSyncOnExit);
+window.addEventListener('beforeunload',flushSyncOnExit);
 
 /* ─── STATE ─────────────────────────────────────────────────────────────── */
 let state=load('dr-state',{});
