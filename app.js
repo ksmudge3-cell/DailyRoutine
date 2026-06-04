@@ -6398,13 +6398,13 @@ async function sendDonutMessage(message){
 }
 
 async function generateDailyOpener(){
-  if(!ANTHROPIC_API_KEY) return;
+  if(!donutApiKey) return;
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
+        'x-api-key': donutApiKey,,
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },
