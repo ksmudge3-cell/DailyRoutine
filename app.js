@@ -253,6 +253,35 @@ const SYNC_ID='main';
 function loadLocal(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function saveLocal(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 
+// Compact day snapshot for state-aware push check-ins. Built client-side from the
+// app's OWN derived functions (single source of truth) so the push text can never
+// drift from what the app shows. Written to its own Supabase row (id='checkInSummary')
+// — never the main blob — so the exit-flush can't clobber it. The push engine reads
+// it and falls back to a generic line if it's stale. Tiny, no PII. Never throws.
+function summarizeStateForCheckIn(){
+  try{
+    const now=new Date();
+    const k=todayKey();
+    const tasks=getScheduleFor(now.getDay(),now).reduce((a,s)=>a.concat(s.tasks),[]);
+    const ds=state[k]||{}, dq=qualityState[k]||{};
+    const total=tasks.filter(t=>dq[t.id]!=='gray').length;
+    const done=tasks.filter(t=>ds[t.id]&&dq[t.id]!=='gray').length;
+    const debuffs=(typeof getActiveBuffs==='function'?getActiveBuffs():[])
+      .filter(b=>b&&b.type==='debuff').map(b=>b.label);
+    const dog=dogState[todayStr()]||{};
+    const collapse=(collapseState&&collapseState.active&&collapseState.active.applyDate===todayStr())
+      ? collapseState.active.type : null;
+    return {
+      updatedAt:new Date().toISOString(),
+      streak:(typeof calcStreak==='function'?calcStreak():0),
+      done, total,
+      debuffs,
+      fedAM:!!dog['dogs-feed-am'], fedPM:!!dog['dogs-feed-pm'],
+      collapse
+    };
+  }catch(e){return null;}
+}
+
 async function syncToSupabase(){
   try{
     // Never let a device with fewer permanent memory entries overwrite one with more.
@@ -287,6 +316,18 @@ async function syncToSupabase(){
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
       body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,activeEffects,quests,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutRollingMemory:safeRolling,donutPermanentMemory:safePermanent,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()})
     });
+    // Side row: compact day snapshot for state-aware push check-ins. Its own row
+    // (id='checkInSummary') so the main-blob enumeration / exit-flush can't wipe it.
+    try{
+      const sum=summarizeStateForCheckIn();
+      if(sum){
+        await fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
+          body:JSON.stringify({id:'checkInSummary',data:sum,updated_at:new Date().toISOString()})
+        });
+      }
+    }catch(e){}
   }catch(e){console.warn('Sync failed',e);}
 }
 
