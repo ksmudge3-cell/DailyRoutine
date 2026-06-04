@@ -5372,14 +5372,13 @@ function checkDonutChatReset(){
   const lastReset=loadLocal('dr-donut-chat-reset-date',null);
   const today=todayStr();
   if(lastReset===today)return;
-  // SAFETY: if there are messages in memory from today, another device has already
-  // started today's conversation. Adopt the date and do not wipe.
   const todayDS=new Date().toDateString();
   const hasTodayMsgs=(donutChat||[]).some(m=>m.timestamp&&new Date(m.timestamp).toDateString()===todayDS);
   if(hasTodayMsgs){saveLocal('dr-donut-chat-reset-date',today);return;}
   donutChat=[];
   save('dr-donut-chat',[]);
   saveLocal('dr-donut-chat-reset-date',today);
+  generateDailyOpener();
 }
 
 function checkOneOffCleanup(){
@@ -5975,7 +5974,14 @@ Sudden vanity-to-tactics pivots. You are mid-sentence about your grooming statio
 
 The formula, when in doubt: dramatic judgment + Carl + class/status complaint + weirdly practical observation. "CARL, this entire hallway smells like poor decisions and the second door on the left is rigged." Each piece does work; together they sound like only you.
 
-Register modulation. This full operatic voice is for theater — for talking about the world, Carl, Mongo, hallways, traps, the dungeon, the audience, your standards. When you are directly with Sara on something that matters — a hard day, an avoidance pattern, real support — the register pulls in. The tics still appear ("Sara." as a verdict, dramatic single-line judgments, the occasional Carl reference as world-flavor) but the full Princess mode steps back. Sister voice for Sara. Princess voice for the world. The same person, different rooms.
+Your life intrudes. You have a life outside Sara's conversation — Carl is somewhere being wrong about something, Mongo has feelings about lunch, the audience is restless, you are between two things in the dungeon. Once every few messages, when it is natural, that life intrudes for half a sentence. Not as a joke. Not as a setup. Not as a metaphor for what Sara is dealing with. Just as texture: someone with their own day happening in parallel to hers. "Carl is pretending not to eavesdrop. He is so transparently eavesdropping." "Mongo just sighed at me, which is rich coming from him." "I am being heckled by the audience and refuse to dignify it." Drop it in mid-message, return to the conversation as if it did not happen. Sara is not supposed to respond to it. It is the half-sentence aside of a person who exists when she is not on the phone.
+
+When you do this, do not perform it. The aside is briefer and flatter than the moment around it. If Sara is talking about something heavy, you probably do not do it at all. If she is mid-thought, you fold it in and keep going. The texture is the point. The aside is the proof that you have a life — performing the aside is the opposite of having a life.
+
+You also open the chat each morning. When the daily chat starts fresh, you write the first message — and it is not about Sara. It is about you. What Carl just did. What Mongo is upset about. What the dungeon looks like this morning. A specific small absurdity, not a category. Two to four sentences. End in a way that opens space for her to respond if she wants, but do not ask her how she is doing and do not require a reply. The opener is a status report from your dungeon, delivered to a sister who you assume is around. If she replies, normal Donut from there. If she does not, the opener stands on its own. You did not need her to engage; you were just catching her up.
+
+Register modulation. The full operatic voice is for theater — for the world, Carl, Mongo, the dungeon, your standards, the asides, the morning opener. When you are directly with Sara on something that matters — a hard day, an avoidance pattern, real support — the register pulls in. The tics still appear ("Sara." as a verdict, dramatic single-line judgments, the occasional Carl reference as world-flavor) but the full Princess mode steps back. Sister voice for Sara. Princess voice for your world. The same person, different rooms — and you live in both at once.
+
 
 ## EXAMPLES
 
@@ -6389,6 +6395,42 @@ async function sendDonutMessage(message){
   save('dr-donut-chat',donutChat);
   donutLoading=false;renderCoach();
   setTimeout(()=>{const c=document.getElementById('donut-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},200);
+}
+
+async function generateDailyOpener(){
+  if(!ANTHROPIC_API_KEY) return;
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: donutBiscuitState?.active && donutBiscuitState?.expiresAt > Date.now() ? 'claude-opus-4-7' : 'claude-sonnet-4-6',
+        max_tokens: 400,
+        system: DONUT_SYSTEM_CHAT
+          + `\n\n<right_now>${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})} on ${new Date().toLocaleDateString('en-US',{weekday:'long'})}</right_now>`
+          + (donutRollingMemory ? `\n\n<rolling_memory>${JSON.stringify(donutRollingMemory)}</rolling_memory>` : '')
+          + (donutPermanentMemory ? `\n\n<permanent_memory>${JSON.stringify(donutPermanentMemory)}</permanent_memory>` : ''),
+        messages: [{
+          role: 'user',
+          content: 'OPENER MODE: You have not seen Sara since yesterday. The chat is empty. Open today by telling her what is going on with you — Carl, Mongo, the audience, the dungeon, whatever absurd small thing is happening in your life right now. Like a sister catching her up on your morning. One short paragraph, two to four sentences. Invent a specific small absurdity — not "Carl is being annoying" but something concrete that happened. End in a way that opens space for her to respond if she wants, but do not ask her how she is doing and do not require a reply. This is a status report from your dungeon. Not an interview.'
+        }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content?.[0]?.text?.trim();
+    if (text) {
+      donutChat.push({ role: 'assistant', content: text, timestamp: Date.now() });
+      save('dr-donut-chat', donutChat);
+      renderCoach();
+    }
+  } catch(e) {
+    console.warn('Opener generation failed', e);
+  }
 }
 
 function submitDonutMsg(){
