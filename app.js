@@ -579,6 +579,10 @@ let editCtx=null; // {type:'weekday'|'weekend', sectionIdx, taskIdx}
 /* ─── HELPERS ───────────────────────────────────────────────────────────── */
 function dayKey(idx){const t=new Date(),d=new Date(t);d.setDate(t.getDate()+(idx-t.getDay()));return`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}
 function todayStr(){return _localDateStr();}
+// Today as a STATE KEY. state/qualityState are keyed by _dateKey (zero-indexed,
+// unpadded month, e.g. 2026-5-4) — NOT _localDateStr/todayStr (padded ISO,
+// e.g. 2026-06-04). Indexing state with todayStr() silently misses every time.
+function todayKey(){return _dateKey(new Date());}
 function isWeekend(idx){return idx===0||idx===6;}
 function isSunday(idx){
   // Map idx to actual date day
@@ -3824,9 +3828,9 @@ function executeCommAction(id){
     case 'snooze_task':{
       const p=action.params||{};
       // Mark today's task as N/A, it'll reappear tomorrow naturally
-      const tq=qualityState[todayStr()]||{};
+      const tq=qualityState[todayKey()]||{};
       if(p.task_id)tq[p.task_id]='gray';
-      qualityState[todayStr()]=tq;
+      qualityState[todayKey()]=tq;
       save('dr-quality',qualityState);
       resultMsg=`LOG ENTRY: Task snoozed — "${p.name||p.task_id}". Marked N/A today. Reappears tomorrow.`;
       break;
@@ -4526,7 +4530,7 @@ function isFloorClearedToday(){
   const idx=new Date().getDay();
   if(dayPct(idx)===100)return true;
   if(typeof isRecoveryMode==='function'&&isRecoveryMode()){
-    const done=Object.entries(state[todayStr()]||{}).filter(([k,v])=>v&&!k.endsWith('_ts')).length;
+    const done=Object.entries(state[todayKey()]||{}).filter(([k,v])=>v&&!k.endsWith('_ts')).length;
     return done>=3;
   }
   return false;
@@ -5184,7 +5188,7 @@ function getActiveBuffs(){
   // FLOOR COLLAPSE debuff carry-forward
   const _c=collapseState.active;
   if(_c&&_c.applyDate===todayStr()){
-    const _done=Object.entries(state[todayStr()]||{}).filter(([k,v])=>v&&!k.endsWith('_ts')).length;
+    const _done=Object.entries(state[todayKey()]||{}).filter(([k,v])=>v&&!k.endsWith('_ts')).length;
     const _cleared=(_c.type==='structural'&&_done>=1)||(_c.type==='heavy'&&_done>=3);
     if(!_cleared)setSlot('collapse',{id:_c.type+'-collapse',label:_c.label,type:'debuff'});
   }
@@ -5590,7 +5594,7 @@ function renderCollapseEvent(){
   if(!active){el.innerHTML='';return;}
   const c=collapseState.active;
   if(!c||c.applyDate!==todayStr()){el.innerHTML='';return;}
-  const done=Object.entries(state[todayStr()]||{}).filter(([k,v])=>v&&!k.endsWith('_ts')).length;
+  const done=Object.entries(state[todayKey()]||{}).filter(([k,v])=>v&&!k.endsWith('_ts')).length;
   const cleared=(c.type==='structural'&&done>=1)||(c.type==='heavy'&&done>=3);
   if(cleared){delete collapseState.active;save('dr-collapse',collapseState);el.innerHTML='';return;}
   const donutLines={
