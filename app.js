@@ -562,6 +562,7 @@ let donutWeeklySummary=load('dr-donut-summary',null);
 let donutTherapistSummary=load('dr-donut-therapist',null);
 let donutApiKey=loadLocal('dr-anthropic-key',null);
 let donutRollingMemory=load('dr-donut-rolling',[]);
+let donutPermanentMemory=load('dr-donut-permanent',[]);
 let donutCalendar=load('dr-donut-calendar',[]);
 let donutYesterdayChat=load('dr-donut-yesterday-chat',[]);
 let donutBiscuitState=load('dr-donut-biscuit',{active:false,expiresAt:null});
