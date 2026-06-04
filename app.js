@@ -862,6 +862,7 @@ function toggleTask(dayIdx,taskId){
   save('dr-state',state);
   maybeAwardTaskPoints(taskId,dayIdx);
   checkLootEarnHooks();
+  reconcileCollapse();
   renderToday();
 }
 
@@ -1426,6 +1427,7 @@ function cycleQuality(dayIdx, taskId){
   }
 
   save('dr-quality',qualityState);
+  reconcileCollapse();
 
   // Surgical orb update — no full re-render, no scroll jump
   const orbTap=document.querySelector(`.q-orb-tap[data-taskid="${taskId}"]`);
@@ -1486,6 +1488,7 @@ function setQuality(dayIdx, taskId, level){
   if(qualityState[k][taskId]===level) delete qualityState[k][taskId];
   else qualityState[k][taskId]=level;
   save('dr-quality',qualityState);
+  reconcileCollapse();
   window._skipGreeting=true;
   const _scroll=document.documentElement.scrollTop||document.body.scrollTop;
   renderToday();
@@ -5424,30 +5427,71 @@ function writeDonutRollingWeek(obj){
 
 
 
-function checkFloorCollapse(){
-  const y=new Date();y.setDate(y.getDate()-1);
-  const yDow=y.getDay();
-  if(dayPct(yDow,y)===100)return; // yesterday's floor was cleared — immune
+// Derive the collapse for a given day (Date) from its CURRENT completion +
+// quality data. Returns the collapse object, or null if the floor is clean
+// (nothing uncleared once N/A/gray is excluded). Single source of truth shared
+// by the once-daily stamp (checkFloorCollapse) and live date-nav reconciliation
+// (reconcileCollapse) so the two paths can never disagree on the count/tier.
+function computeCollapseFor(y){
   const yDate=`${y.getFullYear()}-${y.getMonth()}-${y.getDate()}`;
-  if(collapseState.checked===yDate)return;
-  collapseState.checked=yDate;
   const sc=getScheduleFor(y.getDay(),y);
   const allTasks=sc.reduce((a,s)=>a.concat(s.tasks),[]);
   const yData=state[yDate]||{};
   const yQ=qualityState[yDate]||{};
-  const unchecked=allTasks.filter(t=>!yData[t.id]&&yQ[t.id]!=='gray').length;
-  if(unchecked===0){delete collapseState.active;}
+  const unclearedTasks=allTasks.filter(t=>!yData[t.id]&&yQ[t.id]!=='gray');
+  const unchecked=unclearedTasks.length;
+  if(unchecked===0)return null;
+  let type,label,effectLabel,duration;
+  if(unchecked>=5){type='total';label='Total Collapse';effectLabel='-25% coins, Recovery Mode active';duration='Complete 3 tasks to clear';}
+  else if(unchecked>=3){type='heavy';label='Heavy Collapse';effectLabel='-20% coins + Sleep Deprived';duration='Clears after 3 tasks completed today';}
+  else{type='structural';label='Structural Damage';effectLabel='-10% coins today';duration='Clears after first task completed today';}
+  return {type,label,unchecked,effectLabel,duration,applyDate:todayStr(),unclearedNames:unclearedTasks.map(t=>t.name)};
+}
+
+function checkFloorCollapse(){
+  const y=new Date();y.setDate(y.getDate()-1);
+  const yDate=`${y.getFullYear()}-${y.getMonth()}-${y.getDate()}`;
+  // Initial stamp runs once per day; later same-day edits go through reconcileCollapse().
+  if(collapseState.checked===yDate)return;
+  collapseState.checked=yDate;
+  const result=computeCollapseFor(y);
+  if(!result){delete collapseState.active;}
   else{
-    let type,label,effectLabel,duration;
-    if(unchecked>=5){type='total';label='Total Collapse';effectLabel='-25% coins, Recovery Mode active';duration='Complete 3 tasks to clear';}
-    else if(unchecked>=3){type='heavy';label='Heavy Collapse';effectLabel='-20% coins + Sleep Deprived';duration='Clears after 3 tasks completed today';}
-    else{type='structural';label='Structural Damage';effectLabel='-10% coins today';duration='Clears after first task completed today';}
-    const unclearedNames=allTasks.filter(t=>!yData[t.id]&&yQ[t.id]!=='gray').map(t=>t.name);
-    collapseState.active={type,label,unchecked,effectLabel,duration,applyDate:todayStr(),unclearedNames};
-    collapseLog.push({date:yDate,type,unchecked});
-    save('dr-collapse-log',collapseLog);
+    collapseState.active=result;
+    if(!collapseLog.some(e=>e.date===yDate)){ // one log entry per collapsing day, never duplicated
+      collapseLog.push({date:yDate,type:result.type,unchecked:result.unchecked});
+      save('dr-collapse-log',collapseLog);
+    }
   }
   saveLocal('dr-collapse',collapseState);
+}
+
+// Re-derive the active collapse against the collapsing day's CURRENT data, so
+// going back a day (date-nav) and completing or re-grading a missed task updates
+// or clears the otherwise-frozen collapse. Unlike checkFloorCollapse this never
+// creates a new collapse and never adds a log entry — it only adjusts the one
+// already stamped for today (downgrade tier, refresh names/effect, or clear).
+function reconcileCollapse(){
+  const c=collapseState.active;
+  if(!c||c.applyDate!==todayStr())return; // only a live, today-effective collapse can be reconciled
+  const y=new Date();y.setDate(y.getDate()-1);
+  const yDate=`${y.getFullYear()}-${y.getMonth()}-${y.getDate()}`;
+  const result=computeCollapseFor(y);
+  if(!result){
+    // Floor repaired retroactively — it no longer counts as a collapse at all.
+    delete collapseState.active;
+    collapseLog=collapseLog.filter(e=>e.date!==yDate);
+    save('dr-collapse-log',collapseLog);
+  }else{
+    collapseState.active=result;
+    const logE=collapseLog.find(e=>e.date===yDate);
+    if(logE&&(logE.type!==result.type||logE.unchecked!==result.unchecked)){
+      logE.type=result.type;logE.unchecked=result.unchecked;
+      save('dr-collapse-log',collapseLog);
+    }
+  }
+  saveLocal('dr-collapse',collapseState);
+  renderCollapseEvent();
 }
 function declareFloorCondition(id){
   const def=FLOOR_CONDITIONS.find(f=>f.id===id);if(!def)return;
