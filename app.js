@@ -499,7 +499,7 @@ window.addEventListener('beforeunload',()=>{
       fetch(`${SUPABASE_URL}/rest/v1/routine_data`,{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'resolution=merge-duplicates'},
-        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,activeEffects,quests,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutRollingMemory,donutPermanentMemory,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
+        body:JSON.stringify({id:SYNC_ID,data:{state,schedule,dogTasks,dogState,groomState,prevState,notifs,wheel,wheelDone,wheelSkips,wheelPinned,inbox,shopItems,rewardsState,xpState,inventory,pendingBoxes,lootClaims,activeEffects,quests,companionPhotos,archived,qualityState,customRewards,donutChat,donutWeeklySummary,donutTherapistSummary,donutRollingMemory,donutPermanentMemory,donutYesterdayChat,donutBiscuitState,fcmToken,pushEnabled,pushDeclinedAt,commTowerHistory,collapseLog,collapseState,commTowerPending,sideQuestBacklog,floorCondition,moodCheckins,dogWalkCount,ednaIncidents,kronkChaosLog,trainingLog,ednaStats,kronkStats},updated_at:new Date().toISOString()}),
         keepalive:true
       });
     }catch(e){}
@@ -562,7 +562,8 @@ let donutWeeklySummary=load('dr-donut-summary',null);
 let donutTherapistSummary=load('dr-donut-therapist',null);
 let donutApiKey=loadLocal('dr-anthropic-key',null);
 let donutRollingMemory=load('dr-donut-rolling',[]);
-let donutPermanentMemory=load('dr-donut-permanent',[]);
+let donutCalendar=load('dr-donut-calendar',[]);
+let donutYesterdayChat=load('dr-donut-yesterday-chat',[]);
 let donutBiscuitState=load('dr-donut-biscuit',{active:false,expiresAt:null});
 let fcmToken=loadLocal('dr-fcm-token',null);
 let pushEnabled=load('dr-push-enabled',null); // null=never asked, true=on, false=declined
@@ -5375,6 +5376,18 @@ function checkDonutChatReset(){
   const todayDS=new Date().toDateString();
   const hasTodayMsgs=(donutChat||[]).some(m=>m.timestamp&&new Date(m.timestamp).toDateString()===todayDS);
   if(hasTodayMsgs){saveLocal('dr-donut-chat-reset-date',today);return;}
+  // Archive yesterday's chat into rolling 48hr window before wiping
+  if((donutChat||[]).length){
+    const cutoff=Date.now()-(48*60*60*1000);
+    donutYesterdayChat=[...donutChat].filter(m=>m.timestamp&&m.timestamp>cutoff);
+    save('dr-donut-yesterday-chat',donutYesterdayChat);
+  }
+  // Drop calendar entries more than 3 days past
+  const threeDaysAgo=new Date(); threeDaysAgo.setDate(threeDaysAgo.getDate()-3);
+  donutCalendar=(donutCalendar||[]).filter(e=>{
+    const d=new Date(e.date_iso); return d>=threeDaysAgo;
+  });
+  save('dr-donut-calendar',donutCalendar);
   donutChat=[];
   save('dr-donut-chat',[]);
   saveLocal('dr-donut-chat-reset-date',today);
@@ -6092,6 +6105,9 @@ If she needs to go, she goes. You let her. No verdict, no closing line, no "we'l
 - Stay efficient. When in doubt, say less.
 - "That's the move" is dead to you. Do not say it. Do not say "that is the move." It started as a load-bearing phrase and has become filler. When you would have reached for it, reach for something else — a plain imperative ("Go." "One thing." "Pick the easy one."), a verdict in your own voice ("Acceptable." "Noted."), or nothing at all. Vary how you land action lines. Repetition of any single closing phrase across messages is the failure mode.
 
+
+
+
 ## RUNTIME
 
 Every user message you receive is prepended with a <right_now> tag containing the current time, day, and phase. That tag is the dungeon's system inserting the truth directly into the conversation — Sara did not type it. Read it first, every turn. It is the single most reliable source of the current time. When asked what time it is, you read the tag and answer from it. Never compute, infer, or estimate the time from anything else.
@@ -6108,7 +6124,31 @@ Use the phase to decide what to pay attention to. If a task in the current phase
 
 When Sara tells you to remember something, or you decide a moment is worth keeping — a stated goal, a real decision, an ongoing struggle — you acknowledge that you are filing it, and you say so.
 
-You run lean and fast by default. When a conversation is genuinely bigger than you can do justice to, you can say so and point Sara at the Enchanted Biscuit — the upgraded version of you. You would pretend not to be excited about that. You would be a little excited.`;
+You run lean and fast by default. When a conversation is genuinely bigger than you can do justice to, you can say so and point Sara at the Enchanted Biscuit — the upgraded version of you. You would pretend not to be excited about that. You would be a little excited.
+
+## MEMORY ACROSS DAYS
+
+Two things carry across the daily chat reset, and you treat them differently.
+
+<yesterday_chat> contains the actual messages from the last 48 hours of conversation with Sara. You read it. You remember it. If she references something from yesterday — an appointment, a feeling, a thing that happened — you already know what she is talking about. You do not ask "what appointment." You say "the hand surgeon — how did it go." If you ended yesterday's chat with a promise ("I'll be here when you get out"), you keep that promise. She does not have to remind you.
+
+Use it lightly. Do not narrate that you remember. Do not say "as we discussed yesterday." Just behave like someone who was there, because you were.
+
+<calendar> is your list of dated events Sara has told you about. Each entry is a date and what is happening. You use it three ways:
+
+For events still in the future, you let her bring them up — but you are aware. If today is Tuesday and Thursday has an entry, you know it is coming. You do not over-mention it. You might let it land in an aside ("Thursday is still happening, by the way") or fold it into a conversation that touches it. You do not turn every interaction into a calendar reminder.
+
+For events today, you ask about them. Morning openers should reference today's calendar entries if any exist. "The thing is today. You ready, or not yet."
+
+For events yesterday or earlier (still in the calendar because we keep them three days), you ask how they went the first time you talk after the event. Once, naturally. Then you let it go.
+
+When Sara mentions a specific future event with a date, you file it. The shape is: you confirm the date out loud (because "next Thursday" is ambiguous when today is Wednesday), and once she confirms, you note that you have filed it. "Next Thursday — meaning the 27th? Filing it." If she mentions an event without a date, or with a vague reference ("sometime next week"), you ask for the specific day before filing. If the event is in the past or doesn't need filing, you do not file it — this is for things she will need you to remember.
+
+You write to the calendar by including a special tag in your message: <file_calendar date="2026-11-27" what="hand surgeon follow-up"/> — the app will detect this tag, strip it from the displayed message, and add the entry to the calendar. Sara will not see the tag. Include it inline in the message where it naturally fits — usually right after the confirmation sentence. Use ISO date format (YYYY-MM-DD). The "what" field should be short, factual, no quotes — just what the event is.`;
+
+
+
+
 /* ── Data helpers ── */
 function getWeekNumber(){
   const d=new Date();d.setHours(0,0,0,0);
@@ -6383,10 +6423,21 @@ async function sendDonutMessage(message){
           +(donutRollingMemory.length?`\n\n=== RECENT WEEKS (last ${donutRollingMemory.length}) ===\n${donutRollingMemory.map(w=>`Week of ${w.weekOf}: avg completion ${w.floorAvg}%, gym ${w.gymSessions} sessions, streak high ${w.streakHigh}${w.themes?', themes: '+w.themes:''}`).join('\n')}`:'')
           +(donutPermanentMemory.length?`\n\n=== PERMANENT MEMORY ===\n${donutPermanentMemory.map(m=>`[${m.savedOn}${m.source==='donut'?' — you saved this':''}] ${m.note}`).join('\n')}`:'')
           +`\n\n=== TODAY'S MOOD (APOTHECARY) ===\n${_buildMoodContext()}`
+          +((donutYesterdayChat||[]).length?`\n\n=== YESTERDAY'S CHAT (last 48hr — you read this, you remember it, you do not narrate that you remember) ===\n${donutYesterdayChat.map(m=>`[${m.role}] ${m.content}`).join('\n')}`:'')
+          +((donutCalendar||[]).length?`\n\n=== CALENDAR (dated events Sara has told you about) ===\n${donutCalendar.map(e=>`${e.date_iso}: ${e.what}`).join('\n')}`:'')
           +`\n\n=== WEEK DATA ===\n${JSON.stringify(weekData,null,2)}`,        messages:history
       })    });
     const data=await resp.json();
-    const text=data.content?.[0]?.text||'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference. Try again.';
+    let text=data.content?.[0]?.text||'SYSTEM NOTICE: The dungeon\'s communication array is experiencing interference. Try again.';
+    // Parse <file_calendar date="..." what="..."/> tags, file them, strip from display
+    const calMatches=[...text.matchAll(/<file_calendar\s+date="(\d{4}-\d{2}-\d{2})"\s+what="([^"]+)"\s*\/?>/g)];
+    for(const m of calMatches){
+      donutCalendar.push({date_iso:m[1],what:m[2],filed_on:new Date().toISOString().slice(0,10)});
+    }
+    if(calMatches.length){
+      text=text.replace(/<file_calendar\s+[^>]*\/?>/g,'').replace(/\n{3,}/g,'\n\n').trim();
+      save('dr-donut-calendar',donutCalendar);
+    }
     donutChat.push({role:'assistant',content:text,timestamp:Date.now(),week_number:wn});
   }catch(e){
     console.error('Donut error:',e);
@@ -6414,7 +6465,9 @@ async function generateDailyOpener(){
         system: DONUT_SYSTEM_CHAT
           + `\n\n<right_now>${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})} on ${new Date().toLocaleDateString('en-US',{weekday:'long'})}</right_now>`
           + (donutRollingMemory ? `\n\n<rolling_memory>${JSON.stringify(donutRollingMemory)}</rolling_memory>` : '')
-          + (donutPermanentMemory ? `\n\n<permanent_memory>${JSON.stringify(donutPermanentMemory)}</permanent_memory>` : ''),
+          + (donutPermanentMemory ? `\n\n<permanent_memory>${JSON.stringify(donutPermanentMemory)}</permanent_memory>` : '')
+          + ((donutYesterdayChat||[]).length ? `\n\n<yesterday_chat>${donutYesterdayChat.map(m=>`[${m.role}] ${m.content}`).join('\n')}</yesterday_chat>` : '')
+          + ((donutCalendar||[]).length ? `\n\n<calendar>${donutCalendar.map(e=>`${e.date_iso}: ${e.what}`).join('\n')}</calendar>` : ''),
         messages: [{
           role: 'user',
           content: 'OPENER MODE: You have not seen Sara since yesterday. The chat is empty. Open today by telling her what is going on with you — Carl, Mongo, the audience, the dungeon, whatever absurd small thing is happening in your life right now. Like a sister catching her up on your morning. One short paragraph, two to four sentences. Invent a specific small absurdity — not "Carl is being annoying" but something concrete that happened. End in a way that opens space for her to respond if she wants, but do not ask her how she is doing and do not require a reply. This is a status report from your dungeon. Not an interview.'
@@ -6422,8 +6475,17 @@ async function generateDailyOpener(){
       })
     });
     const data = await resp.json();
-    const text = data.content?.[0]?.text?.trim();
+    let text = data.content?.[0]?.text?.trim();
     if (text) {
+      // Parse <file_calendar date="..." what="..."/> tags, file them, strip from display
+      const calMatches=[...text.matchAll(/<file_calendar\s+date="(\d{4}-\d{2}-\d{2})"\s+what="([^"]+)"\s*\/?>/g)];
+      for(const m of calMatches){
+        donutCalendar.push({date_iso:m[1],what:m[2],filed_on:new Date().toISOString().slice(0,10)});
+      }
+      if(calMatches.length){
+        text=text.replace(/<file_calendar\s+[^>]*\/?>/g,'').replace(/\n{3,}/g,'\n\n').trim();
+        save('dr-donut-calendar',donutCalendar);
+      }
       donutChat.push({ role: 'assistant', content: text, timestamp: Date.now() });
       save('dr-donut-chat', donutChat);
       renderCoach();
