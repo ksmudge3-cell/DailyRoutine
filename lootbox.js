@@ -209,8 +209,91 @@
     else out.push(item);
   }
 
+  /* ============================================================
+     FLOOR RESET — fixed box contents (special event)
+     ------------------------------------------------------------
+     Floor Reset boxes are NOT random rolls (spec §3 Tier 2): each
+     floor's box has SPECIFIED contents — a guaranteed instant
+     treat + guaranteed merch unlock + a small chance layer. "You
+     earned the room, you get the thing — no feel-bad roll."
+     Coins come from the QUEST payout, so these boxes carry items
+     only (no currency slot).
+
+     Asset keys are from the Floor Reset Asset Manifest; sprite art
+     isn't encoded into assets.js yet, so each item also carries an
+     emoji `icon` fallback until the art lands (loot-ui resolves
+     window[asset] first, falls back to the glyph).
+     ============================================================ */
+  // type 'food' = consumable treat (stacks, used when ready);
+  // type 'cosmetic' slot 'keepsake' = own-once merch unlock (ordered later).
+  const FR_REWARDS = {
+    // —— instant treats ——
+    treat_bathbomb:  { itemId:'treat_bathbomb',  name:'Bath Bomb',       type:'food', tier:'rare',     asset:'treat_bathbomb',  icon:'\uD83D\uDEC1', desc:'For the clean tub you just earned.' },
+    treat_bathpillow:{ itemId:'treat_bathpillow',name:'Bath Pillow',     type:'food', tier:'uncommon', asset:'treat_bathpillow',icon:'\uD83D\uDEC0', desc:'Sink in. You did the work.' },
+    treat_soda:      { itemId:'treat_soda',      name:'Soda',            type:'food', tier:'uncommon', asset:'treat_soda',      icon:'\uD83E\uDD64', desc:'Cold, fizzy, every-clear reliable.' },
+    treat_beer:      { itemId:'treat_beer',      name:'Beer',            type:'food', tier:'rare',     asset:'treat_beer',      icon:'\uD83C\uDF7A', desc:'Floor-clear celebration. Earned, not consoled.' },
+    treat_candle:    { itemId:'treat_candle',    name:'Candle',          type:'food', tier:'uncommon', asset:'treat_candle',    icon:'\uD83D\uDD6F\uFE0F', desc:'Mark the room as reclaimed.' },
+    treat_movie:     { itemId:'treat_movie',     name:'Movie Rental',    type:'food', tier:'rare',     asset:'treat_movie',     icon:'\uD83C\uDFAC', desc:'Sit down. You get to stop now.' },
+    treat_flowers:   { itemId:'treat_flowers',   name:'Fresh Flowers',   type:'food', tier:'rare',     asset:'treat_flowers',   icon:'\uD83D\uDC90', desc:'A reset deserves flowers.' },
+    treat_epsom:     { itemId:'treat_epsom',     name:'Epsom Salt',      type:'food', tier:'uncommon', asset:'treat_epsom',     icon:'\uD83E\uDDC2', desc:'For the body that hauled all of it.' },
+    treat_takeout:   { itemId:'treat_takeout',   name:'Takeout',         type:'food', tier:'rare',     asset:'treat_takeout',   icon:'\uD83E\uDD61', desc:'No cooking tonight. Hot meal earned.' },
+    food_cookie:     { itemId:'food_cookie',     name:'Cookie',          type:'food', tier:'uncommon', asset:'food_cookie',     icon:'\uD83C\uDF6A', desc:'A small sweet for a small win.' },
+    // —— merch unlocks (own-once) ——
+    reward_mug:         { itemId:'reward_mug',         name:'Mug',                    type:'cosmetic', slot:'keepsake', tier:'rare',      asset:'reward_mug',         icon:'\u2615', desc:'Unlocked — add to the order cart.' },
+    reward_tshirt:      { itemId:'reward_tshirt',      name:'T-Shirt',                type:'cosmetic', slot:'keepsake', tier:'rare',      asset:'reward_tshirt',      icon:'\uD83D\uDC55', desc:'Unlocked — add to the order cart.' },
+    reward_desk_trinket:{ itemId:'reward_desk_trinket',name:'Desk Trinket',           type:'cosmetic', slot:'keepsake', tier:'rare',      asset:'reward_desk_trinket',icon:'\uD83D\uDCCC', desc:'A little something for the desk.' },
+    reward_fig_mystery: { itemId:'reward_fig_mystery', name:'Mystery Figurine',       type:'cosmetic', slot:'keepsake', tier:'epic',      asset:'reward_fig_mystery', icon:'\uD83C\uDF81', desc:'A blind-box crawler. Who did you get?' },
+    reward_fig_zev:     { itemId:'reward_fig_zev',     name:'Zev Figurine',           type:'cosmetic', slot:'keepsake', tier:'epic',      asset:'reward_fig_zev',     icon:'\uD83D\uDDFF', desc:'Unlocked — add to the order cart.' },
+    reward_fig_donut:   { itemId:'reward_fig_donut',   name:'Princess Donut Figurine',type:'cosmetic', slot:'keepsake', tier:'legendary', asset:'reward_fig_donut',   icon:'\uD83D\uDC51', desc:'THE figurine. She would approve.' },
+    reward_kindle:      { itemId:'reward_kindle',      name:'Kindle',                 type:'cosmetic', slot:'keepsake', tier:'legendary', asset:'reward_kindle',      icon:'\uD83D\uDCD6', headline:true, desc:'The gateway to everything after these nine floors.' },
+  };
+
+  // Each floor: treats = guaranteed treat slots (each slot = options to vary
+  // between); merch = guaranteed merch slots; chance = P(small chance-layer
+  // cosmetic). reward_book is intentionally absent — it's tracker-only.
+  const FR_BOX_CONTENTS = {
+    'fr-bathroom':  { treats:[['treat_bathbomb','treat_bathpillow']], merch:[['reward_mug','reward_desk_trinket']],  chance:0.25 },
+    'fr-kitchen':   { treats:[['treat_soda','food_cookie']],          merch:[['reward_mug','reward_tshirt']],         chance:0.25 },
+    'fr-foyer':     { treats:[['treat_beer','treat_candle']],         merch:[['reward_fig_mystery']],                 chance:0.35 },
+    'fr-living':    { treats:[['treat_movie']],                       merch:[['reward_fig_donut','reward_fig_zev']],  chance:0.35 },
+    'fr-wardrobe':  { treats:[['treat_beer'],['treat_movie'],['treat_takeout']], merch:[['reward_fig_donut']],        chance:0.50 },
+    'fr-bedroom':   { treats:[['treat_candle','treat_flowers']],      merch:[['reward_fig_mystery','reward_mug']],    chance:0.35 },
+    'fr-reckoning': { treats:[['treat_beer'],['treat_movie'],['treat_takeout'],['treat_flowers']], merch:[['reward_kindle']], chance:0.50 },
+  };
+
+  // Build an inventory-ready item from an FR reward entry.
+  function frItem(key, source) {
+    const e = FR_REWARDS[key];
+    if (!e) return null;
+    return {
+      id: uid(), itemId: e.itemId, name: e.name, type: e.type,
+      tier: e.tier || 'rare', qty: 1, source: source || 'floor-reset',
+      acquiredAt: Date.now(), usedAt: null, equipped: false,
+      description: e.desc || null,
+      payload: { ...e },
+    };
+  }
+
+  // Roll a Floor Reset box's FIXED contents. opts.recovery swaps beer→soda
+  // (spec beer rule: never on a rough/Recovery-Mode day). Falls back to a
+  // generic rare roll if the floor is unknown.
+  function rollFloorResetBox(floorId, opts) {
+    opts = opts || {};
+    const spec = FR_BOX_CONTENTS[floorId];
+    if (!spec) return rollBox('rare');
+    const source = 'floor-reset:' + floorId;
+    const out = [];
+    const resolve = (k) => (k === 'treat_beer' && opts.recovery) ? 'treat_soda' : k;
+    for (const slot of (spec.treats || [])) { const it = frItem(resolve(pick(slot)), source); if (it) out.push(it); }
+    for (const slot of (spec.merch  || [])) { const it = frItem(pick(slot), source);          if (it) out.push(it); }
+    if (Math.random() < (spec.chance || 0)) { const it = frItem('reward_desk_trinket', source); if (it) out.push(it); }
+    // dedupe by itemId — a chance item must never echo a merch pick in the same box
+    const seen = new Set();
+    return out.filter((it) => (seen.has(it.itemId) ? false : (seen.add(it.itemId), true)));
+  }
+
   /* ---------- export (browser global + node for testing) ---------- */
-  const DCCLoot = { BOX_TIERS, TUNING, POOL, rollBox, rollCurrency };
+  const DCCLoot = { BOX_TIERS, TUNING, POOL, rollBox, rollCurrency, rollFloorResetBox, FR_REWARDS, FR_BOX_CONTENTS };
   if (typeof module !== 'undefined' && module.exports) module.exports = DCCLoot;
   if (typeof window !== 'undefined') window.DCCLoot = DCCLoot;
 

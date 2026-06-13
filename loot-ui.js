@@ -73,6 +73,12 @@ function stashIconName(it) {
   if (STASH_ICON[it.itemId]) return STASH_ICON[it.itemId];
   if (/^voucher_/.test(it.itemId || '')) return 'ICON_MONEY_BAG';
   if (/^donut_line_/.test(it.itemId || '')) return 'ICON_PRINCESS_DONUT_PORTRAIT';
+  // direct-key resolve: reward sprites registered on window under their own key
+  // (e.g. assets-rewards.js → window.treat_bathbomb). itemId === asset key, so
+  // these self-resolve with no per-sprite table entry. Guarded so a missing key
+  // falls through to the type glyph instead of returning a dead name.
+  if (it.itemId && typeof window[it.itemId] !== 'undefined' && window[it.itemId]) return it.itemId;
+  if (it.payload && it.payload.asset && typeof window[it.payload.asset] !== 'undefined' && window[it.payload.asset]) return it.payload.asset;
   return STASH_ICON_BY_TYPE[it.type] || null; // junk → null → glyph tile
 }
 

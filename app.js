@@ -4472,7 +4472,17 @@ function openBox(boxId){
   if(idx<0){console.warn('openBox: no pending box',boxId);return null;}
   const box=pendingBoxes[idx];
   if(!window.DCCLoot){console.warn('openBox: loot engine not loaded');return null;}
-  const items=window.DCCLoot.rollBox(box.tier);          // roll AT open — the reveal is the roll
+  // Floor Reset boxes carry FIXED contents (treat + merch + chance), not a
+  // random roll. Source tags them: 'quest:fr-<floor>' (floor-clear box) or
+  // 'floor-reset:celestial' (the finale → Reckoning contents).
+  let floorId=null;
+  const src=box.source||'';
+  if(src.indexOf('quest:fr-')===0)floorId=src.slice('quest:'.length);   // → 'fr-bathroom' etc.
+  else if(src==='floor-reset:celestial')floorId='fr-reckoning';
+  const recovery=(typeof isRecoveryMode==='function')&&isRecoveryMode();
+  const items=(floorId&&window.DCCLoot.rollFloorResetBox)
+    ? window.DCCLoot.rollFloorResetBox(floorId,{recovery})              // fixed event contents
+    : window.DCCLoot.rollBox(box.tier);                                 // roll AT open — the reveal is the roll
   if(window.DCCNarrator)window.DCCNarrator.appraiseAll(items); // fill .description
   const deposited={coins:0,xp:0};
   const landed=[];
