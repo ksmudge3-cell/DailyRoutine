@@ -236,7 +236,7 @@
     treat_movie:     { itemId:'treat_movie',     name:'Movie Rental',    type:'food', tier:'rare',     asset:'treat_movie',     icon:'\uD83C\uDFAC', desc:'Sit down. You get to stop now.' },
     treat_flowers:   { itemId:'treat_flowers',   name:'Fresh Flowers',   type:'food', tier:'rare',     asset:'treat_flowers',   icon:'\uD83D\uDC90', desc:'A reset deserves flowers.' },
     treat_epsom:     { itemId:'treat_epsom',     name:'Epsom Salt',      type:'food', tier:'uncommon', asset:'treat_epsom',     icon:'\uD83E\uDDC2', desc:'For the body that hauled all of it.' },
-    treat_takeout:   { itemId:'treat_takeout',   name:'Takeout',         type:'food', tier:'rare',     asset:'treat_takeout',   icon:'\uD83E\uDD61', desc:'No cooking tonight. Hot meal earned.' },
+    treat_takeout:   { itemId:'treat_takeout',   name:'Takeout',         type:'food', tier:'rare',     asset:'icon_takeout_bonus', icon:'\uD83E\uDD61', desc:'No cooking tonight. Hot meal earned.' },
     food_cookie:     { itemId:'food_cookie',     name:'Cookie',          type:'food', tier:'uncommon', asset:'food_cookie',     icon:'\uD83C\uDF6A', desc:'A small sweet for a small win.' },
     // —— merch unlocks (own-once) ——
     reward_mug:         { itemId:'reward_mug',         name:'Mug',                    type:'cosmetic', slot:'keepsake', tier:'rare',      asset:'reward_mug',         icon:'\u2615', desc:'Unlocked — add to the order cart.' },
