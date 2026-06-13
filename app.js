@@ -5187,11 +5187,15 @@ function checkFloorResetFinale(){
    PLACEHOLDER — icons are emoji until the sprite doc lands (real reward sprite
    keys go in `icon` then). Local-only state: it's a within-day pacing counter,
    resets daily, not worth a sync row. */
+// Locked micro pool (handoff). `sprite` = window asset key from assets-rewards.js;
+// `icon` is the emoji fallback if the asset isn't on window. cat drives the
+// sweet/savory anti-repeat rotation.
 const MICRO_DROPS=[
-  {id:'popsicle',label:'Popsicle',icon:'\uD83E\uDDCA',cat:'sweet'},
-  {id:'cheese-plate',label:'Cheese, crackers & pepperoni',icon:'\uD83E\uDDC0',cat:'savory'},
-  {id:'sparkling',label:'Sparkling water / electrolytes',icon:'\uD83E\uDEE7',cat:'drink'},
-  {id:'cold-fruit',label:'Cold fruit',icon:'\uD83C\uDF49',cat:'sweet'},
+  {id:'popsicle',label:'Popsicle',sprite:'micro_popsicle',icon:'\uD83E\uDDCA',cat:'sweet'},
+  {id:'icecream',label:'Ice cream',sprite:'micro_icecream',icon:'\uD83C\uDF66',cat:'sweet'},
+  {id:'protein',label:'Protein snack',sprite:'micro_protein',icon:'\uD83E\uDD5C',cat:'savory'},
+  {id:'snackplate',label:'Snack plate',sprite:'micro_snackplate',icon:'\uD83E\uDDC0',cat:'savory'},
+  {id:'soda',label:'Soda',sprite:'treat_soda',icon:'\uD83E\uDD64',cat:'drink'},
 ];
 const MICRO_DROP_CAP=4;
 let microDropState=loadLocal('dr-microdrops',{date:null,count:0,last:null});
@@ -5210,6 +5214,22 @@ function _pickMicroDrop(){
   return pool[Math.floor(Math.random()*pool.length)]||MICRO_DROPS[0];
 }
 
+// Image-capable micro-drop toast: renders the real sprite (window[item.sprite])
+// with the emoji as graceful fallback if the asset isn't on window. Reuses the
+// existing #pts-toast element via innerHTML; the text-only showPtsToast clears
+// it with textContent on its next call, so the two render paths coexist safely.
+// Sprite is pre-bought pixel art / data URL we control — no untrusted markup.
+function showMicroToast(item,text){
+  const toast=document.getElementById('pts-toast');if(!toast)return;
+  const src=item&&item.sprite&&window[item.sprite];
+  const glyph=src
+    ? `<img src="${src}" alt="" style="height:1.5em;width:auto;vertical-align:middle;margin-right:8px;image-rendering:pixelated;">`
+    : ((item&&item.icon)?item.icon+' ':'');
+  toast.innerHTML=glyph+text;
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'),2500);
+}
+
 // Fire a micro-drop. {guaranteed:true} forces one regardless of cap (used by the
 // Bathroom PURGE "guaranteed treat"). Returns the item, or null if nothing fired.
 function maybeMicroDrop(opts){
@@ -5221,11 +5241,11 @@ function maybeMicroDrop(opts){
   microDropState.last=item.id;
   saveLocal('dr-microdrops',microDropState);
   const overCap=microDropState.count>MICRO_DROP_CAP&&!opts.guaranteed;
-  if(typeof showPtsToast==='function'){
-    showPtsToast(overCap
-      ? `${item.icon} ${item.label} — stash it. You've hit today's pace.`
-      : `${item.icon} MICRO-DROP — ${item.label}. Break earned.`);
-  }
+  const text=overCap
+    ? `${item.label} — stash it. You've hit today's pace.`
+    : `MICRO-DROP — ${item.label}. Break earned.`;
+  if(typeof showMicroToast==='function')showMicroToast(item,text);
+  else if(typeof showPtsToast==='function')showPtsToast(`${item.icon} ${text}`);
   return item;
 }
 
