@@ -3021,7 +3021,7 @@ function getPriorityPool(){
 // the questId/stepId ride along so markSpinDone can route back to the quest.
 function getQuestWheelProjects(catFilter){
   return (Array.isArray(quests)?quests:[])
-    .filter(q=>(q.type==='oneoff'||q.type==='longhaul')&&q.status!=='completed')
+    .filter(q=>(q.type==='oneoff'||q.type==='longhaul')&&q.status!=='completed'&&!q.event)
     .filter(q=>!catFilter||q.category===catFilter)
     .map(q=>({
       id:'quest:'+q.id, name:q.name, category:q.category||null,
@@ -4932,7 +4932,7 @@ function setQuestCategory(questId,cat){
 // removed, so re-rendering both keeps the two DOMs in sync).
 function renderArenaQuests(){
   const wrap=document.getElementById('arena-quests'); if(!wrap)return;
-  let list=(Array.isArray(quests)?quests:[]).filter(q=>(q.type==='oneoff'||q.type==='longhaul')&&q.status!=='completed');
+  let list=(Array.isArray(quests)?quests:[]).filter(q=>(q.type==='oneoff'||q.type==='longhaul')&&q.status!=='completed'&&!q.event);
   // Follow the wheel's category tab: clean/admin/mental/bonus show only that
   // category's quests; the Quests tab (and Priority) show all side directives.
   if(['clean','admin','mental','bonus'].includes(spinCat)) list=list.filter(q=>q.category===spinCat);
@@ -5038,6 +5038,132 @@ function seedStarterQuests(){
   if(added)save('dr-quests',quests);
 }
 
+/* ─── FLOOR RESET EVENT (special event: Apartment Deep-Clean Week) ──────────
+   A one-time nine-day chain. The apartment reset IS the dungeon crawl: each
+   room is a floor, clearing it is an event quest. These live OUTSIDE the daily
+   economy — rewards are baked here (event-tier), so they bypass
+   assignQuestReward and the ~20🪙/day quest generator entirely. Steps are
+   MANUAL (real-world cleaning actions, no routine taskRef) so they're ticked
+   directly in the Archive. The event is dormant until startFloorReset() is
+   called; nothing auto-seeds.
+
+   PLACEHOLDER — box visuals: the spec's box tiers (Mid/High/Top/Celestial) and
+   the Celestial sprite + reward_book/reward_kindle assets live in lootbox.js +
+   the companion sprite doc (loot chat). Until those land, event boxes map to
+   the existing engine tiers below. This one line is the swap point. */
+const FR_BOX={mid:'rare',high:'epic',top:'legendary',celestial:'legendary'};
+
+/* Base rewards only this build (coins + boxes). DEFERRED to a later piece:
+   PURGE bonuses, the Wardrobe-Vault Legendary-orb conditional, micro-drops on
+   task completion, the book/Kindle tracker, and the maintainability handoff
+   tasks that seed new daily-floor recurring tasks. */
+const FLOOR_RESET_DEFS=[
+  {id:'fr-bathroom',name:'The Porcelain Vault — Bathroom',type:'oneoff',event:'floor-reset',floor:'1A',
+   status:'active',reward:{coins:25,boxes:[FR_BOX.mid]},createdAt:Date.now(),
+   steps:[
+     {id:'fr-bath-1',label:'Scour the wet zones — tub, toilet, sink, mirror, floor, fresh towels, trash',done:false,doneAt:null},
+     {id:'fr-bath-2',label:'Breach the storage — under-sink + two drawers, three buckets (sort first)',done:false,doneAt:null},
+     {id:'fr-bath-3',label:'Re-home the keep pile into bins',done:false,doneAt:null},
+   ]},
+  {id:'fr-kitchen',name:'The Kitchen',type:'oneoff',event:'floor-reset',floor:'1B',
+   status:'active',reward:{coins:20,boxes:[FR_BOX.mid]},createdAt:Date.now(),
+   steps:[
+     {id:'fr-kit-1',label:'Counters & surfaces — clear, decide, wipe',done:false,doneAt:null},
+     {id:'fr-kit-2',label:'Fridge — expiry purge',done:false,doneAt:null},
+     {id:'fr-kit-3',label:'In-room cabinets/drawers — junk drawer + gadget graveyard',done:false,doneAt:null},
+     {id:'fr-kit-4',label:'Sink/dishes — empty; floor last',done:false,doneAt:null},
+   ]},
+  {id:'fr-foyer',name:'The Threshold, Pass 1 — Foyer',type:'oneoff',event:'floor-reset',floor:'2',
+   status:'active',reward:{coins:30,boxes:[FR_BOX.high]},createdAt:Date.now(),
+   steps:[
+     {id:'fr-foy-1',label:'Reset the entryway — landing strip, floor, daily clutter',done:false,doneAt:null},
+     {id:'fr-foy-2',label:'Establish the Landing Spot — keys/bag/shoes/mail home',done:false,doneAt:null},
+     {id:'fr-foy-3',label:'Demolish the middle pile — three buckets',done:false,doneAt:null},
+     {id:'fr-foy-4',label:'Build the Staging Hub — drop point for belongs-elsewhere',done:false,doneAt:null},
+     {id:'fr-foy-5',label:'TEST THE MOUNT — if it passes, order closet units TODAY',done:false,doneAt:null},
+     {id:'fr-foy-6',label:'Stage the Co/Struc drawers — purge surplus, stage the rest',done:false,doneAt:null},
+   ]},
+  {id:'fr-living',name:'The Stacks — Living Room',type:'oneoff',event:'floor-reset',floor:'3',
+   status:'active',reward:{coins:30,boxes:[FR_BOX.high]},createdAt:Date.now(),
+   steps:[
+     {id:'fr-liv-1',label:'Tank check FIRST — anything alive? welfare before cleaning',done:false,doneAt:null},
+     {id:'fr-liv-2',label:'Cube + book sort — books / archive craft (→foyer) / active craft / elsewhere',done:false,doneAt:null},
+     {id:'fr-liv-3',label:'Craft shelves — archive ships to foyer, active consolidates',done:false,doneAt:null},
+     {id:'fr-liv-4',label:'Assign freed cubes — leave some deliberately empty',done:false,doneAt:null},
+     {id:'fr-liv-5',label:'Tank fork — keep as planter or rehome',done:false,doneAt:null},
+     {id:'fr-liv-6',label:'Plants — water, wipe, deadhead, repot-check',done:false,doneAt:null},
+     {id:'fr-liv-7',label:'Lighter layer — surfaces, floor, vacuum under furniture, dust',done:false,doneAt:null},
+   ]},
+  {id:'fr-wardrobe',name:'The Wardrobe Vault — Closet + Clothing',type:'oneoff',event:'floor-reset',floor:'4',
+   status:'active',reward:{coins:40,boxes:[FR_BOX.top,FR_BOX.top]},createdAt:Date.now(),
+   steps:[
+     {id:'fr-war-1',label:'CONSOLIDATE FIRST — all clothing into one pile; open the dresser',done:false,doneAt:null},
+     {id:'fr-war-2',label:'First-pass sort by sight — keep / repurpose (→foyer) / toss-donate',done:false,doneAt:null},
+     {id:'fr-war-3',label:'Capped piles — try-on box ×1 max, sentimental set aside',done:false,doneAt:null},
+     {id:'fr-war-4',label:'Home the keepers — closet is the single home for clothing',done:false,doneAt:null},
+   ]},
+  {id:'fr-bedroom',name:'The Quarters — Bedroom',type:'oneoff',event:'floor-reset',floor:'5',
+   status:'active',reward:{coins:20,boxes:[FR_BOX.high]},createdAt:Date.now(),
+   steps:[
+     {id:'fr-bed-1',label:'Bed — fresh linens; confirm under-bed clear',done:false,doneAt:null},
+     {id:'fr-bed-2',label:'Dresser — wipe down, clear its top',done:false,doneAt:null},
+     {id:'fr-bed-3',label:'Drawer units — three-bucket sort each',done:false,doneAt:null},
+     {id:'fr-bed-4',label:'Bookshelf — pull, purge, dust, reassign',done:false,doneAt:null},
+     {id:'fr-bed-5',label:'Surface clutter — clear, sort, wipe',done:false,doneAt:null},
+     {id:'fr-bed-6',label:'Headboard/shelf — clear, dust, stage',done:false,doneAt:null},
+     {id:'fr-bed-7',label:'Desk — wipe',done:false,doneAt:null},
+     {id:'fr-bed-8',label:'Ride-along — dust, floor, vacuum under furniture',done:false,doneAt:null},
+   ]},
+  {id:'fr-reckoning',name:'The Reckoning — Deep Clean + Carpets',type:'oneoff',event:'floor-reset',floor:'6',
+   status:'active',reward:{coins:0,boxes:[]},createdAt:Date.now(),
+   steps:[
+     {id:'fr-rec-1',label:'Foyer Pass 2 — resolve the hub, hard-zone the shelves',done:false,doneAt:null},
+     {id:'fr-rec-2',label:'Deep clean — baseboards, fans, blinds, behind furniture',done:false,doneAt:null},
+     {id:'fr-rec-3',label:'Carpets LAST — nothing moves across them after',done:false,doneAt:null},
+   ]},
+];
+
+// Idempotent: only adds floors whose id is missing (safe across re-calls/devices).
+// Deep-copies each def so per-instance step state isn't shared with the template.
+function seedFloorReset(){
+  if(!Array.isArray(quests))quests=[];
+  let added=false;
+  for(const def of FLOOR_RESET_DEFS){
+    if(!quests.some(q=>q.id===def.id)){
+      quests.push(JSON.parse(JSON.stringify(def)));
+      added=true;
+    }
+  }
+  if(added)save('dr-quests',quests);
+  return added;
+}
+
+// User-triggered entry point (no button yet — call dccFloorReset.start() to begin).
+function startFloorReset(){
+  const added=seedFloorReset();
+  if(typeof renderQuestLog==='function')renderQuestLog();
+  if(typeof showPtsToast==='function')showPtsToast(added?'FLOOR RESET INITIATED. Nine floors await.':'Floor Reset already active.');
+  return added;
+}
+
+// Celestial finale — the Kindle. Grants ONCE when every Floor Reset quest is
+// completed (the spec's "all nine floors cleared" gate). Idempotent via
+// lootClaims (already synced). Called from checkQuestCompletion.
+function checkFloorResetFinale(){
+  const evq=(Array.isArray(quests)?quests:[]).filter(q=>q.event==='floor-reset');
+  if(!evq.length)return;                              // event not started
+  if(lootClaims.floorResetFinale)return;              // already granted
+  if(!evq.every(q=>q.status==='completed'))return;    // not all floors cleared yet
+  lootClaims.floorResetFinale=true;
+  save('dr-loot-claims',lootClaims);
+  if(typeof grantBox==='function')grantBox(FR_BOX.celestial,'floor-reset:celestial');
+  if(typeof showPtsToast==='function')showPtsToast('\u2605 ALL FLOORS CLEARED — CELESTIAL BOX EARNED');
+}
+
+// Expose the event entry points (no UI surface yet — Archive shows the floors,
+// dccFloorReset.start() begins the run).
+window.dccFloorReset={start:startFloorReset,seed:seedFloorReset,finale:checkFloorResetFinale};
+
 // A "block" quest step is done when every one of today's tasks in that schedule
 // section (e.g. 'Morning') is complete. Reads today's schedule so it adapts as
 // tasks are added/removed/renamed — the step tracks the block, not fixed ids.
@@ -5105,15 +5231,19 @@ function checkQuestCompletion(){
     }
   }
   if(changed)save('dr-quests',quests);
+  if(typeof checkFloorResetFinale==='function')checkFloorResetFinale(); // Celestial when all floors cleared
 }
 
 function _payQuest(q){
   const r=q.reward||{};
   if(r.coins){
-    const m=(typeof surgeMultiplier==='function')?surgeMultiplier(new Date().getDay()):1; // Surge doubles quest payout
+    // Floor Reset is event-tier, OUTSIDE the daily economy — no Surge multiplier.
+    const m=q.event?1:((typeof surgeMultiplier==='function')?surgeMultiplier(new Date().getDay()):1); // Surge doubles quest payout
     awardPoints(r.coins*m,'Quest: '+q.name+(m>1?' (\u00d7'+m+' Surge)':''),'quest');
   }
-  if(r.boxTier&&typeof grantBox==='function')grantBox(r.boxTier,'quest:'+(q.id||q.name)); // sealed box reward
+  if(r.boxTier&&typeof grantBox==='function')grantBox(r.boxTier,'quest:'+(q.id||q.name)); // sealed box reward (single)
+  if(Array.isArray(r.boxes)&&typeof grantBox==='function')                                // multiple boxes (event-tier floors)
+    r.boxes.forEach(t=>grantBox(t,'quest:'+(q.id||q.name)));
 }
 
 function getLevelInfo(xp){
