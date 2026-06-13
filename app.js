@@ -4852,8 +4852,9 @@ function renderQuestCard(q){
   const total=steps.length, doneN=steps.filter(s=>s.done).length;
   const pct=total?Math.round(doneN/total*100):0;
   const r=q.reward||{};
+  const boxN=Array.isArray(r.boxes)?r.boxes.length:0;
   const rewardStr = q.type==='longhaul' ? 'Milestone rewards'
-    : `${r.coins||0}🪙${r.boxTier?' + '+_escHtml(r.boxTier)+' box':''}`;
+    : `${r.coins||0}🪙${r.boxTier?' + '+_escHtml(r.boxTier)+' box':''}${boxN?' + '+boxN+' box'+(boxN>1?'es':''):''}`;
   const stepsHtml=steps.map(s=>{
     const manual=!s.taskRef&&!s.blockRef&&!s.dayRef;
     const box=s.done?'☑':'☐';
@@ -4874,7 +4875,10 @@ function renderQuestCard(q){
       <div class="quest-card-type">${_escHtml(q.type)}</div>
     </div>
     <div class="quest-card-reward">Reward: ${rewardStr}</div>
-    ${(q.type==='oneoff'||q.type==='longhaul')?`<div class="quest-card-cat">
+    ${q.purge?`<div class="quest-card-purge">${q.purgeClaimed
+      ? '<span class="purge-claimed">\u2611 PURGE BONUS CLAIMED</span>'
+      : `<button class="purge-btn" onclick="claimPurgeBonus('${q.id}')">PURGE BONUS · ejected ${q.purge.threshold}+ \u2192 +${q.purge.bonusCoins}\uD83E\uDE99${q.purge.guaranteedTreat?' + treat':''}</button>`}</div>`:''}
+    ${(q.type==='oneoff'||q.type==='longhaul')&&!q.event?`<div class="quest-card-cat">
       <label class="quest-cat-label">WHEEL CATEGORY</label>
       <select class="quest-cat-select" onchange="setQuestCategory('${q.id}',this.value)">${['','clean','admin','mental','bonus'].map(c=>`<option value="${c}"${(q.category||'')===c?' selected':''}>${c?c[0].toUpperCase()+c.slice(1):'None'}</option>`).join('')}</select>
     </div>`:''}
@@ -4906,6 +4910,7 @@ function toggleQuestStep(questId,stepId){
   const s=(q.steps||[]).find(x=>x.id===stepId); if(!s)return;
   if(s.taskRef||s.blockRef||s.dayRef)return; // auto-tracked steps aren't manually toggleable
   s.done=!s.done; s.doneAt=s.done?Date.now():null;
+  if(s.done&&q.event==='floor-reset'&&typeof maybeMicroDrop==='function')maybeMicroDrop(); // grind pacing
   save('dr-quests',quests);
   if(typeof checkQuestCompletion==='function')checkQuestCompletion(); // pay out if now complete
   renderQuestLog();
@@ -5059,14 +5064,14 @@ const FR_BOX={mid:'rare',high:'epic',top:'legendary',celestial:'legendary'};
    tasks that seed new daily-floor recurring tasks. */
 const FLOOR_RESET_DEFS=[
   {id:'fr-bathroom',name:'The Porcelain Vault — Bathroom',type:'oneoff',event:'floor-reset',floor:'1A',
-   status:'active',reward:{coins:25,boxes:[FR_BOX.mid]},createdAt:Date.now(),
+   status:'active',reward:{coins:25,boxes:[FR_BOX.mid]},purge:{threshold:10,bonusCoins:5,guaranteedTreat:true},createdAt:Date.now(),
    steps:[
      {id:'fr-bath-1',label:'Scour the wet zones — tub, toilet, sink, mirror, floor, fresh towels, trash',done:false,doneAt:null},
      {id:'fr-bath-2',label:'Breach the storage — under-sink + two drawers, three buckets (sort first)',done:false,doneAt:null},
      {id:'fr-bath-3',label:'Re-home the keep pile into bins',done:false,doneAt:null},
    ]},
   {id:'fr-kitchen',name:'The Kitchen',type:'oneoff',event:'floor-reset',floor:'1B',
-   status:'active',reward:{coins:20,boxes:[FR_BOX.mid]},createdAt:Date.now(),
+   status:'active',reward:{coins:20,boxes:[FR_BOX.mid]},purge:{threshold:10,bonusCoins:5},createdAt:Date.now(),
    steps:[
      {id:'fr-kit-1',label:'Counters & surfaces — clear, decide, wipe',done:false,doneAt:null},
      {id:'fr-kit-2',label:'Fridge — expiry purge',done:false,doneAt:null},
@@ -5074,7 +5079,7 @@ const FLOOR_RESET_DEFS=[
      {id:'fr-kit-4',label:'Sink/dishes — empty; floor last',done:false,doneAt:null},
    ]},
   {id:'fr-foyer',name:'The Threshold, Pass 1 — Foyer',type:'oneoff',event:'floor-reset',floor:'2',
-   status:'active',reward:{coins:30,boxes:[FR_BOX.high]},createdAt:Date.now(),
+   status:'active',reward:{coins:30,boxes:[FR_BOX.high]},purge:{threshold:15,bonusCoins:5},createdAt:Date.now(),
    steps:[
      {id:'fr-foy-1',label:'Reset the entryway — landing strip, floor, daily clutter',done:false,doneAt:null},
      {id:'fr-foy-2',label:'Establish the Landing Spot — keys/bag/shoes/mail home',done:false,doneAt:null},
@@ -5084,7 +5089,7 @@ const FLOOR_RESET_DEFS=[
      {id:'fr-foy-6',label:'Stage the Co/Struc drawers — purge surplus, stage the rest',done:false,doneAt:null},
    ]},
   {id:'fr-living',name:'The Stacks — Living Room',type:'oneoff',event:'floor-reset',floor:'3',
-   status:'active',reward:{coins:30,boxes:[FR_BOX.high]},createdAt:Date.now(),
+   status:'active',reward:{coins:30,boxes:[FR_BOX.high]},purge:{threshold:15,bonusCoins:5},createdAt:Date.now(),
    steps:[
      {id:'fr-liv-1',label:'Tank check FIRST — anything alive? welfare before cleaning',done:false,doneAt:null},
      {id:'fr-liv-2',label:'Cube + book sort — books / archive craft (→foyer) / active craft / elsewhere',done:false,doneAt:null},
@@ -5095,7 +5100,7 @@ const FLOOR_RESET_DEFS=[
      {id:'fr-liv-7',label:'Lighter layer — surfaces, floor, vacuum under furniture, dust',done:false,doneAt:null},
    ]},
   {id:'fr-wardrobe',name:'The Wardrobe Vault — Closet + Clothing',type:'oneoff',event:'floor-reset',floor:'4',
-   status:'active',reward:{coins:40,boxes:[FR_BOX.top,FR_BOX.top]},createdAt:Date.now(),
+   status:'active',reward:{coins:40,boxes:[FR_BOX.top,FR_BOX.top]},purge:{threshold:25,bonusCoins:10},createdAt:Date.now(),
    steps:[
      {id:'fr-war-1',label:'CONSOLIDATE FIRST — all clothing into one pile; open the dresser',done:false,doneAt:null},
      {id:'fr-war-2',label:'First-pass sort by sight — keep / repurpose (→foyer) / toss-donate',done:false,doneAt:null},
@@ -5103,7 +5108,7 @@ const FLOOR_RESET_DEFS=[
      {id:'fr-war-4',label:'Home the keepers — closet is the single home for clothing',done:false,doneAt:null},
    ]},
   {id:'fr-bedroom',name:'The Quarters — Bedroom',type:'oneoff',event:'floor-reset',floor:'5',
-   status:'active',reward:{coins:20,boxes:[FR_BOX.high]},createdAt:Date.now(),
+   status:'active',reward:{coins:20,boxes:[FR_BOX.high]},purge:{threshold:10,bonusCoins:5},createdAt:Date.now(),
    steps:[
      {id:'fr-bed-1',label:'Bed — fresh linens; confirm under-bed clear',done:false,doneAt:null},
      {id:'fr-bed-2',label:'Dresser — wipe down, clear its top',done:false,doneAt:null},
@@ -5160,9 +5165,100 @@ function checkFloorResetFinale(){
   if(typeof showPtsToast==='function')showPtsToast('\u2605 ALL FLOORS CLEARED — CELESTIAL BOX EARNED');
 }
 
+/* ─── MICRO-DROPS (Tier 1 — paces the grind) ───────────────────────────────
+   Fires on every Floor Reset quest-STEP completion (the cleaning grind these
+   treats exist to pace — NOT routine daily tasks). Guaranteed-but-varied:
+   every step earns a drop, the item is randomized, avoiding immediate repeats
+   and flipping sweet/savory so there's no 2pm sugar wall. Physical pacing cap
+   ~4/day: past the cap the app KEEPS acknowledging but reframes (stash it) so
+   you pace the eating, never gated. Acknowledgment only — these are pre-bought
+   physical treats, so no inventory mutation; the toast tells you to go grab one.
+
+   PLACEHOLDER — icons are emoji until the sprite doc lands (real reward sprite
+   keys go in `icon` then). Local-only state: it's a within-day pacing counter,
+   resets daily, not worth a sync row. */
+const MICRO_DROPS=[
+  {id:'popsicle',label:'Popsicle',icon:'\uD83E\uDDCA',cat:'sweet'},
+  {id:'cheese-plate',label:'Cheese, crackers & pepperoni',icon:'\uD83E\uDDC0',cat:'savory'},
+  {id:'sparkling',label:'Sparkling water / electrolytes',icon:'\uD83E\uDEE7',cat:'drink'},
+  {id:'cold-fruit',label:'Cold fruit',icon:'\uD83C\uDF49',cat:'sweet'},
+];
+const MICRO_DROP_CAP=4;
+let microDropState=loadLocal('dr-microdrops',{date:null,count:0,last:null});
+
+function _microDropReset(){
+  const today=todayStr();
+  if(microDropState.date!==today){microDropState={date:today,count:0,last:null};saveLocal('dr-microdrops',microDropState);}
+}
+
+// Pick a varied treat: never the same item twice running; prefer a different
+// category from the last drop (sweet↔savory) to balance the rotation.
+function _pickMicroDrop(){
+  const last=MICRO_DROPS.find(m=>m.id===microDropState.last);
+  let pool=MICRO_DROPS.filter(m=>m.id!==microDropState.last);
+  if(last){const flipped=pool.filter(m=>m.cat!==last.cat);if(flipped.length)pool=flipped;}
+  return pool[Math.floor(Math.random()*pool.length)]||MICRO_DROPS[0];
+}
+
+// Fire a micro-drop. {guaranteed:true} forces one regardless of cap (used by the
+// Bathroom PURGE "guaranteed treat"). Returns the item, or null if nothing fired.
+function maybeMicroDrop(opts){
+  opts=opts||{};
+  if(!MICRO_DROPS.length)return null;
+  _microDropReset();
+  const item=_pickMicroDrop();
+  microDropState.count++;
+  microDropState.last=item.id;
+  saveLocal('dr-microdrops',microDropState);
+  const overCap=microDropState.count>MICRO_DROP_CAP&&!opts.guaranteed;
+  if(typeof showPtsToast==='function'){
+    showPtsToast(overCap
+      ? `${item.icon} ${item.label} — stash it. You've hit today's pace.`
+      : `${item.icon} MICRO-DROP — ${item.label}. Break earned.`);
+  }
+  return item;
+}
+
+/* ─── PURGE BONUSES + VAULT LEGENDARY (Tier 2 bonus triggers) ───────────────
+   Self-attested: cleaning while counting exact items is friction, so PURGE is a
+   single tap on the floor's card ("ejected the threshold"). Claiming pays bonus
+   coins (+box / +guaranteed treat per the spec), once per floor. The Wardrobe
+   Vault's Legendary conditional fires when that floor is COMPLETE *and* its
+   PURGE is claimed (consolidate + full sort + 25 ejected all landed).
+
+   DECISION FLAGGED: the spec says "Legendary orb" — orbs aren't a grantable
+   item in the economy (they're task-quality grades), so the closest real reward
+   is a Legendary loot box. That's what this grants. One-line swap if you'd
+   rather it be a coin/XP windfall instead. */
+function claimPurgeBonus(questId){
+  const q=(Array.isArray(quests)?quests:[]).find(x=>x.id===questId);
+  if(!q||!q.purge||q.purgeClaimed)return {ok:false};
+  q.purgeClaimed=true;
+  const p=q.purge;
+  if(p.bonusCoins&&typeof awardPoints==='function')awardPoints(p.bonusCoins,'PURGE bonus: '+q.name,'quest');
+  if(p.bonusBox&&typeof grantBox==='function')grantBox(p.bonusBox,'purge:'+q.id);
+  if(p.guaranteedTreat)maybeMicroDrop({guaranteed:true});
+  save('dr-quests',quests);
+  _checkVaultLegendary();
+  if(typeof showPtsToast==='function')showPtsToast('\uD83D\uDD25 PURGE CONFIRMED — surplus ejected.');
+  if(typeof renderQuestLog==='function')renderQuestLog();
+  return {ok:true};
+}
+
+// Wardrobe Vault: floor complete + PURGE claimed → Legendary. Idempotent.
+function _checkVaultLegendary(){
+  const q=(Array.isArray(quests)?quests:[]).find(x=>x.id==='fr-wardrobe');
+  if(!q||q.status!=='completed'||!q.purgeClaimed||q.legendaryGranted)return;
+  q.legendaryGranted=true;
+  save('dr-quests',quests);
+  if(typeof grantBox==='function')grantBox('legendary','vault-legendary');
+  if(typeof showPtsToast==='function')showPtsToast('\u2728 THE VAULT YIELDS A LEGENDARY.');
+}
+
 // Expose the event entry points (no UI surface yet — Archive shows the floors,
 // dccFloorReset.start() begins the run).
-window.dccFloorReset={start:startFloorReset,seed:seedFloorReset,finale:checkFloorResetFinale};
+window.dccFloorReset={start:startFloorReset,seed:seedFloorReset,finale:checkFloorResetFinale,
+  microDrop:maybeMicroDrop,claimPurge:claimPurgeBonus};
 
 // A "block" quest step is done when every one of today's tasks in that schedule
 // section (e.g. 'Morning') is complete. Reads today's schedule so it adapts as
@@ -5231,6 +5327,7 @@ function checkQuestCompletion(){
     }
   }
   if(changed)save('dr-quests',quests);
+  if(typeof _checkVaultLegendary==='function')_checkVaultLegendary();          // Vault: complete + purged → Legendary
   if(typeof checkFloorResetFinale==='function')checkFloorResetFinale(); // Celestial when all floors cleared
 }
 
